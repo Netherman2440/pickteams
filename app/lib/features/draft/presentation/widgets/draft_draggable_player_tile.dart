@@ -10,7 +10,6 @@ class DraftDraggablePlayerTile extends StatelessWidget {
     required this.player,
     required this.trailing,
     this.compact = false,
-    this.highlighted = false,
     this.onTap,
     this.dragData,
   });
@@ -19,9 +18,6 @@ class DraftDraggablePlayerTile extends StatelessWidget {
   final Widget trailing;
   final bool compact;
 
-  /// Whether the tile is currently picked by keyboard navigation in the
-  /// draft selection search field.
-  final bool highlighted;
   final VoidCallback? onTap;
   final Object? dragData;
 
@@ -32,7 +28,6 @@ class DraftDraggablePlayerTile extends StatelessWidget {
     final positionText = playerPositionPolishLabel(player.position);
 
     final tile = Card(
-      color: highlighted ? theme.colorScheme.primaryContainer : null,
       child: ListTile(
         dense: compact,
         visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
