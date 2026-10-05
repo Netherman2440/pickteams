@@ -486,7 +486,6 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
                           return DraftDraggablePlayerTile(
                             key: isHighlighted ? _highlightedTileKey : null,
                             player: p,
-                            highlighted: isHighlighted,
                             trailing: const Icon(Icons.add_circle_outline),
                             onTap: () => widget.onToggle(p.playerId),
                             dragData: p.playerId,

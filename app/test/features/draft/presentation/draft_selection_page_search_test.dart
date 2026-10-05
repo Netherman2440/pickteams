@@ -158,6 +158,26 @@ void main() {
     },
   );
 
+  testWidgets(
+    'draft search picked tile looks like a normal tile (no color override)',
+    (tester) async {
+      await _pumpPage(tester);
+
+      await _enterSearchQuery(tester, 'a');
+      expect(_highlightedPlayerName(tester), 'Anna');
+
+      // The tile picked by keyboard navigation must render exactly like
+      // every other tile: no Card color override (e.g. a
+      // primaryContainer background) may hint at the picked position.
+      final pickedCard = tester.widget<Card>(
+        find
+            .descendant(of: _pickedTileFinder(), matching: find.byType(Card))
+            .first,
+      );
+      expect(pickedCard.color, isNull);
+    },
+  );
+
   testWidgets('draft search enter without highlighted player adds nothing', (
     tester,
   ) async {
@@ -258,10 +278,18 @@ Finder _findInSectionContaining(String header, String text) {
   );
 }
 
-String? _highlightedPlayerName(WidgetTester tester) {
-  final finder = find.byWidgetPredicate(
-    (widget) => widget is DraftDraggablePlayerTile && widget.highlighted,
+/// Finder for the tile currently picked by keyboard navigation. The
+/// picked tile does not change its look, so the auto-scroll GlobalKey
+/// is the only remaining marker of the picked position.
+Finder _pickedTileFinder() {
+  return find.byWidgetPredicate(
+    (widget) =>
+        widget is DraftDraggablePlayerTile && widget.key is LabeledGlobalKey,
   );
+}
+
+String? _highlightedPlayerName(WidgetTester tester) {
+  final finder = _pickedTileFinder();
   expect(finder, findsOneWidget);
   final tile = tester.widget<DraftDraggablePlayerTile>(finder);
   return tile.player.name;
