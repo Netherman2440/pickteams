@@ -164,11 +164,11 @@ class SupabaseMatchRepository implements MatchRepository {
       if (awayScore != null) updates['away_score'] = awayScore;
       if (scoreMeta != null) updates['score_meta'] = scoreMeta;
 
-      if (updates.isEmpty) return getMatch(matchId: matchId);
+      if (updates.isEmpty) return await getMatch(matchId: matchId);
 
       await _supabase.from('matches').update(updates).eq('match_id', matchId);
 
-      return getMatch(matchId: matchId);
+      return await getMatch(matchId: matchId);
     } catch (e, stack) {
       _logger.severe('Failed to update score for match $matchId', e, stack);
       throw e.toFailure();
@@ -227,7 +227,7 @@ class SupabaseMatchRepository implements MatchRepository {
         await _supabase.from('team_players').insert(teamPlayersRows);
       }
 
-      return getMatch(matchId: matchId);
+      return await getMatch(matchId: matchId);
     } catch (e, stack) {
       _logger.severe('Failed to update teams for match $matchId', e, stack);
       throw e.toFailure();

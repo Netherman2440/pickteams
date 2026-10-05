@@ -143,7 +143,7 @@ class SupabasePlayerRepository implements PlayerRepository {
       }
 
       if (updates.isEmpty) {
-        return getPlayer(playerId: playerId);
+        return await getPlayer(playerId: playerId);
       }
 
       final response = await _supabase

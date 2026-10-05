@@ -132,7 +132,7 @@ class DraftSessionNotifier extends Notifier<AsyncValue<DraftSessionState>> {
               );
             }
 
-            return _generateAndPersistDraftState(
+            return await _generateAndPersistDraftState(
               request: request,
               allPlayers: allPlayers,
               selectedPlayerIds: selectedPlayerIds,
@@ -189,7 +189,7 @@ class DraftSessionNotifier extends Notifier<AsyncValue<DraftSessionState>> {
           );
         }
 
-        return _generateAndPersistDraftState(
+        return await _generateAndPersistDraftState(
           request: request,
           allPlayers: allPlayers,
           selectedPlayerIds: request.selectedPlayerIds,
