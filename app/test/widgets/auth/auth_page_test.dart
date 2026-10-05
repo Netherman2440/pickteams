@@ -36,6 +36,8 @@ void main() {
         expect(loginButton, findsOneWidget);
 
         // Tap the login button without entering any email
+        await tester.ensureVisible(loginButton);
+        await tester.pumpAndSettle();
         await tester.tap(loginButton);
         await tester.pump();
 
@@ -73,6 +75,8 @@ void main() {
         expect(loginButton, findsOneWidget);
 
         // Tap the login button without entering password
+        await tester.ensureVisible(loginButton);
+        await tester.pumpAndSettle();
         await tester.tap(loginButton);
         await tester.pump();
 
