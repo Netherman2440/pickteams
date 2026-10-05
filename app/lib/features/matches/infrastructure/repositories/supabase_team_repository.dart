@@ -288,7 +288,7 @@ class SupabaseTeamRepository implements TeamRepository {
       if (color != null) updates['color'] = color;
 
       if (updates.isEmpty) {
-        return getTeam(teamId: teamId, matchId: matchId);
+        return await getTeam(teamId: teamId, matchId: matchId);
       }
 
       await _supabase
@@ -297,7 +297,7 @@ class SupabaseTeamRepository implements TeamRepository {
           .eq('team_id', teamId)
           .eq('match_id', matchId);
 
-      return getTeam(teamId: teamId, matchId: matchId);
+      return await getTeam(teamId: teamId, matchId: matchId);
     } catch (e, stack) {
       _logger.severe('Failed to update team $teamId', e, stack);
       throw e.toFailure();
