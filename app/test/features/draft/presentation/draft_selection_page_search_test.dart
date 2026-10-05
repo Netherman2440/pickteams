@@ -92,6 +92,41 @@ void main() {
   );
 
   testWidgets(
+    'draft search software keyboard done action adds highlighted player',
+    (tester) async {
+      await _pumpPage(tester);
+
+      await _enterSearchQuery(tester, 'a');
+      expect(_highlightedPlayerName(tester), 'Anna');
+
+      // Software keyboards (mobile browsers, on-screen keyboards) submit
+      // through the editing-complete action, not hardware key events.
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(_findInSection('Wybrani gracze', 'Anna'), findsOneWidget);
+      expect(_findInSection('Dostępni gracze', 'Anna'), findsNothing);
+
+      // Focus stays on the search field with the whole phrase selected.
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.focusNode!.hasFocus, isTrue);
+      final controller = field.controller!;
+      expect(controller.text, 'a');
+      final selection = controller.selection;
+      expect(selection.isCollapsed, isFalse);
+      expect(selection.baseOffset, 0);
+      expect(selection.extentOffset, controller.text.length);
+
+      // A repeated submit must not add the next matching player.
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(_findInSection('Wybrani gracze', 'Anna'), findsOneWidget);
+      expect(_findInSection('Wybrani gracze', 'Bartek'), findsNothing);
+      expect(_findInSection('Wybrani gracze', 'Cezary'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'draft search arrow keys navigate results and enter adds highlighted player',
     (tester) async {
       await _pumpPage(tester);
