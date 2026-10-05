@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -145,14 +146,18 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _ErrorBody(error: error),
         data: (data) {
-          final available = _filterAvailable(
-            players: data.players,
-            selectedPlayerIds: data.selectedPlayerIds,
-            query: data.searchQuery,
-          );
+          final query = data.searchQuery.trim().toLowerCase();
+          bool matchesQuery(Player p) =>
+              query.isEmpty || p.name.toLowerCase().contains(query);
+
+          final available = data.players
+              .where((p) => !data.selectedPlayerIds.contains(p.playerId))
+              .where(matchesQuery)
+              .toList(growable: false);
 
           final selected = data.players
               .where((p) => data.selectedPlayerIds.contains(p.playerId))
+              .where(matchesQuery)
               .toList(growable: false);
 
           return Padding(
@@ -166,6 +171,7 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
                   child: _SelectedPlayersPanel(
                     players: selected,
                     selectedCount: data.selectedPlayerIds.length,
+                    searchQuery: data.searchQuery,
                     compact: isCompact,
                     onToggle: (playerId) => ref
                         .read(draftSelectionControllerProvider.notifier)
@@ -286,17 +292,145 @@ class _AvailablePlayersPanel extends StatefulWidget {
 
 class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
   late final ScrollController _scrollController;
+  late final TextEditingController _searchController;
+  late final FocusNode _searchFocusNode;
+  late final GlobalKey _highlightedTileKey;
+
+  /// Index of the available player currently picked by keyboard
+  /// navigation in the search field. `null` means no player is picked, so
+  /// Enter adds no one.
+  int? _highlightIndex;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _searchController = TextEditingController(text: widget.searchQuery);
+    _searchFocusNode = FocusNode(
+      debugLabel: 'draft-search-field',
+      onKeyEvent: _handleSearchKeyEvent,
+    );
+    _highlightedTileKey = GlobalKey(debugLabel: 'draft-search-highlight');
+  }
+
+  @override
+  void didUpdateWidget(covariant _AvailablePlayersPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.searchQuery != oldWidget.searchQuery ||
+        widget.searchQuery != _searchController.text) {
+      // The query changed: typed in the field or reset externally (e.g.
+      // after a state reload). Pick the first match again.
+      if (widget.searchQuery != _searchController.text) {
+        final target = widget.searchQuery;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _searchController.text != target) {
+            _searchController.text = target;
+          }
+        });
+      }
+      _highlightIndex = _initialHighlight();
+    } else {
+      // The list changed but the query did not (e.g. a player was just
+      // added): keep the picked position within bounds.
+      _highlightIndex = _clampHighlight(_highlightIndex);
+    }
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  int? _initialHighlight() {
+    if (widget.searchQuery.trim().isEmpty || widget.players.isEmpty) {
+      return null;
+    }
+    return 0;
+  }
+
+  int? _clampHighlight(int? index) {
+    if (index == null || widget.players.isEmpty) {
+      return null;
+    }
+    if (index >= widget.players.length) {
+      return widget.players.length - 1;
+    }
+    return index;
+  }
+
+  KeyEventResult _handleSearchKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowDown ||
+        key == LogicalKeyboardKey.arrowUp) {
+      _moveHighlight(key == LogicalKeyboardKey.arrowDown ? 1 : -1);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter) {
+      // Handle the key press once: holding Enter must not add many
+      // players.
+      if (event is KeyDownEvent) {
+        _addHighlightedPlayer();
+      }
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _moveHighlight(int delta) {
+    if (widget.players.isEmpty) {
+      return;
+    }
+    final current = _highlightIndex;
+    final next = current == null
+        ? (delta > 0 ? 0 : widget.players.length - 1)
+        : (current + delta).clamp(0, widget.players.length - 1);
+    if (next == current) {
+      return;
+    }
+    setState(() {
+      _highlightIndex = next;
+    });
+    _revealHighlightedTile();
+  }
+
+  void _addHighlightedPlayer() {
+    final index = _highlightIndex;
+    if (index == null || index >= widget.players.length) {
+      return;
+    }
+    final player = widget.players[index];
+    widget.onToggle(player.playerId);
+    setState(() {
+      _highlightIndex = null;
+    });
+    _searchFocusNode.requestFocus();
+    // Select the whole phrase so a single Backspace clears the query.
+    _searchController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _searchController.text.length,
+    );
+  }
+
+  void _revealHighlightedTile() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _highlightedTileKey.currentContext;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          alignment: 0.4,
+          duration: const Duration(milliseconds: 150),
+        );
+      }
+    });
   }
 
   @override
@@ -313,17 +447,30 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
             ),
             const SizedBox(height: 8),
             TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
               decoration: const InputDecoration(
                 labelText: 'Szukaj',
                 prefixIcon: Icon(Icons.search),
               ),
               textCapitalization: TextCapitalization.none,
               onChanged: widget.onSearchChanged,
+              // The engine turns Enter into a "done" input action whose
+              // default behavior unfocuses the field. Enter is handled in
+              // [_handleSearchKeyEvent] instead, so keep the focus here.
+              onEditingComplete: () {},
             ),
             const SizedBox(height: 8),
             Expanded(
               child: widget.players.isEmpty
-                  ? const Center(child: Text('Brak dostępnych graczy.'))
+                  ? Center(
+                      child: Text(
+                        widget.searchQuery.trim().isEmpty
+                            ? 'Brak dostępnych graczy.'
+                            : 'Brak dostępnych graczy dla '
+                                  '„${widget.searchQuery}”.',
+                      ),
+                    )
                   : Scrollbar(
                       controller: _scrollController,
                       child: ListView.builder(
@@ -331,8 +478,11 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
                         itemCount: widget.players.length,
                         itemBuilder: (context, index) {
                           final p = widget.players[index];
+                          final isHighlighted = index == _highlightIndex;
                           return DraftDraggablePlayerTile(
+                            key: isHighlighted ? _highlightedTileKey : null,
                             player: p,
+                            highlighted: isHighlighted,
                             trailing: const Icon(Icons.add_circle_outline),
                             onTap: () => widget.onToggle(p.playerId),
                             dragData: p.playerId,
@@ -353,6 +503,7 @@ class _SelectedPlayersPanel extends StatefulWidget {
   const _SelectedPlayersPanel({
     required this.players,
     required this.selectedCount,
+    required this.searchQuery,
     required this.compact,
     required this.onToggle,
     required this.onClear,
@@ -360,6 +511,10 @@ class _SelectedPlayersPanel extends StatefulWidget {
 
   final List<Player> players;
   final int selectedCount;
+
+  /// Active search phrase; when it is not empty, [players] is already
+  /// filtered by it.
+  final String searchQuery;
   final bool compact;
   final ValueChanged<String> onToggle;
   final VoidCallback onClear;
@@ -407,7 +562,14 @@ class _SelectedPlayersPanelState extends State<_SelectedPlayersPanel> {
             const SizedBox(height: 8),
             Expanded(
               child: widget.players.isEmpty
-                  ? const Center(child: Text('Nie wybrano jeszcze graczy.'))
+                  ? Center(
+                      child: Text(
+                        widget.searchQuery.trim().isEmpty
+                            ? 'Nie wybrano jeszcze graczy.'
+                            : 'Brak wybranych graczy dla '
+                                  '„${widget.searchQuery}”.',
+                      ),
+                    )
                   : Scrollbar(
                       controller: _scrollController,
                       child: ListView.builder(
@@ -469,19 +631,6 @@ class _InlineErrorText extends StatelessWidget {
       ),
     );
   }
-}
-
-List<Player> _filterAvailable({
-  required List<Player> players,
-  required Set<String> selectedPlayerIds,
-  required String query,
-}) {
-  final q = query.trim().toLowerCase();
-
-  return players
-      .where((p) => !selectedPlayerIds.contains(p.playerId))
-      .where((p) => q.isEmpty || p.name.toLowerCase().contains(q))
-      .toList(growable: false);
 }
 
 enum _SelectionMenuAction { toggleSubstitute }
