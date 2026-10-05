@@ -455,10 +455,14 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
               ),
               textCapitalization: TextCapitalization.none,
               onChanged: widget.onSearchChanged,
-              // The engine turns Enter into a "done" input action whose
-              // default behavior unfocuses the field. Enter is handled in
-              // [_handleSearchKeyEvent] instead, so keep the focus here.
-              onEditingComplete: () {},
+              // The engine turns Enter into a "done" input action
+              // whose default behavior unfocuses the field. Hardware
+              // keyboards go through [_handleSearchKeyEvent]; software
+              // keyboards (no key events for their submit button) only
+              // reach this callback. Both route through the same
+              // idempotent add path, so the player is added once and
+              // the focus stays.
+              onEditingComplete: _addHighlightedPlayer,
             ),
             const SizedBox(height: 8),
             Expanded(
