@@ -1,0 +1,7 @@
+name: pickteams-ui
+description: Zmiany UI/layoutu w Pickteams z obowiązkową weryfikacją na żywo (serwer debug + Playwright, skill pickteams-ui-testing).
+steps:
+  - id: implement
+    name: Implementacja i weryfikacja UI
+    skill: pickteams-ui-testing
+    prompt: "{{task}}"

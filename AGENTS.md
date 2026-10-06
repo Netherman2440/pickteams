@@ -34,6 +34,14 @@
 - Copy `app/.env.EXAMPLE` to `.env` and never commit secrets; reference keys via `flutter_dotenv` only in `infrastructure/` layers.
 - When sharing repro steps, redact Supabase URLs or rotate keys via the dashboard and note the rotation in the PR description.
 
+## Mobile UI Verification (responsywność)
+
+Przy każdym tasku dotyczącym layoutu/UI na wąskich ekranach:
+
+- Skill `.ai/cezar/skills/pickteams-ui-testing.md` to instrukcja operacyjna (serwer debug + Playwright MCP + pomiary geometrii). Workflow `pickteams-ui` dociąga go automatycznie.
+- Serwer: `bash scripts/ui-serve.sh start|restart|stop|ready` (port 4370, tryb debug — wymagany dla drzewa dostępności i pasków overflow).
+- Weryfikacja mierzalna: snapshoty a11y + recty elementów przed/po zmianie; screenshoty do `.ai/cezar/tmp/ui/`.
+
 ## Codex Command: create_doc
 Use this command format in chat with Codex:
 
