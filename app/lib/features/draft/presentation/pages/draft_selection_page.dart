@@ -54,10 +54,15 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(draftSelectionControllerProvider);
     final createMatchState = ref.watch(createMatchControllerProvider);
+    final isMobile = MediaQuery.sizeOf(context).width < AppConfig.mobileWidth;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Propozycja - wybór graczy'),
+        title: const Text(
+          'Propozycja - wybór graczy',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           state.when(
             data: (data) {
@@ -80,7 +85,7 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Wygeneruj propozycję'),
+                          : Text(isMobile ? 'Losuj' : 'Wygeneruj propozycję'),
                     ),
                     TextButton(
                       onPressed: hasMinimumPlayers
@@ -102,7 +107,7 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
                               );
                             }
                           : null,
-                      child: const Text('Przejdź do relacji'),
+                      child: Text(isMobile ? 'Relacje' : 'Przejdź do relacji'),
                     ),
                     PopupMenuButton<_SelectionMenuAction>(
                       tooltip: 'Ustawienia propozycji',
