@@ -127,6 +127,37 @@ void main() {
   );
 
   testWidgets(
+    'draft search tapping a player refocuses the field and selects phrase',
+    (tester) async {
+      await _pumpPage(tester);
+
+      await _enterSearchQuery(tester, 'a');
+      expect(_highlightedPlayerName(tester), 'Anna');
+
+      // Tap Bartek directly instead of picking with the keyboard.
+      // Other matches stay in "Dostępni" afterwards — the exact case
+      // where the focus used to stay lost on the tapped tile.
+      await tester.tap(_findInSection('Dostępni gracze', 'Bartek'));
+      await tester.pumpAndSettle();
+
+      expect(_findInSection('Wybrani gracze', 'Bartek'), findsOneWidget);
+      expect(_findInSection('Dostępni gracze', 'Anna'), findsOneWidget);
+      expect(_findInSection('Dostępni gracze', 'Cezary'), findsOneWidget);
+
+      // The focus is hard-set back on the search field with the whole
+      // phrase selected, no matter how the player was added.
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.focusNode!.hasFocus, isTrue);
+      final controller = field.controller!;
+      expect(controller.text, 'a');
+      final selection = controller.selection;
+      expect(selection.isCollapsed, isFalse);
+      expect(selection.baseOffset, 0);
+      expect(selection.extentOffset, controller.text.length);
+    },
+  );
+
+  testWidgets(
     'draft search arrow keys navigate results and enter adds highlighted player',
     (tester) async {
       await _pumpPage(tester);
