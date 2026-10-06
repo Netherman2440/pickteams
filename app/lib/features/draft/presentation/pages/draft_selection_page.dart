@@ -412,12 +412,28 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
     setState(() {
       _highlightIndex = null;
     });
-    _searchFocusNode.requestFocus();
-    // Select the whole phrase so a single Backspace clears the query.
-    _searchController.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: _searchController.text.length,
-    );
+    _refocusSearchField();
+  }
+
+  /// Hard-sets the focus back on the search field and selects the whole
+  /// phrase, so one Backspace clears the query. Runs once right away and
+  /// once after the current frame: the add path must win over the tap's
+  /// own focus handling and over the rebuild that follows the toggle,
+  /// no matter how many players remain in "Dostępni".
+  void _refocusSearchField() {
+    void apply() {
+      if (!mounted) {
+        return;
+      }
+      _searchFocusNode.requestFocus();
+      _searchController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _searchController.text.length,
+      );
+    }
+
+    apply();
+    WidgetsBinding.instance.addPostFrameCallback((_) => apply());
   }
 
   void _revealHighlightedTile() {
@@ -487,7 +503,10 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
                             key: isHighlighted ? _highlightedTileKey : null,
                             player: p,
                             trailing: const Icon(Icons.add_circle_outline),
-                            onTap: () => widget.onToggle(p.playerId),
+                            onTap: () {
+                              widget.onToggle(p.playerId);
+                              _refocusSearchField();
+                            },
                             dragData: p.playerId,
                             compact: widget.compact,
                           );
