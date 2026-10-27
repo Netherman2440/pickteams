@@ -26,7 +26,7 @@
 
 ## Commit & Pull Request Guidelines
 - Follow Conventional Commits (`feat:`, `fix:`, `docs:`) as seen in recent history; scope should match a single feature or migration batch.
-- Commits must be linear and rebased on `develop`; avoid mixing Supabase and Flutter changes unless tightly coupled.
+- Commits must be linear and rebased on `main` (PRs target `main`); avoid mixing Supabase and Flutter changes unless tightly coupled.
 - Pull requests need: concise summary, linked issue, screenshots or terminal output for UI/CLI changes, test plan (commands run), and any Supabase migration IDs.
 - Request at least one review; mark blockers clearly and convert to draft if awaiting backend credentials.
 
