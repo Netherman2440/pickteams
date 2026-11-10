@@ -63,14 +63,21 @@ final fixturePlayers = [
     ),
 ];
 
+class FixtureWrites {
+  List<String> homeIds = [];
+  List<String> awayIds = [];
+}
+
 class PlayerListsFixture extends StatefulWidget {
   const PlayerListsFixture({
     super.key,
     this.page = 'match',
     this.role = SquadRole.owner,
+    this.writes,
   });
   final String page;
   final SquadRole role;
+  final FixtureWrites? writes;
   @override
   State<PlayerListsFixture> createState() => _PlayerListsFixtureState();
 }
@@ -131,6 +138,7 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
 
   Widget _results() => DraftResultsPage(
     squadId: 'fixture',
+    matchId: 'match',
     selectedPlayerIds: fixturePlayers.take(16).map((p) => p.playerId).toList(),
   );
 
@@ -160,7 +168,9 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
       ),
       draftSessionNotifierProvider.overrideWith(_FixtureDraft.new),
       matchDetailsProvider.overrideWith(FixtureMatch.new),
-      createMatchControllerProvider.overrideWith(_FixtureCreate.new),
+      createMatchControllerProvider.overrideWith(
+        () => _FixtureCreate(widget.writes),
+      ),
       saveMatchDraftUseCaseProvider.overrideWithValue(
         SaveMatchDraftUseCase(_FixturePersistence()),
       ),
@@ -315,6 +325,15 @@ class FixtureMatch extends MatchDetailsNotifier {
 }
 
 class _FixtureCreate extends CreateMatchController {
+  _FixtureCreate(this.writes);
+  final FixtureWrites? writes;
+
+  MatchDetailsDto _accept(List<Player> home, List<Player> away) {
+    writes?.homeIds = home.map((p) => p.playerId).toList();
+    writes?.awayIds = away.map((p) => p.playerId).toList();
+    return fixtureMatch();
+  }
+
   @override
   Future<MatchDetailsDto?> createMatch({
     required String squadId,
@@ -323,13 +342,13 @@ class _FixtureCreate extends CreateMatchController {
     List<String> rankingHistoryPlayerIds = const [],
     String? homeTeamName,
     String? awayTeamName,
-  }) async => fixtureMatch();
+  }) async => _accept(homePlayers, awayPlayers);
   @override
   Future<MatchDetailsDto?> updateMatch({
     required String matchId,
     required List<Player> homePlayers,
     required List<Player> awayPlayers,
-  }) async => fixtureMatch();
+  }) async => _accept(homePlayers, awayPlayers);
 }
 
 class _FixturePersistence implements DraftPersistenceRepository {

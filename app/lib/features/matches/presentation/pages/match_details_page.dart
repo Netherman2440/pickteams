@@ -1026,6 +1026,8 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                     ),
                   ),
                 ),
+              // Balance the color marker so the name itself stays centered.
+              SizedBox(width: compact ? 20 : 40),
             ],
           ),
           SizedBox(height: compact ? 4 : 6),
