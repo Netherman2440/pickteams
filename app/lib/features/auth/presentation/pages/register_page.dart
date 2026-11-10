@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/auth_provider.dart';
+import '../../infrastructure/oauth_redirect.dart';
 import '../providers/auth_notifier.dart';
 import '../widgets/brand_header.dart';
 
@@ -20,6 +21,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   late final TextEditingController passwordController;
   late final TextEditingController confirmController;
   late final GlobalKey<FormState> formKey;
+  bool _passwordRegistrationRequested = false;
+  bool _handlingAuthNavigation = false;
 
   @override
   void initState() {
@@ -50,7 +53,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     ref.listen(authStateProvider, (previous, next) {
       next.whenOrNull(
         data: (data) async {
-          if (data != null) {
+          if (data != null && !data.isAnonymous && !_handlingAuthNavigation) {
+            _handlingAuthNavigation = true;
+            // OAuth returns a completed session, not an email confirmation.
+            // AuthPage owns invite joining and authenticated navigation.
+            if (!_passwordRegistrationRequested) {
+              if (data.accessToken.isNotEmpty) {
+                context.go('/auth');
+              } else {
+                _handlingAuthNavigation = false;
+              }
+              return;
+            }
             if (data.accessToken.isNotEmpty) {
               await ref.read(authStateProvider.notifier).logout();
             }
@@ -65,6 +79,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           }
         },
         error: (error, stack) {
+          _passwordRegistrationRequested = false;
+          _handlingAuthNavigation = false;
           String message = 'Rejestracja nie powiodła się. Spróbuj ponownie.';
           if (error is UserAlreadyExistsFailure) {
             message = 'Konto z tym adresem e-mail już istnieje.';
@@ -86,6 +102,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         return;
       }
 
+      _passwordRegistrationRequested = true;
       await ref
           .read(authStateProvider.notifier)
           .register(
@@ -97,7 +114,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
 
     Future<void> handleGoogleSignIn() async {
-      final redirectTo = '${Uri.base.origin}/#/auth/callback';
+      _passwordRegistrationRequested = false;
+      final redirectTo = ref.read(oauthRedirectProvider);
       await ref
           .read(authStateProvider.notifier)
           .signInWithProvider(

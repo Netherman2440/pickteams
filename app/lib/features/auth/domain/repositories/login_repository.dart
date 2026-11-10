@@ -7,7 +7,6 @@ abstract class LoginRepository {
   Future<AuthEntity> guestLogin();
   Future<AuthEntity> refreshSession(String? refreshToken);
   Future<void> signInWithProvider(AuthProvider provider, {String? redirectTo});
-  Future<AuthEntity> getSessionFromRedirect(Uri redirectUri);
   Future<void> requestPasswordReset(String email, {String? redirectTo});
   Future<void> updatePassword(String newPassword);
 }

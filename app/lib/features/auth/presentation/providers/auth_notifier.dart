@@ -8,7 +8,7 @@ import '../../application/register_use_case.dart';
 import '../../application/guest_login_use_case.dart';
 import '../../application/logout_use_case.dart';
 import '../../application/oauth_sign_in_use_case.dart';
-import '../../application/complete_oauth_sign_in_use_case.dart';
+import '../../../../core/error/supabase_error_extension.dart';
 import '../../domain/entities/auth_provider.dart';
 import '../../../../core/global_dependencies.dart';
 import '../../infrastructure/repositories/token_secure_storage.dart';
@@ -27,9 +27,19 @@ class AuthNotifier extends Notifier<AsyncValue<AuthEntity?>> {
   late final OAuthSignInUseCase _oauthSignInUseCase = ref.read(
     oauthSignInUseCaseProvider,
   );
-  late final CompleteOAuthSignInUseCase _completeOAuthSignInUseCase = ref.read(
-    completeOAuthSignInUseCaseProvider,
-  );
+  int _authRevision = 0;
+  Future<void> _tokenWrites = Future<void>.value();
+
+  // Publish SDK state immediately. Serialize the compatibility token mirror so
+  // slow storage cannot reorder signed-in, token-refreshed and signed-out events.
+  void _persist(Future<void> Function() write) {
+    _tokenWrites = _tokenWrites.then((_) => write()).catchError((
+      Object error,
+      StackTrace stack,
+    ) {
+      _logger.severe('Failed to persist auth state.', error, stack);
+    });
+  }
 
   @override
   AsyncValue<AuthEntity?> build() {
@@ -49,53 +59,47 @@ class AuthNotifier extends Notifier<AsyncValue<AuthEntity?>> {
       );
     }
 
-    final sub = supabase.auth.onAuthStateChange.listen((data) async {
-      final event = data.event;
-      final session = data.session;
-      final user = session?.user;
+    final sub = supabase.auth.onAuthStateChange.listen(
+      (data) {
+        final event = data.event;
+        final session = data.session;
+        final user = session?.user;
 
-      if (event == AuthChangeEvent.signedOut) {
-        try {
-          await tokenRepository.clearTokens();
-        } catch (error, stackTrace) {
-          _logger.severe(
-            'Failed to clear tokens on sign out.',
-            error,
-            stackTrace,
-          );
+        if (event == AuthChangeEvent.signedOut) {
+          _authRevision++;
+          state = const AsyncValue.data(null);
+          _persist(tokenRepository.clearTokens);
+          return;
         }
-        state = const AsyncValue.data(null);
-        return;
-      }
 
-      if (session == null || user == null) {
-        state = const AsyncValue.data(null);
-        return;
-      }
+        if (session == null || user == null) {
+          return;
+        }
+        _authRevision++;
 
-      final entity = AuthEntity(
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken ?? '',
-        userId: user.id,
-        isAnonymous: user.isAnonymous,
-        email: user.email ?? '',
-      );
-
-      // Persist rotated refresh tokens as soon as Supabase emits them; if
-      // tokenRepository.setTokensFromEntity fails, log it and keep the
-      // AuthEntity in state rather than swapping state to AsyncValue.error, so
-      // we do not unauthenticate the user.
-      try {
-        await tokenRepository.setTokensFromEntity(entity);
-      } catch (error, stackTrace) {
-        _logger.severe(
-          'Failed to persist auth tokens from AuthEntity.',
-          error,
-          stackTrace,
+        final entity = AuthEntity(
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken ?? '',
+          userId: user.id,
+          isAnonymous: user.isAnonymous,
+          email: user.email ?? '',
         );
-      }
-      state = AsyncValue.data(entity);
-    });
+
+        state = AsyncValue.data(entity);
+        _persist(() => tokenRepository.setTokensFromEntity(entity));
+      },
+      onError: (Object error, StackTrace stack) {
+        _authRevision++;
+        // A stale failed callback must not discard an authenticated session.
+        final current = state.asData?.value;
+        if (current != null &&
+            !current.isAnonymous &&
+            current.accessToken.isNotEmpty) {
+          return;
+        }
+        state = AsyncValue.error(error.toFailure(), stack);
+      },
+    );
 
     ref.onDispose(sub.cancel);
 
@@ -131,20 +135,20 @@ class AuthNotifier extends Notifier<AsyncValue<AuthEntity?>> {
     String? redirectTo,
   }) async {
     final previous = state.asData?.value;
+    final revision = ++_authRevision;
     state = const AsyncValue.loading();
     try {
       await _oauthSignInUseCase.execute(provider, redirectTo: redirectTo);
-      state = AsyncValue.data(previous);
+      // Launch completion is not sign-in completion. Do not wait for a callback:
+      // closing the external browser without one must leave the buttons usable.
+      if (ref.mounted && revision == _authRevision) {
+        state = AsyncValue.data(previous);
+      }
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      if (ref.mounted && revision == _authRevision) {
+        state = AsyncValue.error(error, stackTrace);
+      }
     }
-  }
-
-  Future<void> completeOAuthSignIn(Uri redirectUri) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(
-      () => _completeOAuthSignInUseCase.execute(redirectUri),
-    );
   }
 
   Future<void> guestLogin() async {

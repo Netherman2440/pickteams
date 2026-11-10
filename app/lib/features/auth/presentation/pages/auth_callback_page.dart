@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:app/core/error/failure.dart';
+import '../../domain/entities/auth_entity.dart';
 import '../providers/auth_notifier.dart';
 
 class AuthCallbackPage extends ConsumerStatefulWidget {
@@ -13,29 +16,37 @@ class AuthCallbackPage extends ConsumerStatefulWidget {
 }
 
 class _AuthCallbackPageState extends ConsumerState<AuthCallbackPage> {
-  bool _handled = false;
+  Timer? _timeout;
+  bool _timedOut = false;
+  bool _navigating = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_handled) {
-      return;
-    }
-    _handled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(authStateProvider.notifier).completeOAuthSignIn(Uri.base);
-      if (!mounted) {
+  void initState() {
+    super.initState();
+    // Supabase Flutter owns URL parsing and PKCE on both web and native.
+    // Also observe an already restored session after a cold-start callback.
+    ref.listenManual<AsyncValue<AuthEntity?>>(authStateProvider, (_, next) {
+      final entity = next.asData?.value;
+      if (entity == null ||
+          entity.isAnonymous ||
+          entity.accessToken.isEmpty ||
+          _navigating) {
         return;
       }
-      final authState = ref.read(authStateProvider);
-      authState.whenOrNull(
-        data: (data) {
-          if (data != null && mounted) {
-            context.go('/auth');
-          }
-        },
-      );
+      _navigating = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/auth');
+      });
+    }, fireImmediately: true);
+    _timeout = Timer(const Duration(seconds: 15), () {
+      if (mounted) setState(() => _timedOut = true);
     });
+  }
+
+  @override
+  void dispose() {
+    _timeout?.cancel();
+    super.dispose();
   }
 
   @override
@@ -43,7 +54,7 @@ class _AuthCallbackPageState extends ConsumerState<AuthCallbackPage> {
     final authState = ref.watch(authStateProvider);
     final theme = Theme.of(context);
     final error = authState.error;
-    final hasError = authState.hasError;
+    final hasError = authState.hasError || _timedOut;
     String? message;
 
     if (hasError) {
@@ -84,13 +95,13 @@ class _AuthCallbackPageState extends ConsumerState<AuthCallbackPage> {
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
-              if (!hasError)
-                const CircularProgressIndicator()
-              else
-                FilledButton(
-                  onPressed: () => context.go('/auth'),
-                  child: const Text('Wróć do logowania'),
-                ),
+              if (!hasError) const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              // Also available when a cancelled or malformed link has no event.
+              FilledButton(
+                onPressed: () => context.go('/auth'),
+                child: const Text('Wróć do logowania'),
+              ),
             ],
           ),
         ),

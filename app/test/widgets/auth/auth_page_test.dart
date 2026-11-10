@@ -3,13 +3,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/features/auth/presentation/pages/auth_page.dart';
 import 'package:app/core/app_theme.dart';
+import 'package:app/features/auth/domain/entities/auth_provider.dart';
+import 'package:app/features/auth/presentation/pages/register_page.dart';
 import 'package:app/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:app/features/auth/domain/entities/auth_entity.dart';
 
 void main() {
-  test('simple test to verify flutter test works', () {
-    expect(1 + 1, 2);
-  });
+  for (final register in [false, true]) {
+    testWidgets('native Google button supplies callback (register=$register)', (
+      tester,
+    ) async {
+      final notifier = MockAuthNotifier();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [authStateProvider.overrideWith(() => notifier)],
+          child: MaterialApp(
+            home: register ? const RegisterPage() : const AuthPage(),
+          ),
+        ),
+      );
+      final button = find.text(
+        register ? 'Zarejestruj się przez Google' : 'Kontynuuj z Google',
+      );
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(notifier.redirectTo, 'pl.pickteams://auth/callback');
+    });
+  }
 
   group('AuthPage Widget Tests', () {
     testWidgets(
@@ -117,6 +139,16 @@ void main() {
 
 // Mock AuthNotifier for testing
 class MockAuthNotifier extends AuthNotifier {
+  String? redirectTo;
+
+  @override
+  Future<void> signInWithProvider({
+    required AuthProvider provider,
+    String? redirectTo,
+  }) async {
+    this.redirectTo = redirectTo;
+  }
+
   @override
   AsyncValue<AuthEntity?> build() {
     return AsyncValue.data(null);

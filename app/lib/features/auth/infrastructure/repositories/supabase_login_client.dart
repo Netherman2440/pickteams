@@ -159,29 +159,6 @@ class SupabaseLoginClient implements LoginRepository {
   }
 
   @override
-  Future<AuthEntity> getSessionFromRedirect(Uri redirectUri) async {
-    try {
-      final existing = _supabase.auth.currentSession;
-      final session =
-          existing ??
-          (await _supabase.auth.getSessionFromUrl(redirectUri)).session;
-
-      final user = session.user;
-
-      return AuthEntity(
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken ?? '',
-        userId: user.id,
-        isAnonymous: user.isAnonymous,
-        email: user.email ?? '',
-      );
-    } catch (e, stackTrace) {
-      _logger.severe('OAuth callback handling failed', e, stackTrace);
-      throw e.toFailure();
-    }
-  }
-
-  @override
   Future<void> requestPasswordReset(String email, {String? redirectTo}) async {
     try {
       await _supabase.auth.resetPasswordForEmail(email, redirectTo: redirectTo);

@@ -12,6 +12,7 @@ import 'package:app/features/auth/application/request_password_reset_use_case.da
 import 'package:app/features/squads/application/join_squad_from_invite_use_case.dart';
 import 'package:app/features/squads/infrastructure/storage/invite_code_storage.dart';
 
+import '../../infrastructure/oauth_redirect.dart';
 import '../providers/auth_notifier.dart';
 import '../widgets/brand_header.dart';
 
@@ -185,7 +186,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     }
 
     Future<void> handleGoogleSignIn() async {
-      final redirectTo = '${Uri.base.origin}/#/auth/callback';
+      final redirectTo = ref.read(oauthRedirectProvider);
       await ref
           .read(authStateProvider.notifier)
           .signInWithProvider(
