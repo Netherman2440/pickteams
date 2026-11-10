@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-10
+landed: 2026-11-10
 ---
 
 # F003 · Match actions use one menu at every screen width
