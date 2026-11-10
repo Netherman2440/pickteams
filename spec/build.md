@@ -14,6 +14,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F001-draft-and-match-player-lists-remain-readable-on-small-screens` (🟠 ACTIVE): Draft and match player lists remain readable on small screens
+
 ## NEXT
 
 ## PROVEN
