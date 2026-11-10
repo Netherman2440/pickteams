@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-10
+landed: 2026-11-10
 ---
 
 # F001 · Draft and match player lists remain readable on small screens
