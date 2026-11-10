@@ -12,7 +12,7 @@ From the repository root:
 export PATH="$HOME/.local/share/pickteams-f001-sdk/unzip/usr/bin:$HOME/.local/share/pickteams-f001-sdk/flutter/bin:$PATH"
 cd app
 flutter pub get --enforce-lockfile
-flutter test test/features/draft/presentation test/draft/presentation/draft_results_page_rules_test.dart --reporter expanded
+flutter test test/features/draft/presentation test/features/matches/presentation test/draft/presentation/draft_results_page_rules_test.dart --reporter expanded
 flutter build web --release --no-web-resources-cdn --no-wasm-dry-run --target tool/player_lists_preview.dart
 python3 -m http.server 18841 --bind 127.0.0.1 --directory build/web
 ```
@@ -27,7 +27,7 @@ Stop the HTTP server after capture. Direct fixture links are `/?page=selection`,
 
 The browser script captures unchanged 360×640 and 1440×1000 viewports, plus 320×640 and 2560×1000 overflow frames. Device scale and text scale are 1. It blocks all external requests, including the existing web runner's optional Google CSS stylesheet. Flutter's font assets and CanvasKit are local. `browser.json` records viewport, image path, script errors, external requests, and document width. Document width alone cannot detect canvas clipping; review the frames and the widget bounds assertions together.
 
-The widget tests assert Android target behavior with top/bottom insets of 24 px, actual shell space, all 16 row bounds, centered match team names, historical rankings, desktop bounds and inline rankings, and unclipped/reachable text at scale 1.6. They exercise phone selection, search, generation, proposal navigation and acceptance (including changed team IDs), score entry, read-only permissions, player navigation, redraft/rematch access, and long-press team dragging. Existing hardware/software keyboard, focus, and phrase-selection assertions remain in the search tests. No collapse control was introduced.
+The widget tests assert Android target behavior with top/bottom insets of 24 px, actual shell space, all 16 row bounds, centered match team names, historical rankings, desktop bounds and inline rankings, and unclipped/reachable text at scale 1.6. They exercise phone selection, search, generation, proposal navigation and acceptance (including changed team IDs), score entry, read-only permissions, player navigation, redraft/rematch access, and long-press team dragging. The match score regression retains the reviewer's failing 768 px case and checks adjacent widths around the shell switch (600 px), former viewport decision (720 px), and actual content breakpoint (792 px: 56 px rail + 16 px page padding + 720 px content). It verifies exactly one score display, the placement change, two reachable score fields, and saved values. This replaces the weaker phone-only score assertion in the general interaction test. Score placement and team layout now use the same padded-content `LayoutBuilder` decision. Existing hardware/software keyboard, focus, and phrase-selection assertions remain in the search tests. No collapse control was introduced.
 
 ## Candidate checks
 

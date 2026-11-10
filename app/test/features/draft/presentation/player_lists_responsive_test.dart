@@ -155,7 +155,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
   testWidgets(
-    'match score entry, team drag, redraft, rematch and player navigation remain available',
+    'match team drag, redraft, rematch and player navigation remain available',
     (tester) async {
       await _pump(tester, 'match');
       for (final label in [
@@ -180,16 +180,6 @@ void main() {
       );
       await tester.tap(find.text('Anuluj'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Wprowadź wynik'));
-      await tester.tap(find.text('Wprowadź wynik'));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byType(TextField).first);
-      await tester.enterText(find.byType(TextField).first, '3');
-      await tester.enterText(find.byType(TextField).last, '2');
-      await tester.tap(find.byTooltip('Zapisz'));
-      await tester.pumpAndSettle();
-      expect(find.text('3'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
       await tester.tap(find.byTooltip('Edytuj składy'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Michał Kowalski'));

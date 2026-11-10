@@ -564,163 +564,170 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
       for (final player in match.awayTeam?.players ?? const []) player.playerId,
     }.toList(growable: false);
 
-    final compact = MediaQuery.sizeOf(context).width < AppConfig.compactWidth;
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1000),
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < AppConfig.compactWidth;
+              return Column(
                 children: [
-                  Flexible(
-                    child: Text(
-                      dateFormat.format(match.createdAt.toLocal()),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          dateFormat.format(match.createdAt.toLocal()),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                      if (compact) ...[
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: _isScoreEditing
+                              ? _buildEditScoreBoard(compact: true)
+                              : _buildScoreBoard(match, compact: true),
+                        ),
+                      ],
+                    ],
                   ),
-                  if (compact) ...[
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: _isScoreEditing
-                          ? _buildEditScoreBoard(compact: true)
-                          : _buildScoreBoard(match, compact: true),
+                  const SizedBox(height: 4),
+                  Builder(
+                    builder: (context) {
+                      final scoreBoard = _isScoreEditing
+                          ? _buildEditScoreBoard(compact: compact)
+                          : _buildScoreBoard(match, compact: compact);
+                      final homeSection = _buildTeamSection(
+                        context,
+                        _isTeamEditing
+                            ? _homePlayers
+                            : (match.homeTeam?.players ?? const <PlayerDto>[]),
+                        match.homeTeam?.name,
+                        'Gospodarze',
+                        'home',
+                        _isTeamEditing
+                            ? _homeTeamColorHex
+                            : match.homeTeam?.color,
+                        opponentCount: _isTeamEditing
+                            ? _awayPlayers.length
+                            : (match.awayTeam?.players.length ?? 0),
+                        nameController: _isTeamEditing
+                            ? _homeTeamNameController
+                            : null,
+                        compact: compact,
+                      );
+                      final awaySection = _buildTeamSection(
+                        context,
+                        _isTeamEditing
+                            ? _awayPlayers
+                            : (match.awayTeam?.players ?? const <PlayerDto>[]),
+                        match.awayTeam?.name,
+                        'Goście',
+                        'away',
+                        _isTeamEditing
+                            ? _awayTeamColorHex
+                            : match.awayTeam?.color,
+                        opponentCount: _isTeamEditing
+                            ? _homePlayers.length
+                            : (match.homeTeam?.players.length ?? 0),
+                        nameController: _isTeamEditing
+                            ? _awayTeamNameController
+                            : null,
+                        compact: compact,
+                      );
+
+                      final gap = compact ? 8.0 : 16.0;
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: homeSection),
+                          SizedBox(width: gap),
+                          if (!compact) ...[
+                            SizedBox(
+                              width: 220,
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: scoreBoard,
+                              ),
+                            ),
+                            SizedBox(width: gap),
+                          ],
+                          Expanded(child: awaySection),
+                        ],
+                      );
+                    },
+                  ),
+                  if (canManage && !_isEditing)
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      children: [
+                        if (hasTeamsPlayers)
+                          TextButton(
+                            onPressed: () => _enterScoreEditMode(match),
+                            child: const Text('Wprowadź wynik'),
+                          ),
+                        _buildDraftPreviewButton(
+                          context,
+                          showAttention: teamsNotSelected,
+                        ),
+                        if (!isTournamentMatch &&
+                            !hasScore &&
+                            hasTeamAssignments)
+                          TextButton(
+                            onPressed: () => _onRedraft(match),
+                            child: const Text('Wylosuj jeszcze raz'),
+                          ),
+                        if (!hasTeamAssignments && hasTeamsPlayers)
+                          TextButton(
+                            onPressed: () {
+                              context.pushNamed(
+                                AppRoute.draftCreate.name,
+                                pathParameters: {'squadId': widget.squadId},
+                                extra: {
+                                  'selectedIds': selectedIds,
+                                  'matchId': widget.matchId,
+                                },
+                              );
+                            },
+                            child: const Text('Zmień drużyny'),
+                          ),
+                        if (!isTournamentMatch && hasTeamsPlayers)
+                          TextButton(
+                            onPressed: _onRematch,
+                            child: const Text('Rewanż'),
+                          ),
+                      ],
+                    ),
+                  if (_isTeamEditing) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Przeciągnij by zmienić drużyny.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  if (!_isEditing && match.homeWinProbability != null) ...[
+                    const SizedBox(height: 24),
+                    ProbabilitySlider(
+                      title: 'Szansa na wygraną',
+                      homeColor: _parseColor(match.homeTeam?.color),
+                      awayColor: _parseColor(match.awayTeam?.color),
+                      homeProbability: match.homeWinProbability!,
+                      infoText:
+                          'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
+                          'graczami w tym składzie.',
                     ),
                   ],
                 ],
-              ),
-              const SizedBox(height: 4),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isCompact =
-                      constraints.maxWidth < AppConfig.compactWidth;
-                  final scoreBoard = _isScoreEditing
-                      ? _buildEditScoreBoard(compact: isCompact)
-                      : _buildScoreBoard(match, compact: isCompact);
-                  final homeSection = _buildTeamSection(
-                    context,
-                    _isTeamEditing
-                        ? _homePlayers
-                        : (match.homeTeam?.players ?? const <PlayerDto>[]),
-                    match.homeTeam?.name,
-                    'Gospodarze',
-                    'home',
-                    _isTeamEditing ? _homeTeamColorHex : match.homeTeam?.color,
-                    opponentCount: _isTeamEditing
-                        ? _awayPlayers.length
-                        : (match.awayTeam?.players.length ?? 0),
-                    nameController: _isTeamEditing
-                        ? _homeTeamNameController
-                        : null,
-                    compact: isCompact,
-                  );
-                  final awaySection = _buildTeamSection(
-                    context,
-                    _isTeamEditing
-                        ? _awayPlayers
-                        : (match.awayTeam?.players ?? const <PlayerDto>[]),
-                    match.awayTeam?.name,
-                    'Goście',
-                    'away',
-                    _isTeamEditing ? _awayTeamColorHex : match.awayTeam?.color,
-                    opponentCount: _isTeamEditing
-                        ? _homePlayers.length
-                        : (match.homeTeam?.players.length ?? 0),
-                    nameController: _isTeamEditing
-                        ? _awayTeamNameController
-                        : null,
-                    compact: isCompact,
-                  );
-
-                  final gap = isCompact ? 8.0 : 16.0;
-                  final scoreBoardWidth = isCompact ? 140.0 : 220.0;
-
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: homeSection),
-                      SizedBox(width: gap),
-                      if (!isCompact) ...[
-                        SizedBox(
-                          width: scoreBoardWidth,
-                          child: Align(
-                            alignment: Alignment.topCenter,
-                            child: scoreBoard,
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                      ],
-                      Expanded(child: awaySection),
-                    ],
-                  );
-                },
-              ),
-              if (canManage && !_isEditing)
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  children: [
-                    if (hasTeamsPlayers)
-                      TextButton(
-                        onPressed: () => _enterScoreEditMode(match),
-                        child: const Text('Wprowadź wynik'),
-                      ),
-                    _buildDraftPreviewButton(
-                      context,
-                      showAttention: teamsNotSelected,
-                    ),
-                    if (!isTournamentMatch && !hasScore && hasTeamAssignments)
-                      TextButton(
-                        onPressed: () => _onRedraft(match),
-                        child: const Text('Wylosuj jeszcze raz'),
-                      ),
-                    if (!hasTeamAssignments && hasTeamsPlayers)
-                      TextButton(
-                        onPressed: () {
-                          context.pushNamed(
-                            AppRoute.draftCreate.name,
-                            pathParameters: {'squadId': widget.squadId},
-                            extra: {
-                              'selectedIds': selectedIds,
-                              'matchId': widget.matchId,
-                            },
-                          );
-                        },
-                        child: const Text('Zmień drużyny'),
-                      ),
-                    if (!isTournamentMatch && hasTeamsPlayers)
-                      TextButton(
-                        onPressed: _onRematch,
-                        child: const Text('Rewanż'),
-                      ),
-                  ],
-                ),
-              if (_isTeamEditing) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'Przeciągnij by zmienić drużyny.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-              if (!_isEditing && match.homeWinProbability != null) ...[
-                const SizedBox(height: 24),
-                ProbabilitySlider(
-                  title: 'Szansa na wygraną',
-                  homeColor: _parseColor(match.homeTeam?.color),
-                  awayColor: _parseColor(match.awayTeam?.color),
-                  homeProbability: match.homeWinProbability!,
-                  infoText:
-                      'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
-                      'graczami w tym składzie.',
-                ),
-              ],
-            ],
+              );
+            },
           ),
         ),
       ),
