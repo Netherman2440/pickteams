@@ -19,11 +19,10 @@ import 'package:app/core/widgets/probability_slider.dart';
 enum _MatchDetailsEditMode { none, teams, score }
 
 class _MatchAction {
-  const _MatchAction(this.label, this.onSelected, {this.showAttention = false});
+  const _MatchAction(this.label, this.onSelected);
 
   final String label;
   final VoidCallback onSelected;
-  final bool showAttention;
 }
 
 class MatchDetailsPage extends ConsumerStatefulWidget {
@@ -475,8 +474,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // The body is capped at 1000px with 8px padding on each side.
-        // Use that same available width for the menu and score layout.
+        // Score placement and team layout share the padded content width.
         final contentWidth = constraints.maxWidth.clamp(0.0, 1000.0) - 16;
         final compact = contentWidth < AppConfig.compactWidth;
         return Scaffold(
@@ -509,7 +507,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                     onPressed: _cancelEdit,
                     tooltip: 'Anuluj',
                   ),
-                ] else if (compact) ...[
+                ] else ...[
                   PopupMenuButton<_MatchAction>(
                     tooltip: 'Akcje meczu',
                     icon: const Icon(Icons.more_vert),
@@ -520,23 +518,11 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                           'Edytuj składy',
                           () => _enterTeamEditMode(matchAsync.value!),
                         ),
-                        ..._bodyActions(matchAsync.value!),
+                        ..._matchActions(matchAsync.value!),
                         _MatchAction('Usuń mecz', _deleteMatch),
                       ])
                         PopupMenuItem(value: action, child: Text(action.label)),
                     ],
-                  ),
-                ] else ...[
-                  IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: _deleteMatch,
-                    tooltip: 'Usuń mecz',
-                    color: Colors.red,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => _enterTeamEditMode(matchAsync.value!),
-                    tooltip: 'Edytuj składy',
                   ),
                 ],
               ],
@@ -545,12 +531,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
           body: matchAsync.when(
             data: (match) => Stack(
               children: [
-                _buildContent(
-                  context,
-                  match,
-                  canManage: canManage,
-                  compact: compact,
-                ),
+                _buildContent(context, match, compact: compact),
                 if (_isTeamEditing && _isDraggingPlayer)
                   Positioned(
                     left: 0,
@@ -578,7 +559,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
     );
   }
 
-  List<_MatchAction> _bodyActions(MatchDetailsDto match) {
+  List<_MatchAction> _matchActions(MatchDetailsDto match) {
     final hasScore = match.homeScore != null && match.awayScore != null;
     final hasTeamAssignments =
         (match.homeTeam?.players.isNotEmpty ?? false) &&
@@ -598,7 +579,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
             'matchId': widget.matchId,
           },
         );
-      }, showAttention: !hasTeamsPlayers),
+      }),
       if (!isTournamentMatch && !hasScore && hasTeamAssignments)
         _MatchAction('Wylosuj jeszcze raz', () => _onRedraft(match)),
       if (!hasTeamAssignments && hasTeamsPlayers)
@@ -623,7 +604,6 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
   Widget _buildContent(
     BuildContext context,
     MatchDetailsDto match, {
-    required bool canManage,
     required bool compact,
   }) {
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
@@ -719,15 +699,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                   );
                 },
               ),
-              if (canManage && !_isEditing && !compact)
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  children: [
-                    for (final action in _bodyActions(match))
-                      _buildActionButton(context, action),
-                  ],
-                ),
+
               if (_isTeamEditing) ...[
                 const SizedBox(height: 12),
                 Text(
@@ -754,46 +726,6 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildActionButton(BuildContext context, _MatchAction action) {
-    final theme = Theme.of(context);
-    final button = TextButton(
-      onPressed: action.onSelected,
-      child: Text(action.label),
-    );
-
-    if (!action.showAttention) {
-      return button;
-    }
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        button,
-        Positioned(
-          right: 6,
-          top: 2,
-          child: Container(
-            width: 14,
-            height: 14,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.error,
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              '!',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onError,
-                fontWeight: FontWeight.w700,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

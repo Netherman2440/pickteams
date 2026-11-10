@@ -95,29 +95,20 @@ void main() {
           tester,
         ) async {
           await _pump(tester, width: width, role: role, match: match);
-          if (width == 360) {
-            expect(find.byTooltip('Akcje meczu').hitTestable(), findsOneWidget);
-            expect(find.byTooltip('Edytuj składy'), findsNothing);
-            expect(find.byTooltip('Usuń mecz'), findsNothing);
-            for (final label in _bodyLabels) {
-              expect(find.text(label), findsNothing);
-            }
-            await _openMenu(tester);
-            final expected = ['Edytuj składy', ...bodyLabels, 'Usuń mecz'];
-            expect(
-              find.byWidgetPredicate((w) => w is PopupMenuItem),
-              findsNWidgets(expected.length),
-            );
-            for (final label in expected) {
-              expect(find.text(label).hitTestable(), findsOneWidget);
-            }
-          } else {
-            expect(find.byTooltip('Akcje meczu'), findsNothing);
-            expect(
-              find.byTooltip('Edytuj składy').hitTestable(),
-              findsOneWidget,
-            );
-            expect(find.byTooltip('Usuń mecz').hitTestable(), findsOneWidget);
+          expect(find.byTooltip('Akcje meczu').hitTestable(), findsOneWidget);
+          expect(find.byTooltip('Edytuj składy'), findsNothing);
+          expect(find.byTooltip('Usuń mecz'), findsNothing);
+          for (final label in _bodyLabels) {
+            expect(find.text(label), findsNothing);
+          }
+          await _openMenu(tester);
+          final expected = ['Edytuj składy', ...bodyLabels, 'Usuń mecz'];
+          expect(
+            find.byWidgetPredicate((w) => w is PopupMenuItem),
+            findsNWidgets(expected.length),
+          );
+          for (final label in expected) {
+            expect(find.text(label).hitTestable(), findsOneWidget);
           }
           for (final label in _bodyLabels) {
             expect(
@@ -143,6 +134,30 @@ void main() {
       });
     }
   }
+
+  testWidgets('desktop menu dispatches edit and delete with cancellation', (
+    tester,
+  ) async {
+    final writes = FixtureWrites();
+    await _pump(tester, width: 1440, writes: writes);
+    await _select(tester, 'Edytuj składy');
+    expect(find.byTooltip('Zapisz').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('Anuluj').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('Akcje meczu'), findsNothing);
+    await tester.enterText(find.byType(TextField).first, 'Changed');
+    await tester.tap(find.byTooltip('Anuluj'));
+    await tester.pumpAndSettle();
+    expect(find.text('Changed'), findsNothing);
+    expect(find.text('Niebiescy'), findsOneWidget);
+    await _select(tester, 'Usuń mecz');
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(writes.deletions, 0);
+    await tester.tap(find.text('Anuluj'));
+    await tester.pumpAndSettle();
+    expect(writes.deletions, 0);
+    expect(find.byTooltip('Akcje meczu').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   for (final action in ['Edytuj składy', 'Wprowadź wynik']) {
     testWidgets('$action exposes Save/Cancel and Cancel discards edits', (

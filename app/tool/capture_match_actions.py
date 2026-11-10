@@ -36,7 +36,7 @@ with sync_playwright() as p:
             page.wait_for_timeout(2500)
             # Enable Flutter's accessibility tree, not a replacement UI.
             page.locator("flt-semantics-placeholder").evaluate("node => node.click()")
-            for state in (["closed", "open"] if width == 360 else ["desktop"]):
+            for state in ["closed", "open"]:
                 if state == "open":
                     page.get_by_role("button", name="Akcje meczu").click()
                     page.wait_for_timeout(500)
