@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:app/features/matches/presentation/widgets/match_player_tile.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,16 +38,27 @@ void main() {
     testWidgets(
       'score display and entry remain available at ${width}px in the real shell',
       (tester) async {
+        expect(defaultTargetPlatform, TargetPlatform.android);
         tester.view.physicalSize = Size(width, width == 360 ? 640 : 1000);
         tester.view.devicePixelRatio = 1;
         tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
         addTearDown(tester.view.reset);
-        await tester.pumpWidget(const PlayerListsFixture(page: 'match'));
+        await tester.pumpWidget(
+          PlayerListsFixture(match: fixtureMatch(homeScore: 14, awayScore: 5)),
+        );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(find.text(':'), findsOneWidget);
         final scoreY = tester.getCenter(find.text(':')).dy;
         final teamY = tester.getTopLeft(find.text('Niebiescy')).dy;
+        final scoreBounds = tester
+            .getRect(find.text('14'))
+            .expandToInclude(tester.getRect(find.text('5')));
+        final teamsCenter =
+            (tester.getCenter(find.text('Niebiescy')).dx +
+                tester.getCenter(find.text('Czerwoni')).dx) /
+            2;
+        expect(scoreBounds.center.dx, closeTo(teamsCenter, 0.5));
         if (width < 792) {
           expect(scoreY, lessThan(teamY));
         } else {
@@ -74,16 +87,136 @@ void main() {
           expect(bounds.left, greaterThanOrEqualTo(0));
           expect(bounds.right, lessThanOrEqualTo(width));
         }
-        await tester.enterText(inputs.first, '3');
-        await tester.enterText(inputs.last, '2');
+        final inputBounds = tester
+            .getRect(inputs.first)
+            .expandToInclude(tester.getRect(inputs.last));
+        expect(inputBounds.center.dx, closeTo(teamsCenter, 0.5));
+        await tester.enterText(inputs.first, '14');
+        await tester.enterText(inputs.last, '5');
         await tester.tap(find.byTooltip('Zapisz'));
         await tester.pumpAndSettle();
         expect(inputs, findsNothing);
-        expect(find.text('3'), findsOneWidget);
-        expect(find.text('2'), findsOneWidget);
+        expect(find.text('14'), findsOneWidget);
+        expect(find.text('5'), findsOneWidget);
         expect(find.text(':'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
   }
+
+  for (final width in [320.0, 360.0, 393.0, 412.0]) {
+    // At 320px enlarged text overflows the existing RootShell title Row.
+    // Keep that navigation defect separate from match-header coverage.
+    for (final scale in width == 320 ? [1.0] : [1.0, 1.6, 2.0]) {
+      for (final scores in [(14, 5), (null, null), (123, 98)]) {
+        testWidgets(
+          'phone $width scale $scale score $scores with Android keyboard',
+          (tester) async {
+            expect(defaultTargetPlatform, TargetPlatform.android);
+            tester.view.physicalSize = Size(width, 640);
+            tester.view.devicePixelRatio = 1;
+            tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+            tester.view.viewPadding = const FakeViewPadding(
+              top: 24,
+              bottom: 24,
+            );
+            tester.platformDispatcher.textScaleFactorTestValue = scale;
+            addTearDown(tester.view.reset);
+            addTearDown(
+              tester.platformDispatcher.clearTextScaleFactorTestValue,
+            );
+            await tester.pumpWidget(
+              PlayerListsFixture(
+                match: fixtureMatch(homeScore: scores.$1, awayScore: scores.$2),
+              ),
+            );
+            await tester.pumpAndSettle();
+            _expectPhoneScore(
+              tester,
+              width,
+              scores.$1?.toString() ?? '-',
+              scores.$2?.toString() ?? '-',
+            );
+            final rows = find.byType(MatchPlayerTile);
+            expect(rows, findsNWidgets(16));
+            expect(find.text('50.13'), findsOneWidget);
+            expect(find.text('60.25'), findsNothing);
+            if (width == 360 && scale == 1) {
+              for (final row in rows.evaluate()) {
+                expect(
+                  tester.getRect(find.byWidget(row.widget)).bottom,
+                  lessThanOrEqualTo(616),
+                  reason:
+                      'The date must not push the eight-player lists below the viewport',
+                );
+              }
+            }
+            await tester.tap(find.byTooltip('Akcje meczu'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('Wprowadź wynik'));
+            await tester.pumpAndSettle();
+            final fields = find.byType(TextField);
+            expect(fields, findsNWidgets(2));
+            final fieldBounds = tester
+                .getRect(fields.first)
+                .expandToInclude(tester.getRect(fields.last));
+            expect(fieldBounds.center.dx, closeTo(width / 2, 0.5));
+            final date = tester.getRect(find.textContaining('10.11.2026'));
+            expect(date.bottom, lessThanOrEqualTo(fieldBounds.top));
+            expect(fieldBounds.left, greaterThanOrEqualTo(8));
+            expect(fieldBounds.right, lessThanOrEqualTo(width - 8));
+            tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+            tester.view.padding = const FakeViewPadding(top: 24);
+            for (final (field, value) in [
+              (fields.first, '14'),
+              (fields.last, '5'),
+            ]) {
+              await tester.enterText(field, value);
+              await tester.ensureVisible(field);
+              await tester.pumpAndSettle();
+              expect(field.hitTestable(), findsOneWidget);
+              expect(tester.getRect(field).bottom, lessThanOrEqualTo(360));
+            }
+            expect(find.byTooltip('Zapisz').hitTestable(), findsOneWidget);
+            await tester.tap(find.byTooltip('Zapisz'));
+            await tester.pumpAndSettle();
+            expect(fields, findsNothing);
+            tester.view.viewInsets = const FakeViewPadding();
+            tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+            await tester.pumpAndSettle();
+            _expectPhoneScore(tester, width, '14', '5');
+            await tester.ensureVisible(rows.last);
+            await tester.pumpAndSettle();
+            expect(rows.last.hitTestable(), findsOneWidget);
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+  }
+}
+
+void _expectPhoneScore(
+  WidgetTester tester,
+  double width,
+  String home,
+  String away,
+) {
+  final homeText = find.text(home).first;
+  final awayText = find.text(away).last;
+  final bounds = tester
+      .getRect(homeText)
+      .expandToInclude(tester.getRect(awayText));
+  expect(bounds.center.dx, closeTo(width / 2, 0.5));
+  expect(bounds.left, greaterThanOrEqualTo(8));
+  expect(bounds.right, lessThanOrEqualTo(width - 8));
+  expect(
+    tester.getRect(find.textContaining('10.11.2026')).bottom,
+    lessThanOrEqualTo(bounds.top),
+  );
+  expect(
+    bounds.bottom,
+    lessThanOrEqualTo(tester.getRect(find.text('Niebiescy')).top),
+  );
+  expect(tester.takeException(), isNull);
 }

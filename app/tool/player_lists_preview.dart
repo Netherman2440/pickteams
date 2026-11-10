@@ -6,5 +6,17 @@ import '../test/fixtures/player_lists_app.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
-  runApp(PlayerListsFixture(page: Uri.base.queryParameters['page'] ?? 'match'));
+  final params = Uri.base.queryParameters;
+  runApp(
+    PlayerListsFixture(
+      page: params['page'] ?? 'match',
+      match: params['score'] == 'saved'
+          ? fixtureMatch(homeScore: 14, awayScore: 5)
+          : null,
+      textScale: double.tryParse(params['scale'] ?? ''),
+      systemPadding: params['insets'] == 'android'
+          ? const EdgeInsets.symmetric(vertical: 24)
+          : null,
+    ),
+  );
 }

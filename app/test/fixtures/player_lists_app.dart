@@ -78,11 +78,15 @@ class PlayerListsFixture extends StatefulWidget {
     this.role = SquadRole.owner,
     this.writes,
     this.match,
+    this.textScale,
+    this.systemPadding,
   });
   final String page;
   final SquadRole role;
   final FixtureWrites? writes;
   final MatchDetailsDto? match;
+  final double? textScale;
+  final EdgeInsets? systemPadding;
   @override
   State<PlayerListsFixture> createState() => _PlayerListsFixtureState();
 }
@@ -189,6 +193,16 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
       theme: AppTheme.darkTheme,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: widget.textScale == null
+              ? null
+              : TextScaler.linear(widget.textScale!),
+          padding: widget.systemPadding,
+          viewPadding: widget.systemPadding,
+        ),
+        child: child!,
+      ),
     ),
   );
 }

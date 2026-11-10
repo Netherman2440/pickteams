@@ -617,25 +617,15 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
           padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Text(
-                      dateFormat.format(match.createdAt.toLocal()),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  if (compact) ...[
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: _isScoreEditing
-                          ? _buildEditScoreBoard(compact: true)
-                          : _buildScoreBoard(match, compact: true),
-                    ),
-                  ],
-                ],
+              Text(
+                dateFormat.format(match.createdAt.toLocal()),
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
               ),
+              if (compact)
+                _isScoreEditing
+                    ? _buildEditScoreBoard(compact: true)
+                    : _buildScoreBoard(match, compact: true),
               const SizedBox(height: 4),
               Builder(
                 builder: (context) {
@@ -758,23 +748,25 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
 
   Widget _buildEditScoreBoard({required bool compact}) {
     final fontSize = compact ? 24.0 : 32.0;
-    final width = compact ? 56.0 : 80.0;
+    final width = compact ? MediaQuery.textScalerOf(context).scale(80) : 80.0;
     final padding = compact ? 8.0 : 16.0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(
-          width: width,
-          child: TextField(
-            controller: _homeScoreController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Gospodarze',
+        Flexible(
+          child: SizedBox(
+            width: width,
+            child: TextField(
+              controller: _homeScoreController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Gospodarze',
+              ),
             ),
           ),
         ),
@@ -782,17 +774,19 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
           padding: EdgeInsets.symmetric(horizontal: padding),
           child: Text(':', style: TextStyle(fontSize: fontSize + 8)),
         ),
-        SizedBox(
-          width: width,
-          child: TextField(
-            controller: _awayScoreController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Goście',
+        Flexible(
+          child: SizedBox(
+            width: width,
+            child: TextField(
+              controller: _awayScoreController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Goście',
+              ),
             ),
           ),
         ),
