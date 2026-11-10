@@ -43,64 +43,136 @@ class MatchTile extends StatelessWidget {
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth <
+                  600 * MediaQuery.textScalerOf(context).scale(14) / 14) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          WidgetSpan(
-                            alignment: PlaceholderAlignment.middle,
-                            child: _TeamColorBox(color: homeTeamColor),
-                          ),
-                          TextSpan(text: ' $homeTeamName', style: titleStyle),
-                          TextSpan(text: '  -  ', style: titleStyle),
-                          WidgetSpan(
-                            alignment: PlaceholderAlignment.middle,
-                            child: _TeamColorBox(color: awayTeamColor),
-                          ),
-                          TextSpan(text: ' $awayTeamName', style: titleStyle),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    _TeamRow(
+                      name: homeTeamName,
+                      color: homeTeamColor,
+                      style: titleStyle,
+                      score: teamsNotSelected ? null : homeScore,
                     ),
+                    const SizedBox(height: 8),
+                    _TeamRow(
+                      name: awayTeamName,
+                      color: awayTeamColor,
+                      style: titleStyle,
+                      score: teamsNotSelected ? null : awayScore,
+                    ),
+                    if (teamsNotSelected) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Nie wybrano jeszcze drużyn',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 4),
                     Text(
                       dateFormat.format(match.createdAt.toLocal()),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (teamsNotSelected)
-                Text(
-                  'Nie wybrano jeszcze drużyn',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                );
+              }
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: _TeamColorBox(color: homeTeamColor),
+                              ),
+                              TextSpan(
+                                text: ' $homeTeamName',
+                                style: titleStyle,
+                              ),
+                              TextSpan(text: '  -  ', style: titleStyle),
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: _TeamColorBox(color: awayTeamColor),
+                              ),
+                              TextSpan(
+                                text: ' $awayTeamName',
+                                style: titleStyle,
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          dateFormat.format(match.createdAt.toLocal()),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
-                )
-              else
-                Row(
-                  children: [
-                    _ScoreBox(score: homeScore),
-                    const SizedBox(width: 8),
-                    const Text(':'),
-                    const SizedBox(width: 8),
-                    _ScoreBox(score: awayScore),
-                  ],
-                ),
-            ],
+                  const SizedBox(width: 12),
+                  if (teamsNotSelected)
+                    Text(
+                      'Nie wybrano jeszcze drużyn',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    Row(
+                      children: [
+                        _ScoreBox(score: homeScore),
+                        const SizedBox(width: 8),
+                        const Text(':'),
+                        const SizedBox(width: 8),
+                        _ScoreBox(score: awayScore),
+                      ],
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
+}
+
+class _TeamRow extends StatelessWidget {
+  const _TeamRow({
+    required this.name,
+    required this.color,
+    required this.style,
+    required this.score,
+  });
+
+  final String name;
+  final Color color;
+  final TextStyle? style;
+  final String? score;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      _TeamColorBox(color: color),
+      const SizedBox(width: 8),
+      Expanded(child: Text(name, style: style)),
+      if (score != null) ...[
+        const SizedBox(width: 12),
+        _ScoreBox(score: score!),
+      ],
+    ],
+  );
 }
 
 bool _teamsAreEmpty(Match match) {
@@ -141,8 +213,11 @@ class _ScoreBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 40,
-      height: 40,
+      width: MediaQuery.textScalerOf(
+        context,
+      ).scale(40).clamp(40, double.infinity),
+      constraints: const BoxConstraints(minHeight: 40),
+      padding: const EdgeInsets.all(4),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey),
