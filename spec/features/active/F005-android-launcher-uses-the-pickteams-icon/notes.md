@@ -1,0 +1,8 @@
+# Android launcher verification
+
+- Reviewed application candidate: `cae346b24b07bc8fd9d651962f33257d3977d66d`. The independent verdict is recorded verbatim in `review-1.md`.
+- Worker evidence at `.limen/proof/f005/cae346b24b07bc8fd9d651962f33257d3977d66d/` proves clean exact-SHA formatting, analysis, 134 coverage tests, two deterministic generations, decoded-pixel equivalence, and discriminating negative controls. The independent review additionally checked the PNG safe-circle geometry and inspected the actual generated mask sheet.
+- The reviewer did not repeat Flutter validation because non-blocking lock acquisition returned 75 before dependency installation. This is an unrun independent check, not a failed test. The existing exact-candidate checks are sufficient for integrating these resources: application Dart code is unchanged, source/resource review passed, and native acceptance is not being declared complete.
+- The late lock-policy note is not a source defect or invalidation of already completed commands. There is no subsequent unverified source change in the candidate.
+- Keep the ticket active after source integration. Acceptance 3 still needs a rebuilt APK installed/updated with the unchanged `com.example.app` ID and an observed launcher icon. No APK, emulator, physical-device, or OEM-launcher check has been run. Static manifest references alone do not close this acceptance gap.
+- Hot reload and web deployment do not replace launcher resources. Prefer updating the existing test installation; do not advise uninstalling without warning that local app data may be removed.
