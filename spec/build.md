@@ -14,11 +14,14 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F007-match-lists-show-both-team-names-on-phones` (🟠 ACTIVE): Match lists show both team names on phones
 - `F006-google-sign-in-returns-to-the-android-app` (🟠 ACTIVE): Google sign-in returns to the Android app
 - `F005-android-launcher-uses-the-pickteams-icon` (🟠 ACTIVE): Android launcher uses the Pickteams icon
 - `F004-match-scores-stay-centered-on-phones` (🟠 ACTIVE): Match scores stay centered on phones
 
 ## NEXT
+
+- Player ranking history shows one decimal place (`F008-player-ranking-history-shows-one-decimal-place`).
 
 ## PROVEN
 
