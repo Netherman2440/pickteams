@@ -43,11 +43,15 @@ void branded(img.Image actual, img.Image source, int size, String path) {
     height: size,
     interpolation: img.Interpolation.average,
   );
-  final a = actual.getBytes(order: img.ChannelOrder.rgba);
-  final b = expected.getBytes(order: img.ChannelOrder.rgba);
-  require(a.length == b.length, '$path: pixel count');
-  for (var i = 0; i < a.length; i++) {
-    require(a[i] == b[i], '$path: not the expected Pickteams pixels (byte $i)');
+  for (final pixel in actual) {
+    final expectedPixel = expected.getPixel(pixel.x, pixel.y);
+    require(
+      pixel.r == expectedPixel.r &&
+          pixel.g == expectedPixel.g &&
+          pixel.b == expectedPixel.b &&
+          pixel.a == expectedPixel.a,
+      '$path: not the expected Pickteams pixels (${pixel.x},${pixel.y})',
+    );
   }
 }
 
