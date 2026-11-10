@@ -158,6 +158,8 @@ void main() {
     'match team drag, redraft, rematch and player navigation remain available',
     (tester) async {
       await _pump(tester, 'match');
+      await tester.tap(find.byTooltip('Akcje meczu'));
+      await tester.pumpAndSettle();
       for (final label in [
         'Wylosuj jeszcze raz',
         'Rewanż',
@@ -172,6 +174,8 @@ void main() {
       expect(find.text('Czy chcesz utworzyć rewanż?'), findsOneWidget);
       await tester.tap(find.text('Anuluj'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Akcje meczu'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Wylosuj jeszcze raz'));
       await tester.pumpAndSettle();
       expect(
@@ -180,7 +184,9 @@ void main() {
       );
       await tester.tap(find.text('Anuluj'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Edytuj składy'));
+      await tester.tap(find.byTooltip('Akcje meczu'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edytuj składy'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Michał Kowalski'));
       await _drag(
@@ -209,6 +215,7 @@ void main() {
     'read-only match hides management but preserves player navigation',
     (tester) async {
       await _pump(tester, 'match', role: SquadRole.none);
+      expect(find.byTooltip('Akcje meczu'), findsNothing);
       expect(find.byTooltip('Edytuj składy'), findsNothing);
       expect(find.byTooltip('Usuń mecz'), findsNothing);
       expect(find.text('Wprowadź wynik'), findsNothing);

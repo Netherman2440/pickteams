@@ -51,6 +51,16 @@ void main() {
         } else {
           expect(scoreY, greaterThan(teamY));
         }
+        if (width < 792) {
+          expect(find.byTooltip('Edytuj składy'), findsNothing);
+          expect(find.text('Wprowadź wynik'), findsNothing);
+          await tester.tap(find.byTooltip('Akcje meczu'));
+          await tester.pumpAndSettle();
+        } else {
+          expect(find.byTooltip('Akcje meczu'), findsNothing);
+          expect(find.byTooltip('Edytuj składy'), findsOneWidget);
+          expect(find.byTooltip('Usuń mecz'), findsOneWidget);
+        }
         await tester.ensureVisible(find.text('Wprowadź wynik'));
         await tester.tap(find.text('Wprowadź wynik'));
         await tester.pumpAndSettle();

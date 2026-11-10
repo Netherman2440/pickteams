@@ -18,6 +18,14 @@ import 'package:app/core/widgets/probability_slider.dart';
 
 enum _MatchDetailsEditMode { none, teams, score }
 
+class _MatchAction {
+  const _MatchAction(this.label, this.onSelected, {this.showAttention = false});
+
+  final String label;
+  final VoidCallback onSelected;
+  final bool showAttention;
+}
+
 class MatchDetailsPage extends ConsumerStatefulWidget {
   final String squadId;
   final String matchId;
@@ -465,282 +473,124 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
         squadAsync.asData?.value.role == SquadRole.owner ||
         squadAsync.asData?.value.role == SquadRole.admin;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: Navigator.of(context).canPop()
-            ? null
-            : IconButton(
-                tooltip: 'Wróć do meczów',
-                onPressed: () {
-                  context.goNamed(
-                    AppRoute.matches.name,
-                    pathParameters: {'squadId': widget.squadId},
-                  );
-                },
-                icon: const Icon(Icons.arrow_back),
-              ),
-        title: const Text('Szczegóły meczu'),
-        titleTextStyle: Theme.of(context).textTheme.titleMedium,
-        toolbarHeight: 48,
-        actions: [
-          if (canManage && matchAsync.hasValue) ...[
-            if (_isEditing) ...[
-              IconButton(
-                icon: const Icon(Icons.save),
-                onPressed: () => _saveChanges(matchAsync.value!),
-                tooltip: 'Zapisz',
-              ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: _cancelEdit,
-                tooltip: 'Anuluj',
-              ),
-            ] else ...[
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: _deleteMatch,
-                tooltip: 'Usuń mecz',
-                color: Colors.red,
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _enterTeamEditMode(matchAsync.value!),
-                tooltip: 'Edytuj składy',
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The body is capped at 1000px with 8px padding on each side.
+        // Use that same available width for the menu and score layout.
+        final contentWidth = constraints.maxWidth.clamp(0.0, 1000.0) - 16;
+        final compact = contentWidth < AppConfig.compactWidth;
+        return Scaffold(
+          appBar: AppBar(
+            leading: Navigator.of(context).canPop()
+                ? null
+                : IconButton(
+                    tooltip: 'Wróć do meczów',
+                    onPressed: () {
+                      context.goNamed(
+                        AppRoute.matches.name,
+                        pathParameters: {'squadId': widget.squadId},
+                      );
+                    },
+                    icon: const Icon(Icons.arrow_back),
+                  ),
+            title: const Text('Szczegóły meczu'),
+            titleTextStyle: Theme.of(context).textTheme.titleMedium,
+            toolbarHeight: 48,
+            actions: [
+              if (canManage && matchAsync.hasValue) ...[
+                if (_isEditing) ...[
+                  IconButton(
+                    icon: const Icon(Icons.save),
+                    onPressed: () => _saveChanges(matchAsync.value!),
+                    tooltip: 'Zapisz',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: _cancelEdit,
+                    tooltip: 'Anuluj',
+                  ),
+                ] else if (compact) ...[
+                  PopupMenuButton<_MatchAction>(
+                    tooltip: 'Akcje meczu',
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (action) => action.onSelected(),
+                    itemBuilder: (context) => [
+                      for (final action in [
+                        _MatchAction(
+                          'Edytuj składy',
+                          () => _enterTeamEditMode(matchAsync.value!),
+                        ),
+                        ..._bodyActions(matchAsync.value!),
+                        _MatchAction('Usuń mecz', _deleteMatch),
+                      ])
+                        PopupMenuItem(value: action, child: Text(action.label)),
+                    ],
+                  ),
+                ] else ...[
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: _deleteMatch,
+                    tooltip: 'Usuń mecz',
+                    color: Colors.red,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _enterTeamEditMode(matchAsync.value!),
+                    tooltip: 'Edytuj składy',
+                  ),
+                ],
+              ],
             ],
-          ],
-        ],
-      ),
-      body: matchAsync.when(
-        data: (match) => Stack(
-          children: [
-            _buildContent(context, match, canManage: canManage),
-            if (_isTeamEditing && _isDraggingPlayer)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: SafeArea(
-                  top: false,
-                  child: _RemoveDropZone(onRemove: _removePlayerFromMatch),
+          ),
+          body: matchAsync.when(
+            data: (match) => Stack(
+              children: [
+                _buildContent(
+                  context,
+                  match,
+                  canManage: canManage,
+                  compact: compact,
+                ),
+                if (_isTeamEditing && _isDraggingPlayer)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: SafeArea(
+                      top: false,
+                      child: _RemoveDropZone(onRemove: _removePlayerFromMatch),
+                    ),
+                  ),
+              ],
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: SelectableText.rich(
+                TextSpan(
+                  text: 'Błąd: $error',
+                  style: const TextStyle(color: Colors.red),
                 ),
               ),
-          ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: SelectableText.rich(
-            TextSpan(
-              text: 'Błąd: $error',
-              style: const TextStyle(color: Colors.red),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    MatchDetailsDto match, {
-    required bool canManage,
-  }) {
-    final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
-    final bottomInset = _isTeamEditing && _isDraggingPlayer ? 84.0 : 0.0;
+  List<_MatchAction> _bodyActions(MatchDetailsDto match) {
     final hasScore = match.homeScore != null && match.awayScore != null;
     final hasTeamAssignments =
         (match.homeTeam?.players.isNotEmpty ?? false) &&
         (match.awayTeam?.players.isNotEmpty ?? false);
-    final teamsPlayersCount =
-        (match.homeTeam?.players.length ?? 0) +
-        (match.awayTeam?.players.length ?? 0);
-    final hasTeamsPlayers = teamsPlayersCount > 0;
-    final teamsNotSelected =
-        (match.homeTeam?.players.length ?? 0) == 0 &&
-        (match.awayTeam?.players.length ?? 0) == 0;
+    final hasTeamsPlayers =
+        (match.homeTeam?.players.isNotEmpty ?? false) ||
+        (match.awayTeam?.players.isNotEmpty ?? false);
     final isTournamentMatch = match.tournamentId != null;
-    final selectedIds = <String>{
-      for (final player in match.homeTeam?.players ?? const []) player.playerId,
-      for (final player in match.awayTeam?.players ?? const []) player.playerId,
-    }.toList(growable: false);
-
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1000),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < AppConfig.compactWidth;
-              return Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          dateFormat.format(match.createdAt.toLocal()),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      if (compact) ...[
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: _isScoreEditing
-                              ? _buildEditScoreBoard(compact: true)
-                              : _buildScoreBoard(match, compact: true),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Builder(
-                    builder: (context) {
-                      final scoreBoard = _isScoreEditing
-                          ? _buildEditScoreBoard(compact: compact)
-                          : _buildScoreBoard(match, compact: compact);
-                      final homeSection = _buildTeamSection(
-                        context,
-                        _isTeamEditing
-                            ? _homePlayers
-                            : (match.homeTeam?.players ?? const <PlayerDto>[]),
-                        match.homeTeam?.name,
-                        'Gospodarze',
-                        'home',
-                        _isTeamEditing
-                            ? _homeTeamColorHex
-                            : match.homeTeam?.color,
-                        opponentCount: _isTeamEditing
-                            ? _awayPlayers.length
-                            : (match.awayTeam?.players.length ?? 0),
-                        nameController: _isTeamEditing
-                            ? _homeTeamNameController
-                            : null,
-                        compact: compact,
-                      );
-                      final awaySection = _buildTeamSection(
-                        context,
-                        _isTeamEditing
-                            ? _awayPlayers
-                            : (match.awayTeam?.players ?? const <PlayerDto>[]),
-                        match.awayTeam?.name,
-                        'Goście',
-                        'away',
-                        _isTeamEditing
-                            ? _awayTeamColorHex
-                            : match.awayTeam?.color,
-                        opponentCount: _isTeamEditing
-                            ? _homePlayers.length
-                            : (match.homeTeam?.players.length ?? 0),
-                        nameController: _isTeamEditing
-                            ? _awayTeamNameController
-                            : null,
-                        compact: compact,
-                      );
-
-                      final gap = compact ? 8.0 : 16.0;
-
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: homeSection),
-                          SizedBox(width: gap),
-                          if (!compact) ...[
-                            SizedBox(
-                              width: 220,
-                              child: Align(
-                                alignment: Alignment.topCenter,
-                                child: scoreBoard,
-                              ),
-                            ),
-                            SizedBox(width: gap),
-                          ],
-                          Expanded(child: awaySection),
-                        ],
-                      );
-                    },
-                  ),
-                  if (canManage && !_isEditing)
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 8,
-                      children: [
-                        if (hasTeamsPlayers)
-                          TextButton(
-                            onPressed: () => _enterScoreEditMode(match),
-                            child: const Text('Wprowadź wynik'),
-                          ),
-                        _buildDraftPreviewButton(
-                          context,
-                          showAttention: teamsNotSelected,
-                        ),
-                        if (!isTournamentMatch &&
-                            !hasScore &&
-                            hasTeamAssignments)
-                          TextButton(
-                            onPressed: () => _onRedraft(match),
-                            child: const Text('Wylosuj jeszcze raz'),
-                          ),
-                        if (!hasTeamAssignments && hasTeamsPlayers)
-                          TextButton(
-                            onPressed: () {
-                              context.pushNamed(
-                                AppRoute.draftCreate.name,
-                                pathParameters: {'squadId': widget.squadId},
-                                extra: {
-                                  'selectedIds': selectedIds,
-                                  'matchId': widget.matchId,
-                                },
-                              );
-                            },
-                            child: const Text('Zmień drużyny'),
-                          ),
-                        if (!isTournamentMatch && hasTeamsPlayers)
-                          TextButton(
-                            onPressed: _onRematch,
-                            child: const Text('Rewanż'),
-                          ),
-                      ],
-                    ),
-                  if (_isTeamEditing) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      'Przeciągnij by zmienić drużyny.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  if (!_isEditing && match.homeWinProbability != null) ...[
-                    const SizedBox(height: 24),
-                    ProbabilitySlider(
-                      title: 'Szansa na wygraną',
-                      homeColor: _parseColor(match.homeTeam?.color),
-                      awayColor: _parseColor(match.awayTeam?.color),
-                      homeProbability: match.homeWinProbability!,
-                      infoText:
-                          'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
-                          'graczami w tym składzie.',
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDraftPreviewButton(
-    BuildContext context, {
-    required bool showAttention,
-  }) {
-    final theme = Theme.of(context);
-    final button = TextButton(
-      onPressed: () {
+    return [
+      if (hasTeamsPlayers)
+        _MatchAction('Wprowadź wynik', () => _enterScoreEditMode(match)),
+      _MatchAction('Podgląd propozycji', () {
         context.pushNamed(
           AppRoute.matchDraft.name,
           pathParameters: {
@@ -748,11 +598,173 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
             'matchId': widget.matchId,
           },
         );
-      },
-      child: const Text('Podgląd propozycji'),
+      }, showAttention: !hasTeamsPlayers),
+      if (!isTournamentMatch && !hasScore && hasTeamAssignments)
+        _MatchAction('Wylosuj jeszcze raz', () => _onRedraft(match)),
+      if (!hasTeamAssignments && hasTeamsPlayers)
+        _MatchAction('Zmień drużyny', () {
+          final selectedIds = <String>{
+            for (final player in match.homeTeam?.players ?? const [])
+              player.playerId,
+            for (final player in match.awayTeam?.players ?? const [])
+              player.playerId,
+          }.toList(growable: false);
+          context.pushNamed(
+            AppRoute.draftCreate.name,
+            pathParameters: {'squadId': widget.squadId},
+            extra: {'selectedIds': selectedIds, 'matchId': widget.matchId},
+          );
+        }),
+      if (!isTournamentMatch && hasTeamsPlayers)
+        _MatchAction('Rewanż', _onRematch),
+    ];
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    MatchDetailsDto match, {
+    required bool canManage,
+    required bool compact,
+  }) {
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
+    final bottomInset = _isTeamEditing && _isDraggingPlayer ? 84.0 : 0.0;
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      dateFormat.format(match.createdAt.toLocal()),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  if (compact) ...[
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: _isScoreEditing
+                          ? _buildEditScoreBoard(compact: true)
+                          : _buildScoreBoard(match, compact: true),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              Builder(
+                builder: (context) {
+                  final scoreBoard = _isScoreEditing
+                      ? _buildEditScoreBoard(compact: compact)
+                      : _buildScoreBoard(match, compact: compact);
+                  final homeSection = _buildTeamSection(
+                    context,
+                    _isTeamEditing
+                        ? _homePlayers
+                        : (match.homeTeam?.players ?? const <PlayerDto>[]),
+                    match.homeTeam?.name,
+                    'Gospodarze',
+                    'home',
+                    _isTeamEditing ? _homeTeamColorHex : match.homeTeam?.color,
+                    opponentCount: _isTeamEditing
+                        ? _awayPlayers.length
+                        : (match.awayTeam?.players.length ?? 0),
+                    nameController: _isTeamEditing
+                        ? _homeTeamNameController
+                        : null,
+                    compact: compact,
+                  );
+                  final awaySection = _buildTeamSection(
+                    context,
+                    _isTeamEditing
+                        ? _awayPlayers
+                        : (match.awayTeam?.players ?? const <PlayerDto>[]),
+                    match.awayTeam?.name,
+                    'Goście',
+                    'away',
+                    _isTeamEditing ? _awayTeamColorHex : match.awayTeam?.color,
+                    opponentCount: _isTeamEditing
+                        ? _homePlayers.length
+                        : (match.homeTeam?.players.length ?? 0),
+                    nameController: _isTeamEditing
+                        ? _awayTeamNameController
+                        : null,
+                    compact: compact,
+                  );
+
+                  final gap = compact ? 8.0 : 16.0;
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: homeSection),
+                      SizedBox(width: gap),
+                      if (!compact) ...[
+                        SizedBox(
+                          width: 220,
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: scoreBoard,
+                          ),
+                        ),
+                        SizedBox(width: gap),
+                      ],
+                      Expanded(child: awaySection),
+                    ],
+                  );
+                },
+              ),
+              if (canManage && !_isEditing && !compact)
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  children: [
+                    for (final action in _bodyActions(match))
+                      _buildActionButton(context, action),
+                  ],
+                ),
+              if (_isTeamEditing) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Przeciągnij by zmienić drużyny.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (!_isEditing && match.homeWinProbability != null) ...[
+                const SizedBox(height: 24),
+                ProbabilitySlider(
+                  title: 'Szansa na wygraną',
+                  homeColor: _parseColor(match.homeTeam?.color),
+                  awayColor: _parseColor(match.awayTeam?.color),
+                  homeProbability: match.homeWinProbability!,
+                  infoText:
+                      'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
+                      'graczami w tym składzie.',
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context, _MatchAction action) {
+    final theme = Theme.of(context);
+    final button = TextButton(
+      onPressed: action.onSelected,
+      child: Text(action.label),
     );
 
-    if (!showAttention) {
+    if (!action.showAttention) {
       return button;
     }
 
