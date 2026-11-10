@@ -66,6 +66,9 @@ final fixturePlayers = [
 class FixtureWrites {
   List<String> homeIds = [];
   List<String> awayIds = [];
+  int deletions = 0;
+  int rematches = 0;
+  Object? draftExtra;
 }
 
 class PlayerListsFixture extends StatefulWidget {
@@ -74,10 +77,12 @@ class PlayerListsFixture extends StatefulWidget {
     this.page = 'match',
     this.role = SquadRole.owner,
     this.writes,
+    this.match,
   });
   final String page;
   final SquadRole role;
   final FixtureWrites? writes;
+  final MatchDetailsDto? match;
   @override
   State<PlayerListsFixture> createState() => _PlayerListsFixtureState();
 }
@@ -93,13 +98,16 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
           GoRoute(
             path: '/squads/:squadId/selection',
             name: 'draftCreate',
-            builder: (_, _) => DraftSelectionPage(
-              squadId: 'fixture',
-              initialSelectedIds: fixturePlayers
-                  .take(16)
-                  .map((p) => p.playerId)
-                  .toList(),
-            ),
+            builder: (_, state) {
+              widget.writes?.draftExtra = state.extra;
+              final extra = state.extra as Map<String, dynamic>?;
+              return DraftSelectionPage(
+                squadId: 'fixture',
+                initialSelectedIds:
+                    extra?['selectedIds'] as List<String>? ??
+                    fixturePlayers.take(16).map((p) => p.playerId).toList(),
+              );
+            },
           ),
           GoRoute(
             path: '/squads/:squadId/results',
@@ -167,7 +175,9 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
         GetSquadPlayersUseCase(_FixturePlayers()),
       ),
       draftSessionNotifierProvider.overrideWith(_FixtureDraft.new),
-      matchDetailsProvider.overrideWith(FixtureMatch.new),
+      matchDetailsProvider.overrideWith(
+        () => FixtureMatch(initial: widget.match, writes: widget.writes),
+      ),
       createMatchControllerProvider.overrideWith(
         () => _FixtureCreate(widget.writes),
       ),
@@ -249,6 +259,8 @@ MatchDetailsDto fixtureMatch({
   int? awayScore,
   List<String>? homeIds,
   List<String>? awayIds,
+  String? tournamentId,
+  bool withoutTeams = false,
 }) {
   TeamDto team(String id, String name, String color, List<String> ids) =>
       TeamDto(
@@ -272,28 +284,38 @@ MatchDetailsDto fixtureMatch({
     matchId: 'match',
     squadId: 'fixture',
     createdAt: DateTime(2026, 11, 10, 18),
+    tournamentId: tournamentId,
     homeScore: homeScore,
     awayScore: awayScore,
     homeWinProbability: .52,
-    homeTeam: team(
-      'home',
-      'Niebiescy',
-      '#1E88E5',
-      homeIds ?? fixturePlayers.take(8).map((p) => p.playerId).toList(),
-    ),
-    awayTeam: team(
-      'away',
-      'Czerwoni',
-      '#E53935',
-      awayIds ?? fixturePlayers.skip(8).take(8).map((p) => p.playerId).toList(),
-    ),
+    homeTeam: withoutTeams
+        ? null
+        : team(
+            'home',
+            'Niebiescy',
+            '#1E88E5',
+            homeIds ?? fixturePlayers.take(8).map((p) => p.playerId).toList(),
+          ),
+    awayTeam: withoutTeams
+        ? null
+        : team(
+            'away',
+            'Czerwoni',
+            '#E53935',
+            awayIds ??
+                fixturePlayers.skip(8).take(8).map((p) => p.playerId).toList(),
+          ),
   );
 }
 
 class FixtureMatch extends MatchDetailsNotifier {
+  FixtureMatch({this.initial, this.writes});
+  final MatchDetailsDto? initial;
+  final FixtureWrites? writes;
+
   @override
   AsyncValue<MatchDetailsDto> build(String matchId) =>
-      AsyncData(fixtureMatch());
+      AsyncData(initial ?? fixtureMatch());
   @override
   Future<void> updateScore(String squadId, int homeScore, int awayScore) async {
     state = AsyncData(fixtureMatch(homeScore: homeScore, awayScore: awayScore));
@@ -319,9 +341,15 @@ class FixtureMatch extends MatchDetailsNotifier {
     String? awayColor,
   }) async {}
   @override
-  Future<MatchDetailsDto> rematch() async => fixtureMatch();
+  Future<MatchDetailsDto> rematch() async {
+    if (writes != null) writes!.rematches++;
+    return fixtureMatch();
+  }
+
   @override
-  Future<void> deleteMatch() async {}
+  Future<void> deleteMatch() async {
+    if (writes != null) writes!.deletions++;
+  }
 }
 
 class _FixtureCreate extends CreateMatchController {
