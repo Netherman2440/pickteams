@@ -1,0 +1,16 @@
+# Android only. Run from app/:
+# dart run flutter_launcher_icons -f flutter_launcher_icons_android.yaml
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path_android: assets/icons/app_icon.png
+  adaptive_icon_background: "#2E2C29"
+  adaptive_icon_foreground: assets/icons/app_icon_2.png
+  # Keep the complete transparent mark inside Android's 66/108 safe circle.
+  adaptive_icon_foreground_inset: 16
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false
