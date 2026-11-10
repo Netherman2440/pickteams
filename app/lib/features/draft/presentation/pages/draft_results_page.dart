@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -221,6 +219,8 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                 icon: const Icon(Icons.arrow_back),
               ),
         title: const Text('Propozycja'),
+        toolbarHeight: 48,
+        titleTextStyle: Theme.of(context).textTheme.titleMedium,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -253,124 +253,64 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
             );
           }
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _ProposalNavigator(
-                  index: data.selectedIndex,
-                  total: data.proposals.length,
-                  onPrev: data.selectedIndex == 0
-                      ? null
-                      : () => ref
-                            .read(draftSessionNotifierProvider.notifier)
-                            .selectProposal(data.selectedIndex - 1),
-                  onNext: data.selectedIndex == data.proposals.length - 1
-                      ? null
-                      : () => ref
-                            .read(draftSessionNotifierProvider.notifier)
-                            .selectProposal(data.selectedIndex + 1),
-                ),
-                const SizedBox(height: 12),
-                _TotalsRow(
-                  homePlayers: data.home,
-                  awayPlayers: data.away,
-                  playWithSubstitute: _playWithSubstitute,
-                  homeWinProbability: data.homeWinProbability,
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isCompact =
-                          constraints.maxWidth < AppConfig.compactWidth;
-                      final gap = isCompact ? 8.0 : 12.0;
-                      final panelWidth = math.max(
-                        220.0,
-                        (constraints.maxWidth - gap) / 2,
-                      );
-                      final homePanel = isCompact
-                          ? SizedBox(
-                              width: panelWidth,
-                              child: _RosterPanel(
-                                title: 'Gospodarze',
-                                players: data.home,
-                                compact: isCompact,
-                                onAcceptPlayerId: (playerId) => ref
-                                    .read(draftSessionNotifierProvider.notifier)
-                                    .movePlayer(
-                                      playerId: playerId,
-                                      toHome: true,
-                                    ),
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Column(
+                  children: [
+                    _ProposalNavigator(
+                      index: data.selectedIndex,
+                      total: data.proposals.length,
+                      onPrev: data.selectedIndex == 0
+                          ? null
+                          : () => ref
+                                .read(draftSessionNotifierProvider.notifier)
+                                .selectProposal(data.selectedIndex - 1),
+                      onNext: data.selectedIndex == data.proposals.length - 1
+                          ? null
+                          : () => ref
+                                .read(draftSessionNotifierProvider.notifier)
+                                .selectProposal(data.selectedIndex + 1),
+                    ),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact =
+                            constraints.maxWidth < AppConfig.compactWidth;
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final home in [true, false]) ...[
+                              if (!home) const SizedBox(width: 12),
+                              Expanded(
+                                child: _RosterPanel(
+                                  title: home ? 'Gospodarze' : 'Goście',
+                                  players: home ? data.home : data.away,
+                                  compact: compact,
+                                  onAcceptPlayerId: (id) => ref
+                                      .read(
+                                        draftSessionNotifierProvider.notifier,
+                                      )
+                                      .movePlayer(playerId: id, toHome: home),
+                                ),
                               ),
-                            )
-                          : Expanded(
-                              child: _RosterPanel(
-                                title: 'Gospodarze',
-                                players: data.home,
-                                compact: isCompact,
-                                onAcceptPlayerId: (playerId) => ref
-                                    .read(draftSessionNotifierProvider.notifier)
-                                    .movePlayer(
-                                      playerId: playerId,
-                                      toHome: true,
-                                    ),
-                              ),
-                            );
-
-                      final awayPanel = isCompact
-                          ? SizedBox(
-                              width: panelWidth,
-                              child: _RosterPanel(
-                                title: 'Goście',
-                                players: data.away,
-                                compact: isCompact,
-                                onAcceptPlayerId: (playerId) => ref
-                                    .read(draftSessionNotifierProvider.notifier)
-                                    .movePlayer(
-                                      playerId: playerId,
-                                      toHome: false,
-                                    ),
-                              ),
-                            )
-                          : Expanded(
-                              child: _RosterPanel(
-                                title: 'Goście',
-                                players: data.away,
-                                compact: isCompact,
-                                onAcceptPlayerId: (playerId) => ref
-                                    .read(draftSessionNotifierProvider.notifier)
-                                    .movePlayer(
-                                      playerId: playerId,
-                                      toHome: false,
-                                    ),
-                              ),
-                            );
-
-                      final content = Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          homePanel,
-                          SizedBox(width: gap),
-                          awayPanel,
-                        ],
-                      );
-                      if (isCompact) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: constraints.maxWidth,
-                            ),
-                            child: content,
-                          ),
+                            ],
+                          ],
                         );
-                      }
-                      return content;
-                    },
-                  ),
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    _TotalsRow(
+                      homePlayers: data.home,
+                      awayPlayers: data.away,
+                      playWithSubstitute: _playWithSubstitute,
+                      homeWinProbability: data.homeWinProbability,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         },
@@ -615,8 +555,9 @@ class _TotalsRow extends StatelessWidget {
         if (isCompact) {
           return Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
                 children: [
                   _TotalChip(label: 'Ranking gospodarzy', value: effectiveHome),
                   _TotalChip(label: 'Ranking gości', value: effectiveAway),
@@ -721,52 +662,33 @@ class _RosterPanel extends StatelessWidget {
       builder: (context, candidateData, rejectedData) {
         final isHighlighted = candidateData.isNotEmpty;
 
-        return Card(
-          shape: isHighlighted
-              ? RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 2,
-                  ),
-                )
-              : null,
-          child: Padding(
-            padding: EdgeInsets.all(compact ? 8 : 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontSize: compact ? 14 : null,
-                  ),
+        final sortedPlayers = [...players]
+          ..sort((a, b) => b.ranking.compareTo(a.ranking));
+        return ColoredBox(
+          color: isHighlighted
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: .12)
+              : Colors.transparent,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: compact ? 14 : null,
                 ),
-                SizedBox(height: compact ? 6 : 8),
-                Expanded(
-                  child: players.isEmpty
-                      ? const Center(child: Text('Brak graczy.'))
-                      : Builder(
-                          builder: (context) {
-                            final sortedPlayers = [...players]
-                              ..sort((a, b) => b.ranking.compareTo(a.ranking));
-                            return ListView.builder(
-                              itemCount: sortedPlayers.length,
-                              itemBuilder: (context, index) {
-                                final p = sortedPlayers[index];
-                                return DraftDraggablePlayerTile(
-                                  player: p,
-                                  trailing: const Icon(Icons.drag_indicator),
-                                  dragData: p.playerId,
-                                  compact: compact,
-                                );
-                              },
-                            );
-                          },
-                        ),
+              ),
+              const SizedBox(height: 4),
+              if (players.isEmpty) const Text('Brak graczy.'),
+              for (final p in sortedPlayers)
+                DraftDraggablePlayerTile(
+                  player: p,
+                  trailing: const SizedBox.shrink(),
+                  dragData: p.playerId,
+                  compact: compact,
+                  simple: true,
                 ),
-              ],
-            ),
+            ],
           ),
         );
       },

@@ -480,6 +480,8 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                 icon: const Icon(Icons.arrow_back),
               ),
         title: const Text('Szczegóły meczu'),
+        titleTextStyle: Theme.of(context).textTheme.titleMedium,
+        toolbarHeight: 48,
         actions: [
           if (canManage && matchAsync.hasValue) ...[
             if (_isEditing) ...[
@@ -562,256 +564,165 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
       for (final player in match.awayTeam?.players ?? const []) player.playerId,
     }.toList(growable: false);
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
-      child: Column(
-        children: [
-          if (canManage && !_isEditing)
-            Align(
-              alignment: Alignment.centerRight,
-              child: Wrap(
-                spacing: 8,
+    final compact = MediaQuery.sizeOf(context).width < AppConfig.compactWidth;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (!isTournamentMatch && !hasScore && hasTeamAssignments)
-                    TextButton(
-                      onPressed: () => _onRedraft(match),
-                      child: const Text('Wylosuj jeszcze raz'),
+                  Flexible(
+                    child: Text(
+                      dateFormat.format(match.createdAt.toLocal()),
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  if (!hasTeamAssignments && hasTeamsPlayers)
-                    TextButton(
-                      onPressed: () {
-                        context.pushNamed(
-                          AppRoute.draftCreate.name,
-                          pathParameters: {'squadId': widget.squadId},
-                          extra: {
-                            'selectedIds': selectedIds,
-                            'matchId': widget.matchId,
-                          },
-                        );
-                      },
-                      child: const Text('Zmień drużyny'),
-                    ),
-                  _buildDraftPreviewButton(
-                    context,
-                    showAttention: teamsNotSelected,
                   ),
-                  if (hasTeamsPlayers)
-                    TextButton(
-                      onPressed: () => _enterScoreEditMode(match),
-                      child: const Text('Wprowadź wynik'),
+                  if (compact) ...[
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: _isScoreEditing
+                          ? _buildEditScoreBoard(compact: true)
+                          : _buildScoreBoard(match, compact: true),
                     ),
-                  if (!isTournamentMatch && hasTeamsPlayers)
-                    TextButton(
-                      onPressed: _onRematch,
-                      child: const Text('Rewanż'),
-                    ),
+                  ],
                 ],
               ),
-            ),
-          Text(
-            dateFormat.format(match.createdAt.toLocal()),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 16),
-          const SizedBox(height: 24),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isCompact = constraints.maxWidth < AppConfig.compactWidth;
-              final scoreBoard = _isScoreEditing
-                  ? _buildEditScoreBoard(compact: isCompact)
-                  : _buildScoreBoard(match, compact: isCompact);
-              final homeSection = _buildTeamSection(
-                context,
-                _isTeamEditing
-                    ? _homePlayers
-                    : (match.homeTeam?.players ?? const <PlayerDto>[]),
-                match.homeTeam?.name,
-                'Gospodarze',
-                'home',
-                _isTeamEditing ? _homeTeamColorHex : match.homeTeam?.color,
-                opponentCount: _isTeamEditing
-                    ? _awayPlayers.length
-                    : (match.awayTeam?.players.length ?? 0),
-                nameController: _isTeamEditing ? _homeTeamNameController : null,
-                compact: isCompact,
-              );
-              final awaySection = _buildTeamSection(
-                context,
-                _isTeamEditing
-                    ? _awayPlayers
-                    : (match.awayTeam?.players ?? const <PlayerDto>[]),
-                match.awayTeam?.name,
-                'Goście',
-                'away',
-                _isTeamEditing ? _awayTeamColorHex : match.awayTeam?.color,
-                opponentCount: _isTeamEditing
-                    ? _homePlayers.length
-                    : (match.homeTeam?.players.length ?? 0),
-                nameController: _isTeamEditing ? _awayTeamNameController : null,
-                compact: isCompact,
-              );
+              const SizedBox(height: 4),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact =
+                      constraints.maxWidth < AppConfig.compactWidth;
+                  final scoreBoard = _isScoreEditing
+                      ? _buildEditScoreBoard(compact: isCompact)
+                      : _buildScoreBoard(match, compact: isCompact);
+                  final homeSection = _buildTeamSection(
+                    context,
+                    _isTeamEditing
+                        ? _homePlayers
+                        : (match.homeTeam?.players ?? const <PlayerDto>[]),
+                    match.homeTeam?.name,
+                    'Gospodarze',
+                    'home',
+                    _isTeamEditing ? _homeTeamColorHex : match.homeTeam?.color,
+                    opponentCount: _isTeamEditing
+                        ? _awayPlayers.length
+                        : (match.awayTeam?.players.length ?? 0),
+                    nameController: _isTeamEditing
+                        ? _homeTeamNameController
+                        : null,
+                    compact: isCompact,
+                  );
+                  final awaySection = _buildTeamSection(
+                    context,
+                    _isTeamEditing
+                        ? _awayPlayers
+                        : (match.awayTeam?.players ?? const <PlayerDto>[]),
+                    match.awayTeam?.name,
+                    'Goście',
+                    'away',
+                    _isTeamEditing ? _awayTeamColorHex : match.awayTeam?.color,
+                    opponentCount: _isTeamEditing
+                        ? _homePlayers.length
+                        : (match.homeTeam?.players.length ?? 0),
+                    nameController: _isTeamEditing
+                        ? _awayTeamNameController
+                        : null,
+                    compact: isCompact,
+                  );
 
-              final gap = isCompact ? 8.0 : 16.0;
-              final scoreBoardWidth = isCompact ? 140.0 : 220.0;
+                  final gap = isCompact ? 8.0 : 16.0;
+                  final scoreBoardWidth = isCompact ? 140.0 : 220.0;
 
-              if (isCompact) {
-                final homePlayers = _isTeamEditing
-                    ? _homePlayers
-                    : (match.homeTeam?.players ?? const <PlayerDto>[]);
-                final awayPlayers = _isTeamEditing
-                    ? _awayPlayers
-                    : (match.awayTeam?.players ?? const <PlayerDto>[]);
-                final homeOpponentCount = _isTeamEditing
-                    ? _awayPlayers.length
-                    : awayPlayers.length;
-                final awayOpponentCount = _isTeamEditing
-                    ? _homePlayers.length
-                    : homePlayers.length;
-                final homeRating = _effectiveTeamRating(
-                  homePlayers,
-                  homeOpponentCount,
-                );
-                final awayRating = _effectiveTeamRating(
-                  awayPlayers,
-                  awayOpponentCount,
-                );
-
-                return Column(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: _buildCompactTeamHeader(
-                            teamName: match.homeTeam?.name,
-                            fallbackLabel: 'Gospodarze',
-                            colorHex: _isTeamEditing
-                                ? _homeTeamColorHex
-                                : match.homeTeam?.color,
-                            nameController: _isTeamEditing
-                                ? _homeTeamNameController
-                                : null,
-                            rating: homeRating,
-                            alignEnd: false,
-                            onPickColor: _isTeamEditing
-                                ? () => _pickTeamColor('home')
-                                : null,
-                          ),
-                        ),
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: homeSection),
+                      SizedBox(width: gap),
+                      if (!isCompact) ...[
                         SizedBox(
                           width: scoreBoardWidth,
                           child: Align(
-                            alignment: Alignment.center,
+                            alignment: Alignment.topCenter,
                             child: scoreBoard,
                           ),
                         ),
-                        Expanded(
-                          child: _buildCompactTeamHeader(
-                            teamName: match.awayTeam?.name,
-                            fallbackLabel: 'Goście',
-                            colorHex: _isTeamEditing
-                                ? _awayTeamColorHex
-                                : match.awayTeam?.color,
-                            nameController: _isTeamEditing
-                                ? _awayTeamNameController
-                                : null,
-                            rating: awayRating,
-                            alignEnd: true,
-                            onPickColor: _isTeamEditing
-                                ? () => _pickTeamColor('away')
-                                : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: _buildTeamSection(
-                            context,
-                            homePlayers,
-                            match.homeTeam?.name,
-                            'Gospodarze',
-                            'home',
-                            _isTeamEditing
-                                ? _homeTeamColorHex
-                                : match.homeTeam?.color,
-                            opponentCount: homeOpponentCount,
-                            nameController: _isTeamEditing
-                                ? _homeTeamNameController
-                                : null,
-                            compact: true,
-                            showHeader: false,
-                          ),
-                        ),
                         SizedBox(width: gap),
-                        Expanded(
-                          child: _buildTeamSection(
-                            context,
-                            awayPlayers,
-                            match.awayTeam?.name,
-                            'Goście',
-                            'away',
-                            _isTeamEditing
-                                ? _awayTeamColorHex
-                                : match.awayTeam?.color,
-                            opponentCount: awayOpponentCount,
-                            nameController: _isTeamEditing
-                                ? _awayTeamNameController
-                                : null,
-                            compact: true,
-                            showHeader: false,
-                          ),
-                        ),
                       ],
-                    ),
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: homeSection),
-                  SizedBox(width: gap),
-                  SizedBox(
-                    width: scoreBoardWidth,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: scoreBoard,
-                    ),
-                  ),
-                  SizedBox(width: gap),
-                  Expanded(child: awaySection),
-                ],
-              );
-            },
-          ),
-          if (_isTeamEditing) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Przeciągnij by zmienić drużyny.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      Expanded(child: awaySection),
+                    ],
+                  );
+                },
               ),
-            ),
-          ],
-          if (!_isEditing && match.homeWinProbability != null) ...[
-            const SizedBox(height: 24),
-            ProbabilitySlider(
-              title: 'Szansa na wygraną',
-              homeColor: _parseColor(match.homeTeam?.color),
-              awayColor: _parseColor(match.awayTeam?.color),
-              homeProbability: match.homeWinProbability!,
-              infoText:
-                  'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
-                  'graczami w tym składzie.',
-            ),
-          ],
-        ],
+              if (canManage && !_isEditing)
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  children: [
+                    if (hasTeamsPlayers)
+                      TextButton(
+                        onPressed: () => _enterScoreEditMode(match),
+                        child: const Text('Wprowadź wynik'),
+                      ),
+                    _buildDraftPreviewButton(
+                      context,
+                      showAttention: teamsNotSelected,
+                    ),
+                    if (!isTournamentMatch && !hasScore && hasTeamAssignments)
+                      TextButton(
+                        onPressed: () => _onRedraft(match),
+                        child: const Text('Wylosuj jeszcze raz'),
+                      ),
+                    if (!hasTeamAssignments && hasTeamsPlayers)
+                      TextButton(
+                        onPressed: () {
+                          context.pushNamed(
+                            AppRoute.draftCreate.name,
+                            pathParameters: {'squadId': widget.squadId},
+                            extra: {
+                              'selectedIds': selectedIds,
+                              'matchId': widget.matchId,
+                            },
+                          );
+                        },
+                        child: const Text('Zmień drużyny'),
+                      ),
+                    if (!isTournamentMatch && hasTeamsPlayers)
+                      TextButton(
+                        onPressed: _onRematch,
+                        child: const Text('Rewanż'),
+                      ),
+                  ],
+                ),
+              if (_isTeamEditing) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Przeciągnij by zmienić drużyny.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (!_isEditing && match.homeWinProbability != null) ...[
+                const SizedBox(height: 24),
+                ProbabilitySlider(
+                  title: 'Szansa na wygraną',
+                  homeColor: _parseColor(match.homeTeam?.color),
+                  awayColor: _parseColor(match.awayTeam?.color),
+                  homeProbability: match.homeWinProbability!,
+                  infoText:
+                      'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
+                      'graczami w tym składzie.',
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -871,8 +782,8 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
     final hasScore = match.homeScore != null && match.awayScore != null;
     final homeScore = hasScore ? match.homeScore.toString() : '-';
     final awayScore = hasScore ? match.awayScore.toString() : '-';
-    final fontSize = compact ? 32.0 : 48.0;
-    final separatorSize = compact ? 32.0 : 48.0;
+    final fontSize = compact ? 24.0 : 48.0;
+    final separatorSize = compact ? 24.0 : 48.0;
     final padding = compact ? 8.0 : 16.0;
 
     return Row(
@@ -1080,7 +991,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                         child: _buildTeamColorBox(
                           context: context,
                           color: teamColor,
-                          size: compact ? 24 : 32,
+                          size: compact ? 14 : 32,
                           editable: true,
                         ),
                       ),
@@ -1088,7 +999,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                   : _buildTeamColorBox(
                       context: context,
                       color: teamColor,
-                      size: compact ? 24 : 32,
+                      size: compact ? 14 : 32,
                       editable: false,
                     ),
               SizedBox(width: compact ? 6 : 8),
@@ -1106,10 +1017,13 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                   ),
                 )
               else
-                Text(
-                  _displayTeamName(teamName, fallbackLabel),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: compact ? 16 : null,
+                Flexible(
+                  child: Text(
+                    _displayTeamName(teamName, fallbackLabel),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: compact ? 14 : null,
+                    ),
                   ),
                 ),
             ],
@@ -1122,7 +1036,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
               fontSize: compact ? 11 : null,
             ),
           ),
-          const Divider(),
+          const Divider(height: 6),
         ],
         ...sortedPlayers.map(
           (player) => MatchPlayerTile(
@@ -1180,87 +1094,6 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
     }
 
     return list;
-  }
-
-  Widget _buildCompactTeamHeader({
-    required String fallbackLabel,
-    required String? teamName,
-    required String? colorHex,
-    required TextEditingController? nameController,
-    required double rating,
-    required bool alignEnd,
-    VoidCallback? onPickColor,
-  }) {
-    final theme = Theme.of(context);
-    final teamColor = _parseColor(colorHex);
-    final nameWidget = _isTeamEditing && nameController != null
-        ? SizedBox(
-            width: 128,
-            child: _buildEditableTeamNameField(
-              context: context,
-              controller: nameController,
-              hintText: fallbackLabel,
-              textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-              style: theme.textTheme.titleMedium,
-              maxWidth: 128,
-            ),
-          )
-        : Text(
-            _displayTeamName(teamName, fallbackLabel),
-            style: theme.textTheme.titleMedium,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          );
-
-    final colorBox = _buildTeamColorBox(
-      context: context,
-      color: teamColor,
-      size: 18,
-      editable: onPickColor != null,
-    );
-
-    return Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: alignEnd
-              ? MainAxisAlignment.end
-              : MainAxisAlignment.start,
-          children: [
-            if (!alignEnd) ...[
-              if (onPickColor != null)
-                GestureDetector(
-                  onTap: onPickColor,
-                  child: Tooltip(message: 'Zmień kolor', child: colorBox),
-                )
-              else
-                colorBox,
-              const SizedBox(width: 6),
-            ],
-            Flexible(child: nameWidget),
-            if (alignEnd) ...[
-              const SizedBox(width: 6),
-              if (onPickColor != null)
-                GestureDetector(
-                  onTap: onPickColor,
-                  child: Tooltip(message: 'Zmień kolor', child: colorBox),
-                )
-              else
-                colorBox,
-            ],
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Ranking: ${rating.toStringAsFixed(1)}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
   }
 }
 

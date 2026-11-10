@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:app/core/widgets/player_list_row.dart';
 import 'package:app/features/matches/application/dto/player_dto.dart';
 
 class MatchPlayerTile extends StatelessWidget {
@@ -30,76 +31,12 @@ class MatchPlayerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // In match history, we should show the snapshot ranking if available.
     final displayRanking = snapshotRanking ?? player.ranking;
-    final theme = Theme.of(context);
-    final hasTrailing = trailing != null;
-    final scoreText = displayRanking.toStringAsFixed(2);
-
-    final tile = Card(
-      child: compact
-          ? InkWell(
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 10,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 14,
-                      child: Text(
-                        player.name.isNotEmpty
-                            ? player.name[0].toUpperCase()
-                            : '?',
-                        style: theme.textTheme.labelSmall,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              player.name,
-                              softWrap: true,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            scoreText,
-                            textAlign: TextAlign.right,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (hasTrailing) ...[const SizedBox(width: 8), trailing!],
-                  ],
-                ),
-              ),
-            )
-          : ListTile(
-              dense: false,
-              visualDensity: VisualDensity.standard,
-              leading: CircleAvatar(
-                child: Text(
-                  player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
-                ),
-              ),
-              title: Text(
-                player.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(scoreText),
-              trailing: trailing,
-              onTap: onTap,
-            ),
+    final tile = PlayerListRow(
+      name: player.name,
+      ranking: displayRanking,
+      compact: compact,
+      trailing: trailing,
+      onTap: onTap,
     );
 
     final data = dragData;

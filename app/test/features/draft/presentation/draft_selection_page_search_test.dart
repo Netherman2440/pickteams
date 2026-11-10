@@ -14,6 +14,29 @@ import 'package:app/features/players/domain/repositories/player_repository.dart'
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  testWidgets(
+    'phone selection puts search before both lists without overflow',
+    (tester) async {
+      await _pumpPage(
+        tester,
+        initialSelectedIds: List.generate(16, (i) => 'p${i + 1}'),
+        phone: true,
+      );
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getTopLeft(find.byType(TextField)).dy,
+        lessThan(tester.getTopLeft(find.textContaining('Wybrani gracze')).dy),
+      );
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is ScrollView && w.physics is! NeverScrollableScrollPhysics,
+        ),
+        findsNothing,
+      );
+    },
+  );
+
   testWidgets('draft search filters both selected and available sections', (
     tester,
   ) async {
@@ -197,15 +220,16 @@ void main() {
       await _enterSearchQuery(tester, 'a');
       expect(_highlightedPlayerName(tester), 'Anna');
 
-      // The tile picked by keyboard navigation must render exactly like
-      // every other tile: no Card color override (e.g. a
-      // primaryContainer background) may hint at the picked position.
-      final pickedCard = tester.widget<Card>(
+      // Keyboard selection does not change the row background.
+      final material = tester.widget<Material>(
         find
-            .descendant(of: _pickedTileFinder(), matching: find.byType(Card))
+            .descendant(
+              of: _pickedTileFinder(),
+              matching: find.byType(Material),
+            )
             .first,
       );
-      expect(pickedCard.color, isNull);
+      expect(material.color, Colors.transparent);
     },
   );
 
@@ -258,15 +282,20 @@ void main() {
 Future<void> _pumpPage(
   WidgetTester tester, {
   List<String> initialSelectedIds = const [],
+  bool phone = false,
 }) async {
-  await tester.binding.setSurfaceSize(const Size(1800, 1000));
+  await tester.binding.setSurfaceSize(
+    phone ? const Size(360, 640) : const Size(1800, 1000),
+  );
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
-  final players = [
-    _player('p1', 'Anna', 40),
-    _player('p2', 'Bartek', 41),
-    _player('p3', 'Cezary', 42),
-  ];
+  final players = phone
+      ? List.generate(22, (i) => _player('p${i + 1}', 'Gracz ${i + 1}', 40 + i))
+      : [
+          _player('p1', 'Anna', 40),
+          _player('p2', 'Bartek', 41),
+          _player('p3', 'Cezary', 42),
+        ];
 
   await tester.pumpWidget(
     ProviderScope(
@@ -292,9 +321,10 @@ Future<void> _enterSearchQuery(WidgetTester tester, String query) async {
 }
 
 Finder _sectionCard(String header) {
-  return find.ancestor(
-    of: find.textContaining(header),
-    matching: find.byType(Card),
+  return find.byKey(
+    ValueKey(
+      header == 'Wybrani gracze' ? 'selected-players' : 'available-players',
+    ),
   );
 }
 

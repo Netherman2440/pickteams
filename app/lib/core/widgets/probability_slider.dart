@@ -35,8 +35,7 @@ class ProbabilitySlider extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(title, style: theme.textTheme.titleSmall),
-                const Spacer(),
+                Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
                 if (infoText != null)
                   IconButton(
                     icon: const Icon(Icons.info_outline),

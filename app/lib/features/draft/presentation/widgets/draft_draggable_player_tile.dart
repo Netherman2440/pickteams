@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:app/core/widgets/player_list_row.dart';
 
 import 'package:app/features/players/domain/entities/player.dart';
 import 'package:app/features/players/domain/entities/player_position.dart';
@@ -10,6 +11,7 @@ class DraftDraggablePlayerTile extends StatelessWidget {
     required this.player,
     required this.trailing,
     this.compact = false,
+    this.simple = false,
     this.onTap,
     this.dragData,
   });
@@ -17,6 +19,7 @@ class DraftDraggablePlayerTile extends StatelessWidget {
   final Player player;
   final Widget trailing;
   final bool compact;
+  final bool simple;
 
   final VoidCallback? onTap;
   final Object? dragData;
@@ -27,70 +30,82 @@ class DraftDraggablePlayerTile extends StatelessWidget {
     final difference = player.ranking - player.baseRanking;
     final positionText = playerPositionPolishLabel(player.position);
 
-    final tile = Card(
-      child: ListTile(
-        dense: compact,
-        visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
-        contentPadding: compact
-            ? const EdgeInsets.symmetric(horizontal: 8)
-            : null,
-        leading: CircleAvatar(
-          radius: compact ? 14 : null,
-          child: Text(
-            player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
-            style: compact ? theme.textTheme.labelSmall : null,
-          ),
-        ),
-        title: Text(
-          player.name,
-          maxLines: compact ? 2 : 1,
-          overflow: TextOverflow.ellipsis,
-          style: compact ? theme.textTheme.bodyMedium : null,
-        ),
-        subtitle: compact
-            ? Text(
-                'Ranking: ${player.ranking.toStringAsFixed(2)}',
-                style: theme.textTheme.bodySmall,
-              )
-            : Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                children: [
-                  if (positionText != null) ...[
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+    final tile = simple
+        ? PlayerListRow(
+            name: player.name,
+            ranking: player.ranking,
+            compact: compact,
+            trailing: trailing,
+            onTap: onTap,
+          )
+        : Card(
+            child: ListTile(
+              dense: compact,
+              visualDensity: compact
+                  ? VisualDensity.compact
+                  : VisualDensity.standard,
+              contentPadding: compact
+                  ? const EdgeInsets.symmetric(horizontal: 8)
+                  : null,
+              leading: CircleAvatar(
+                radius: compact ? 14 : null,
+                child: Text(
+                  player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
+                  style: compact ? theme.textTheme.labelSmall : null,
+                ),
+              ),
+              title: Text(
+                player.name,
+                maxLines: compact ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: compact ? theme.textTheme.bodyMedium : null,
+              ),
+              subtitle: compact
+                  ? Text(
+                      'Ranking: ${player.ranking.toStringAsFixed(2)}',
+                      style: theme.textTheme.bodySmall,
+                    )
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
                       children: [
-                        Icon(
-                          Icons.sports_soccer,
-                          size: 16,
-                          color: theme.colorScheme.primary,
+                        if (positionText != null) ...[
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.sports_soccer,
+                                size: 16,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(positionText),
+                            ],
+                          ),
+                        ],
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.insights,
+                              size: 16,
+                              color: theme.colorScheme.tertiary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Ranking: ${player.ranking.toStringAsFixed(2)}',
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(positionText),
+                        if (difference.abs() > 0) ...[
+                          _RankingDifference(difference: difference),
+                        ],
                       ],
                     ),
-                  ],
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.insights,
-                        size: 16,
-                        color: theme.colorScheme.tertiary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text('Ranking: ${player.ranking.toStringAsFixed(2)}'),
-                    ],
-                  ),
-                  if (difference.abs() > 0) ...[
-                    _RankingDifference(difference: difference),
-                  ],
-                ],
-              ),
-        trailing: trailing,
-        onTap: onTap,
-      ),
-    );
+              trailing: trailing,
+              onTap: onTap,
+            ),
+          );
 
     final data = dragData;
     if (data == null) {

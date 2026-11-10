@@ -57,7 +57,9 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Propozycja - wybór graczy'),
+        title: const Text('Wybór graczy'),
+        titleTextStyle: Theme.of(context).textTheme.titleMedium,
+        toolbarHeight: 48,
         actions: [
           state.when(
             data: (data) {
@@ -80,9 +82,10 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Wygeneruj propozycję'),
+                          : const Text('Wygeneruj'),
                     ),
-                    TextButton(
+                    IconButton(
+                      tooltip: 'Przejdź do relacji',
                       onPressed: hasMinimumPlayers
                           ? () {
                               final ids = data.selectedPlayerIds.toList(
@@ -102,7 +105,7 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
                               );
                             }
                           : null,
-                      child: const Text('Przejdź do relacji'),
+                      icon: const Icon(Icons.people_outline),
                     ),
                     PopupMenuButton<_SelectionMenuAction>(
                       tooltip: 'Ustawienia propozycji',
@@ -160,65 +163,37 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
               .where(matchesQuery)
               .toList(growable: false);
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < AppConfig.compactWidth;
-
-                final selectedPanel = Expanded(
-                  flex: isCompact ? 5 : 2,
-                  child: _SelectedPlayersPanel(
-                    players: selected,
-                    selectedCount: data.selectedPlayerIds.length,
-                    searchQuery: data.searchQuery,
-                    compact: isCompact,
-                    onToggle: (playerId) => ref
-                        .read(draftSelectionControllerProvider.notifier)
-                        .togglePlayer(playerId: playerId),
-                    onClear: () => ref
-                        .read(draftSelectionControllerProvider.notifier)
-                        .clearSelection(),
-                  ),
-                );
-
-                final availablePanel = Expanded(
-                  flex: isCompact ? 4 : 3,
-                  child: _AvailablePlayersPanel(
-                    players: available,
-                    selectedCount: data.selectedPlayerIds.length,
-                    searchQuery: data.searchQuery,
-                    compact: isCompact,
-                    onSearchChanged: (value) => ref
-                        .read(draftSelectionControllerProvider.notifier)
-                        .setSearchQuery(value),
-                    onToggle: (playerId) => ref
-                        .read(draftSelectionControllerProvider.notifier)
-                        .togglePlayer(playerId: playerId),
-                  ),
-                );
-
-                return Column(
-                  children: [
-                    if (data.validationMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _InlineErrorText(
-                          message: data.validationMessage!,
-                        ),
-                      ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          selectedPanel,
-                          const SizedBox(height: 12),
-                          availablePanel,
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+          final compact =
+              MediaQuery.sizeOf(context).width < AppConfig.compactWidth;
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: _AvailablePlayersPanel(
+                players: available,
+                selectedCount: data.selectedPlayerIds.length,
+                searchQuery: data.searchQuery,
+                compact: compact,
+                validationMessage: data.validationMessage,
+                selectedPanel: _SelectedPlayersPanel(
+                  players: selected,
+                  selectedCount: data.selectedPlayerIds.length,
+                  searchQuery: data.searchQuery,
+                  compact: compact,
+                  onToggle: (id) => ref
+                      .read(draftSelectionControllerProvider.notifier)
+                      .togglePlayer(playerId: id),
+                  onClear: () => ref
+                      .read(draftSelectionControllerProvider.notifier)
+                      .clearSelection(),
+                ),
+                onSearchChanged: (value) => ref
+                    .read(draftSelectionControllerProvider.notifier)
+                    .setSearchQuery(value),
+                onToggle: (id) => ref
+                    .read(draftSelectionControllerProvider.notifier)
+                    .togglePlayer(playerId: id),
+              ),
             ),
           );
         },
@@ -277,12 +252,16 @@ class _AvailablePlayersPanel extends StatefulWidget {
     required this.compact,
     required this.onSearchChanged,
     required this.onToggle,
+    required this.selectedPanel,
+    this.validationMessage,
   });
 
   final List<Player> players;
   final int selectedCount;
   final String searchQuery;
   final bool compact;
+  final Widget selectedPanel;
+  final String? validationMessage;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onToggle;
 
@@ -451,77 +430,72 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Dostępni gracze',
-              style: Theme.of(context).textTheme.titleMedium,
+    return SingleChildScrollView(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.validationMessage != null)
+            _InlineErrorText(message: widget.validationMessage!),
+          TextField(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            decoration: const InputDecoration(
+              labelText: 'Szukaj',
+              prefixIcon: Icon(Icons.search),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              decoration: const InputDecoration(
-                labelText: 'Szukaj',
-                prefixIcon: Icon(Icons.search),
+            textCapitalization: TextCapitalization.none,
+            onChanged: widget.onSearchChanged,
+            // The engine turns Enter into a "done" input action
+            // whose default behavior unfocuses the field. Hardware
+            // keyboards go through [_handleSearchKeyEvent]; software
+            // keyboards (no key events for their submit button) only
+            // reach this callback. Both route through the same
+            // idempotent add path, so the player is added once and
+            // the focus stays.
+            onEditingComplete: _addHighlightedPlayer,
+          ),
+          const SizedBox(height: 8),
+          widget.selectedPanel,
+          const SizedBox(height: 12),
+          Column(
+            key: const ValueKey('available-players'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Dostępni gracze',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              textCapitalization: TextCapitalization.none,
-              onChanged: widget.onSearchChanged,
-              // The engine turns Enter into a "done" input action
-              // whose default behavior unfocuses the field. Hardware
-              // keyboards go through [_handleSearchKeyEvent]; software
-              // keyboards (no key events for their submit button) only
-              // reach this callback. Both route through the same
-              // idempotent add path, so the player is added once and
-              // the focus stays.
-              onEditingComplete: _addHighlightedPlayer,
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: widget.players.isEmpty
-                  ? Center(
-                      child: Text(
-                        widget.searchQuery.trim().isEmpty
-                            ? 'Brak dostępnych graczy.'
-                            : 'Brak dostępnych graczy dla '
-                                  '„${widget.searchQuery}”.',
-                      ),
-                    )
-                  : Scrollbar(
-                      controller: _scrollController,
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        itemCount: widget.players.length,
-                        itemBuilder: (context, index) {
-                          final p = widget.players[index];
-                          final isHighlighted = index == _highlightIndex;
-                          return DraftDraggablePlayerTile(
-                            key: isHighlighted ? _highlightedTileKey : null,
-                            player: p,
-                            trailing: const Icon(Icons.add_circle_outline),
-                            onTap: () {
-                              widget.onToggle(p.playerId);
-                              _refocusSearchField();
-                            },
-                            dragData: p.playerId,
-                            compact: widget.compact,
-                          );
-                        },
-                      ),
-                    ),
-            ),
-          ],
-        ),
+              const SizedBox(height: 8),
+              if (widget.players.isEmpty)
+                Text(
+                  widget.searchQuery.trim().isEmpty
+                      ? 'Brak dostępnych graczy.'
+                      : 'Brak dostępnych graczy dla „${widget.searchQuery}”.',
+                ),
+              for (final (index, p) in widget.players.indexed)
+                DraftDraggablePlayerTile(
+                  key: index == _highlightIndex ? _highlightedTileKey : null,
+                  player: p,
+                  trailing: const Icon(Icons.add_circle_outline),
+                  onTap: () {
+                    widget.onToggle(p.playerId);
+                    _refocusSearchField();
+                  },
+                  dragData: p.playerId,
+                  compact: widget.compact,
+                  simple: true,
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SelectedPlayersPanel extends StatefulWidget {
+class _SelectedPlayersPanel extends StatelessWidget {
   const _SelectedPlayersPanel({
     required this.players,
     required this.selectedCount,
@@ -542,77 +516,41 @@ class _SelectedPlayersPanel extends StatefulWidget {
   final VoidCallback onClear;
 
   @override
-  State<_SelectedPlayersPanel> createState() => _SelectedPlayersPanelState();
-}
-
-class _SelectedPlayersPanelState extends State<_SelectedPlayersPanel> {
-  late final ScrollController _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      key: const ValueKey('selected-players'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Wybrani gracze (${widget.selectedCount})',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                TextButton(
-                  onPressed: widget.selectedCount == 0 ? null : widget.onClear,
-                  child: const Text('Wyczyść'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
             Expanded(
-              child: widget.players.isEmpty
-                  ? Center(
-                      child: Text(
-                        widget.searchQuery.trim().isEmpty
-                            ? 'Nie wybrano jeszcze graczy.'
-                            : 'Brak wybranych graczy dla '
-                                  '„${widget.searchQuery}”.',
-                      ),
-                    )
-                  : Scrollbar(
-                      controller: _scrollController,
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        itemCount: widget.players.length,
-                        itemBuilder: (context, index) {
-                          final p = widget.players[index];
-                          return DraftDraggablePlayerTile(
-                            player: p,
-                            trailing: const Icon(Icons.remove_circle_outline),
-                            onTap: () => widget.onToggle(p.playerId),
-                            dragData: p.playerId,
-                            compact: widget.compact,
-                          );
-                        },
-                      ),
-                    ),
+              child: Text(
+                'Wybrani gracze ($selectedCount)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            TextButton(
+              onPressed: selectedCount == 0 ? null : onClear,
+              child: const Text('Wyczyść'),
             ),
           ],
         ),
-      ),
+        if (players.isEmpty)
+          Text(
+            searchQuery.trim().isEmpty
+                ? 'Nie wybrano jeszcze graczy.'
+                : 'Brak wybranych graczy dla „$searchQuery”.',
+          ),
+        for (final p in players)
+          DraftDraggablePlayerTile(
+            player: p,
+            trailing: const Icon(Icons.remove_circle_outline),
+            onTap: () => onToggle(p.playerId),
+            dragData: p.playerId,
+            compact: compact,
+            simple: true,
+          ),
+      ],
     );
   }
 }
