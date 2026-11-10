@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-10
+landed: 2026-11-10
 ---
 
 # F002 · Match actions stay in one menu on small screens
