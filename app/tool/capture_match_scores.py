@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 from urllib.parse import urlparse
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 url, output = sys.argv[1:]
 out = Path(output)
@@ -47,11 +47,11 @@ with sync_playwright() as p:
             for state in ["saved", "editing", "resaved"]:
                 if state == "editing":
                     page.get_by_role("button", name="Akcje meczu").click()
-                    page.get_by_text("Wprowadź wynik", exact=True).click()
+                    page.get_by_role("menuitem", name="Wprowadź wynik", exact=True).click()
                     fields = page.get_by_role("textbox")
-                    assert fields.count() == 2
-                    assert fields.nth(0).input_value() == "14"
-                    assert fields.nth(1).input_value() == "5"
+                    expect(fields).to_have_count(2)
+                    expect(fields.nth(0)).to_have_value("14")
+                    expect(fields.nth(1)).to_have_value("5")
                     fields.nth(0).fill("15")
                     fields.nth(1).fill("6")
                     # Leave the values from the reported image in the proof frame.
@@ -59,7 +59,7 @@ with sync_playwright() as p:
                     fields.nth(1).fill("5")
                 elif state == "resaved":
                     page.get_by_role("button", name="Zapisz", exact=True).click()
-                    assert page.get_by_role("textbox").count() == 0
+                    expect(page.get_by_role("textbox")).to_have_count(0)
                     page.get_by_text("14", exact=True).wait_for()
                     page.get_by_text("5", exact=True).wait_for()
                 page.wait_for_timeout(500)
@@ -75,7 +75,7 @@ with sync_playwright() as p:
                     "errors": list(errors),
                     "blockedExternalRequests": list(blocked),
                     "documentWidth": page.evaluate("document.documentElement.scrollWidth"),
-                    "semantics": page.locator("flt-semantics-host").inner_text(),
+                    "semantics": page.locator("flt-semantics-host").aria_snapshot(),
                 })
             page.close()
     finally:
