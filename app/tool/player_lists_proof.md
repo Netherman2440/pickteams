@@ -4,16 +4,16 @@ This fixture renders the real draft selection, draft results, and match details 
 
 ## Reproduce
 
-Use Flutter 3.47.9 / Dart 3.13.7. The official Linux archive is `https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.47.9-stable.tar.xz`. This worktree installs it under `.tools/flutter`; a user-local `unzip` executable is under `.tools/unzip/usr/bin`. Neither is committed. No system install is required.
+Use Flutter 3.47.9 / Dart 3.13.7. The official Linux archive is `https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.47.9-stable.tar.xz`. The SDK is installed outside the repository under `/home/agents/.local/share/pickteams-f001-sdk/flutter`; a user-local `unzip` executable is under `/home/agents/.local/share/pickteams-f001-sdk/unzip/usr/bin`. Neither is committed. No system install is required.
 
 From the repository root:
 
 ```sh
-export PATH="$PWD/.tools/unzip/usr/bin:$PWD/.tools/flutter/bin:$PATH"
+export PATH="$HOME/.local/share/pickteams-f001-sdk/unzip/usr/bin:$HOME/.local/share/pickteams-f001-sdk/flutter/bin:$PATH"
 cd app
 flutter pub get --enforce-lockfile
 flutter test test/features/draft/presentation test/draft/presentation/draft_results_page_rules_test.dart --reporter expanded
-flutter build web --release --no-web-resources-cdn --target tool/player_lists_preview.dart
+flutter build web --release --no-web-resources-cdn --no-wasm-dry-run --target tool/player_lists_preview.dart
 python3 -m http.server 18841 --bind 127.0.0.1 --directory build/web
 ```
 
@@ -37,7 +37,7 @@ After committing the candidate, retain raw output for:
 dart format --output=none --set-exit-if-changed <changed Dart files>
 flutter analyze --no-pub
 flutter test --coverage --reporter expanded
-flutter build web --release --no-web-resources-cdn --target tool/player_lists_preview.dart
+flutter build web --release --no-web-resources-cdn --no-wasm-dry-run --target tool/player_lists_preview.dart
 ```
 
 Flutter 3.47.9 automatically inserts platform/build exclusions in `analysis_options.yaml`; restore that SDK-only edit after running commands. Do not format untouched files. Record `git rev-parse HEAD` beside logs and frames. The canonical proof directory is `/home/agents/dev/pickteams/.limen/proof/f001/`.
