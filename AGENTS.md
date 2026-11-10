@@ -34,6 +34,11 @@
 - Copy `app/.env.EXAMPLE` to `.env` and never commit secrets; reference keys via `flutter_dotenv` only in `infrastructure/` layers.
 - When sharing repro steps, redact Supabase URLs or rotate keys via the dashboard and note the rotation in the PR description.
 
+## Prototype Sharing
+- Share UI prototypes as static HTML over Tailscale. Give the owner a working URL, not only screenshots or local file paths.
+- Include direct links to each design variant, and label mockups and sample data clearly.
+- Serve only a dedicated public prototype directory on the Tailscale interface. Do not expose the repository, credentials, or production data. Keep an explicitly shared preview running until it is replaced or the owner asks to stop it.
+
 ## Codex Command: create_doc
 Use this command format in chat with Codex:
 
