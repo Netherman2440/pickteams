@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-11
+landed: 2026-11-11
 ---
 
 # F014 · Player rows are shared and draft selection scrolls as one list

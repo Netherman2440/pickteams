@@ -15,7 +15,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F015-lineups-keep-a-compact-team-header-while-scrolling` (🟠 ACTIVE): Lineups keep a compact team header while scrolling
-- `F014-player-rows-are-shared-and-draft-selection-scrolls-as-one-list` (🟠 ACTIVE): Player rows are shared and draft selection scrolls as one list
 - `F013-match-lists-put-the-date-beside-unboxed-team-scores` (🟠 ACTIVE): Match lists put the date beside unboxed team scores
 - `F012-a-match-is-created-only-when-a-proposal-is-accepted` (🟠 ACTIVE): A match is created only when a proposal is accepted
 - `F010-android-identifies-the-app-as-pickteams` (🟠 ACTIVE): Android identifies the app as Pickteams
@@ -30,6 +29,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F014-player-rows-are-shared-and-draft-selection-scrolls-as-one-list` (🟢 PROVEN): Player rows are shared and draft selection scrolls as one list; landed 2026-11-11
 - `F011-player-details-use-one-edit-mode` (🟢 PROVEN): Player details use one edit mode; landed 2026-11-11
 - `F009-android-release-builds-use-a-compatible-toolchain` (🟢 PROVEN): Android release builds use a compatible toolchain; landed 2026-11-11
 - `F007-match-lists-show-both-team-names-on-phones` (🟢 PROVEN): Match lists show both team names on phones; landed 2026-11-11
@@ -37,4 +37,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F003-match-actions-use-one-menu-at-every-screen-width` (🟢 PROVEN): Match actions use one menu at every screen width; landed 2026-11-10
 - `F002-match-actions-stay-in-one-menu-on-small-screens` (🟢 PROVEN): Match actions stay in one menu on small screens; landed 2026-11-10
 - `F001-draft-and-match-player-lists-remain-readable-on-small-screens` (🟢 PROVEN): Draft and match player lists remain readable on small screens; landed 2026-11-10
-- 2026-11: 7 landed. spec/features/done/2026-11/
+- 2026-11: 8 landed. spec/features/done/2026-11/
