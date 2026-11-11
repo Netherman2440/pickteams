@@ -50,7 +50,10 @@ with sync_playwright() as p:
                     page.get_by_role("menuitem", name="Wprowadź wynik", exact=True).click()
                     fields = page.get_by_role("textbox")
                     expect(fields).to_have_count(2)
+                    # Flutter populates each semantics input only on focus.
+                    fields.nth(0).click()
                     expect(fields.nth(0)).to_have_value("14")
+                    fields.nth(1).click()
                     expect(fields.nth(1)).to_have_value("5")
                     fields.nth(0).fill("15")
                     fields.nth(1).fill("6")
