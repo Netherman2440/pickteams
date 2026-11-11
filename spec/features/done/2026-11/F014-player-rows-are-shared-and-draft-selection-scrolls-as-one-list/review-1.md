@@ -1,0 +1,35 @@
+FAIL 3e2c909a7397d81d5bc2ea7762e183cec9fac5c7
+
+Source review passes. Visual acceptance does not pass. One blocking acceptance defect remains.
+
+## Blocking finding
+
+**PROVEN — enlarged desktop proposal summary loses both complete ranking values.** At 1440×1000 and 1.6× text, the home chip fades after `Ranking gospodar...`; its `468.0` value is entirely hidden. The away chip fades around `436`, hiding the complete `436.0` value. I opened the original, not only a contact sheet: `/home/agents/dev/pickteams/.limen/proof/F014/3e2c909a7397d81d5bc2ea7762e183cec9fac5c7/coordinator-browser/frames/results-1440-1.6-summary.png`. SHA256: `785aff6c9b1bc4f3d7be248ea60417be83874ae0278b1e4f3701146435b6bc80`.
+
+This fails ticket acceptance 6 (real-page readability at 360px, 1440px and enlarged text) and the review task's explicit requirement for readable summary glyphs without clipping. The glyphs are real, but the complete information is not visible. `browser.json` passes because accessible labels retain the hidden text; that does not establish painted readability.
+
+The cause is the existing desktop 1:2:1 summary allocation in `/home/agents/dev/.pickteams-limen-worktrees/2026-11-11-f014-shared-rows-final-review-db9ecbfd/app/lib/features/draft/presentation/pages/draft_results_page.dart:572-595`, with single-line `Chip` labels at line 626. This layout is unchanged from base f2ed2a1; I do not claim the row diff introduced it. It nevertheless blocks the expressly requested full visual acceptance. Use a width/text-scale-aware stacked or wrapping summary layout, without shrinking the font. Capture the same desktop case again and confirm both complete totals. Do not change scoring or precision.
+
+## Unverified checks
+
+- No Flutter tests, analyze, builds, browser runs, JavaScript checks, native commands, or installs were run in this review, as requested. The producer's 34 passing tests and clean analysis are historical, not new exact-candidate runs: `/home/agents/dev/pickteams/.limen/proof/F014/727eb72/tests.log` and `/home/agents/dev/pickteams/.limen/proof/F014/727eb72/analyze.log`. Current-commit execution remains unverified; this is not a blocker.
+- The coordinator captured at the requested commit but reused a build from 25d6b0b. Git confirms that only the Python capture script differs from that commit. Build provenance is recorded in `/home/agents/dev/pickteams/.limen/proof/F014/25d6b0b/coordinator-browser/run.sh`; current capture provenance is in `/home/agents/dev/pickteams/.limen/proof/F014/3e2c909a7397d81d5bc2ea7762e183cec9fac5c7/coordinator-browser/run.sh`. I did not rebuild or independently attest the compiled artifact. The visual finding is directly present in the supplied originals.
+- An optional sheet-crop comparison could not start because Python PIL is absent. No installation or image-comparison retry followed. Original SHA256 and PNG-size checks did run successfully with stdlib. Evidence: `/home/agents/dev/pickteams/.limen/proof/F014/review-1/checks.txt`.
+
+## Notes and source conclusions
+
+- **PROVEN by source inspection:** `PlayerListRow` keeps inline two-decimal ratings, unrestricted name wrapping, 32/48 minimum heights, and leading/trailing/supporting slots. Explicit density overrides the compatibility compact flag. Both wrappers preserve old constructor arguments, drag payloads and platform behavior. Match snapshot fallback and profile route callbacks remain intact. Ordinary players adopt the same row. Selection has exactly one vertical body scroll with selected above available and search outside it. Filtering derives both groups from unchanged selected IDs; counters use the full set. Selection lifecycle, generator limits, routing, theme and production fonts are unchanged. Inspected scope is recorded in `/home/agents/dev/pickteams/.limen/proof/F014/review-1/checks.txt`; API details are in `/home/agents/dev/.pickteams-limen-worktrees/2026-11-11-f014-shared-rows-final-review-db9ecbfd/app/tool/shared_rows_contract.md`.
+- **PROVEN by source and record inspection:** capture repairs do not force clicks, mutate DOM styles, change production themes, or remove runtime assertions. Host attachment is appropriate for the zero-sized semantics host. Search uses normal click and keyboard input; screenshots show real text and filtering. Added aria-label reading exposes semantics without changing pixels. All 16 records contain only the known Google CSS stub and no blocked requests/page errors. The stub matches HTTPS host/path/type, not the exact query string; executed records all contain the expected index stylesheet. Local font requests return 200. Evidence: `/home/agents/dev/.pickteams-limen-worktrees/2026-11-11-f014-shared-rows-final-review-db9ecbfd/app/tool/capture_shared_rows.py`, `/home/agents/dev/pickteams/.limen/proof/F014/3e2c909a7397d81d5bc2ea7762e183cec9fac5c7/coordinator-browser/frames/browser.json`, and `/home/agents/dev/pickteams/.limen/proof/F014/3e2c909a7397d81d5bc2ea7762e183cec9fac5c7/coordinator-browser/server.log`.
+- **PROVEN by pixel inspection:** all 14 sheets were opened, covering all 38 frames. Phone summaries at both scales and desktop 1× summaries have readable actual glyphs and complete values. Rows, ratings and visible actions are readable at both widths/scales. Both lists reach player 100. Both selection queries retain count 2. Enlarged phone selection title truncation does not remove Generate, relations, menu or Clear. Narrow roster names wrap awkwardly but retain characters. Full opened-sheet inventory and observations: `/home/agents/dev/pickteams/.limen/proof/F014/review-1/visual-inspection.md`.
+
+## Checks actually performed
+
+- `git rev-parse HEAD`: exact candidate; `git status --short` / `--porcelain`: clean before and after inspection.
+- `git diff --check f2ed2a1 HEAD`: exit 0. Diff/stat/name checks against f2ed2a1, 727eb72 and 25d6b0b: source scope confirmed; only capture Python differs from 25d6b0b.
+- Python `ast.parse` on capture source: passed.
+- Python stdlib checks of manifest, browser records, all 38 SHA256 hashes and PNG dimensions: passed; 14 sheets and 16 recorded cases. Coordinator `capture.exit` and `run.exit` are 0; capture log reports 16 cases, 0 assertion failures. These were inspected, not rerun.
+- Read/rg inspection of source, callers, tests, capture delta, build/capture provenance and local font request logs: completed. Read the ticket's six acceptance bullets, common constraints, vision and board without editing them.
+- Image-reader inspection of 14 sheets plus the enlarged desktop summary original: completed; one visual failure above.
+- Initial optional PIL check: unavailable (`ModuleNotFoundError`), not a product failure.
+
+Command results are saved at `/home/agents/dev/pickteams/.limen/proof/F014/review-1/checks.txt`. No source, ticket, board, main, private config, or key files were changed or accessed. No publication or merge occurred. The shared-row API has no identified source blocker, but do not represent this candidate as Source PASS + real visual PASS for downstream integration until the summary acceptance defect is resolved.

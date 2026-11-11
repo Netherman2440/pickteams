@@ -1,0 +1,3 @@
+# Wynik
+
+Listy zawodników współdzielą wiersz z rankingiem obok nazwy, konfigurowalną gęstością i zawijaniem długich nazw. Wybór do draftu ma jedną przewijaną listę z wybranymi nad dostępnymi oraz wspólne wyszukiwanie zachowujące zaznaczenia. Zmiana weszła liniowo w commicie `f5debf4f5837ef3d1de38d34dfa4760e5aca9b27`; wszystkie 14 plików funkcji pozostało identyczne ze źródłami zatwierdzonego kandydata. Po rebase przeszło 40 testów i pełna analiza, a niezależny review obejrzał wszystkie 38 kadrów przeglądarkowych przy zwykłym i większym tekście, w tym poprawione pełne sumy rankingów. Testy urządzenia i APK nie są częścią tego dowodu; zwijany nagłówek i końcowa walidacja całego wydania pozostają osobnymi krokami.
