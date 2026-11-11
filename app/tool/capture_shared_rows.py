@@ -71,7 +71,11 @@ def capture(url, output):
                             record["frames"].append({
                                 "state": state, "file": path.name,
                                 "sha256": hashlib.sha256(image).hexdigest(),
-                                "semantics": page.locator("flt-semantics-host").inner_text(),
+                                "semantics": page.locator("flt-semantics-host").evaluate(
+                                    "host => host.innerText + '\\n' + Array.from("
+                                    "host.querySelectorAll('[aria-label]'))"
+                                    ".map(node => node.getAttribute('aria-label')).join('\\n')"
+                                ),
                             })
                             assert page.evaluate("document.documentElement.scrollWidth") == width
 
@@ -101,18 +105,24 @@ def capture(url, output):
                                 assert search.bounding_box() == search_box
                                 assert record["frames"][0]["sha256"] != record["frames"][-1]["sha256"]
                                 record["checks"].append("one list reaches player 100; search stays fixed")
-                                search.fill("Anna")
+                                # Click/focus then type through Flutter's real keyboard
+                                # input; filling the semantics proxy can miss desktop input.
+                                search.click()
+                                page.keyboard.press("Control+A")
+                                page.keyboard.type("Anna")
                                 page.wait_for_timeout(500)
                                 frame("search-selected")
                                 content = record["frames"][-1]["semantics"]
                                 assert "Wybrani gracze (2)" in content
-                                assert "Brak dostępnych graczy" in content
-                                search.fill("Gracz 100")
+                                assert "Brak dostępnych graczy" in content, "Selected-only search did not filter available players"
+                                search.click()
+                                page.keyboard.press("Control+A")
+                                page.keyboard.type("Gracz 100")
                                 page.wait_for_timeout(500)
                                 frame("search-available")
                                 content = record["frames"][-1]["semantics"]
                                 assert "Wybrani gracze (2)" in content
-                                assert "Brak wybranych graczy" in content
+                                assert "Brak wybranych graczy" in content, "Available-only search did not filter selected players"
                                 record["checks"].append("query filters each group and retains selected count")
                             elif screen == "players":
                                 scroll_bottom()
@@ -122,7 +132,7 @@ def capture(url, output):
                                 scroll_bottom()
                                 frame("summary")
                                 content = record["frames"][-1]["semantics"]
-                                assert "Ranking gospodarzy" in content and "Ranking gości" in content
+                                assert "Ranking gospodarzy" in content and "Ranking gości" in content, "Accessible summary labels are missing"
                                 record["checks"].append("summary labels present; inspect PNG pixels for readable glyphs")
                             elif scale == 1.6:
                                 scroll_bottom()
