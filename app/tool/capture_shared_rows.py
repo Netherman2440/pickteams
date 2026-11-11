@@ -33,7 +33,8 @@ def capture(url, output):
                         record = {
                             "screen": screen, "viewport": [width, height],
                             "textScale": scale, "console": [], "pageErrors": [],
-                            "blockedRequests": [], "frames": [], "checks": [],
+                            "blockedRequests": [], "stubbedFontStylesheets": [],
+                            "frames": [], "checks": [],
                         }
                         records.append(record)
                         page = browser.new_page(
@@ -45,8 +46,17 @@ def capture(url, output):
                         page.on("pageerror", lambda error: record["pageErrors"].append(str(error)))
 
                         def local_only(route):
-                            if urlparse(route.request.url).netloc == origin.netloc:
+                            request = urlparse(route.request.url)
+                            if request.netloc == origin.netloc:
                                 route.continue_()
+                            elif (request.scheme == "https"
+                                  and request.netloc == "fonts.googleapis.com"
+                                  and request.path == "/css2"
+                                  and route.request.resource_type == "stylesheet"):
+                                # Legacy index.html CSS is unused by CanvasKit;
+                                # Flutter loads its bundled fonts independently.
+                                record["stubbedFontStylesheets"].append(route.request.url)
+                                route.fulfill(status=200, content_type="text/css", body="")
                             else:
                                 record["blockedRequests"].append(route.request.url)
                                 route.abort()
@@ -76,7 +86,9 @@ def capture(url, output):
                         try:
                             page.goto(f"{url}/?page={screen}&scale={scale}", wait_until="networkidle")
                             page.wait_for_selector("flutter-view")
-                            page.wait_for_selector("flt-semantics-host")
+                            # Its absolutely positioned children leave the host with
+                            # zero bounds. Attachment, not host visibility, is required.
+                            page.wait_for_selector("flt-semantics-host", state="attached")
                             page.wait_for_timeout(1800)
                             frame("top")
                             if screen == "selection":
