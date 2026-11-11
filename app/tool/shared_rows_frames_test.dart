@@ -1,6 +1,8 @@
 // Capture real Flutter pages with fake providers; no browser or backend needed.
 // flutter test --update-goldens --dart-define=F014_FRAME_DIR=/absolute/output \
-//   --concurrency=1 tool/shared_rows_frames_test.dart
+//   --dart-define=F014_SDK=/path/to/flutter --concurrency=1 tool/shared_rows_frames_test.dart
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,8 +13,22 @@ import '../test/fixtures/shared_rows_app.dart';
 void main() {
   const directory = String.fromEnvironment('F014_FRAME_DIR');
   setUpAll(() async {
-    if (directory.isEmpty)
+    if (directory.isEmpty) {
       throw StateError('Set F014_FRAME_DIR to an absolute path');
+    }
+    const sdk = String.fromEnvironment('F014_SDK');
+    if (sdk.isEmpty) {
+      throw StateError('Set F014_SDK to the Flutter SDK root');
+    }
+    final roboto = File(
+      '$sdk/bin/cache/artifacts/material_fonts/Roboto-Regular.ttf',
+    );
+    await (FontLoader(
+      'Roboto',
+    )..addFont(roboto.readAsBytes().then(ByteData.sublistView))).load();
+    await (FontLoader(
+      'MaterialIcons',
+    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
     GoogleFonts.config.allowRuntimeFetching = false;
     for (final family in ['OpenSans', 'Nunito']) {
       await (FontLoader(
