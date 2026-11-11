@@ -201,18 +201,19 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     }
 
     Future<void> handlePasswordReset() async {
-      final controller = TextEditingController();
+      var resetEmail = '';
       final formKey = GlobalKey<FormState>();
       final messenger = ScaffoldMessenger.of(context);
 
-      final result = await showDialog<bool>(
+      final email = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Resetowanie hasła'),
           content: Form(
             key: formKey,
             child: TextFormField(
-              controller: controller,
+              // Let the field own its controller through the closing animation.
+              onChanged: (value) => resetEmail = value,
               decoration: const InputDecoration(
                 labelText: 'E-mail',
                 border: OutlineInputBorder(),
@@ -234,13 +235,13 @@ class _AuthPageState extends ConsumerState<AuthPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('Anuluj'),
             ),
             FilledButton(
               onPressed: () {
                 if (formKey.currentState?.validate() ?? false) {
-                  Navigator.of(context).pop(true);
+                  Navigator.of(context).pop(resetEmail.trim());
                 }
               },
               child: const Text('Send link'),
@@ -249,13 +250,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
         ),
       );
 
-      if (result != true) {
-        controller.dispose();
+      if (email == null) {
         return;
       }
-
-      final email = controller.text.trim();
-      controller.dispose();
       try {
         final redirectTo = '${Uri.base.origin}/#/auth/reset';
         await ref

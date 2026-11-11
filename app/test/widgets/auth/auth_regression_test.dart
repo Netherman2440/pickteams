@@ -240,6 +240,11 @@ void main() {
         ),
       ).thenThrow(Exception('offline'));
       await pumpApp(tester, '/auth');
+      await tap(tester, 'Nie pamiętasz hasła?');
+      await tap(tester, 'Anuluj');
+      verifyNever(
+        () => reset.execute(any(), redirectTo: any(named: 'redirectTo')),
+      );
       Future<void> request() async {
         await tap(tester, 'Nie pamiętasz hasła?');
         await tester.enterText(
@@ -257,6 +262,9 @@ void main() {
         find.text('Nie udało się wysłać linku resetującego.'),
         findsOneWidget,
       );
+      // Let the standard error snackbar finish before asserting the next one.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
       when(
         () => reset.execute(
           'test@example.com',
