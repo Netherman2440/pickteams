@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-10
+landed: 2026-11-11
 ---
 
 # F007 · Match lists show both team names on phones
