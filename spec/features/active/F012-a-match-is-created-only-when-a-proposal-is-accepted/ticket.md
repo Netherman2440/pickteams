@@ -18,7 +18,7 @@ Wygenerowanie i przeglądanie propozycji nie tworzy meczu. Dopiero akceptacja wy
 
 ## Out of scope
 
-- Zmiana generatora, punktacji, limitu 16 graczy lub logiki turniejów.
+- Zmiana generatora, punktacji, istniejących limitów liczby graczy lub logiki turniejów.
 - Usuwanie historycznych pustych meczów i publikacja migracji na produkcji.
 - Wizualna przebudowa list i nagłówków.
 
@@ -33,4 +33,4 @@ Wygenerowanie i przeglądanie propozycji nie tworzy meczu. Dopiero akceptacja wy
 
 ## Notes
 
-Obecna ścieżka tworzy pusty mecz jeszcze na ekranie wyboru, a notifier zapisuje wygenerowane propozycje przy obecności matchId. Należy zbadać obie granice. Jeśli pełny zapis wymaga migracji/RPC, przygotować transakcyjną operację z zachowaniem RLS i testami; nie stosować sekwencji „utwórz, a po błędzie usuń” ani nie wdrażać bez zgody na produkcję. Zapisany wynik i event-sourced delty pozostają bez zmian.
+Obecna ścieżka tworzy pusty mecz jeszcze na ekranie wyboru, a notifier zapisuje wygenerowane propozycje przy obecności matchId. Należy zbadać obie granice. Jeśli pełny zapis wymaga migracji/RPC, przygotować transakcyjną operację z zachowaniem RLS i testami; nie stosować sekwencji „utwórz, a po błędzie usuń” ani nie wdrażać bez zgody na produkcję. Zapisany wynik i event-sourced delty pozostają bez zmian. Kod bazowy już przed tym zadaniem ustawia maxPlayersPerMatch na 22 i ma test dopuszczający ponad 16 graczy. Zachowujemy ten stan, zamiast wprowadzać niezamówioną zmianę limitów; rozbieżność z opisanym w vision/docelowym MVP limitem 16 nie jest rozwiązana przez tę poprawkę.
