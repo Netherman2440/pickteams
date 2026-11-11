@@ -1,0 +1,9 @@
+# Score-layout evidence and integration
+
+- Reviewed candidate: `af9a39c365b6083acab2f11f6aaa150336bcfefb`, based on `9e573fe`. The independent verdict is preserved verbatim in `review-1.md`.
+- Exact-candidate format, analysis, 164 coverage tests, production/fixture JS builds and all twelve inspected Flutter frames passed. Evidence: `.limen/proof/f004/af9a39c365b6083acab2f11f6aaa150336bcfefb/review-notes.md`.
+- The reviewer independently ran all 99 score/action tests, checked the candidate identity/clean source and inspected all twelve frames. Raw independent results are in `.limen/proof/f004/review-1/`.
+- The automatic note audit flagged relative artifact filenames. The coordinator resolved each against the review's declared absolute evidence directory and read the SHA, review, empty final status and exit-0/99-pass test log. No acceptance or code check remains failed; this is not permission to ignore a missing artifact.
+- Visual inspection found an additional real 5.5px floating-label/date collision. The final scaled edit-only gap and transformed paint-bounds assertion fix it. Historical red/green evidence is in `.limen/proof/f004/floating-label-regression/`. The input helper's failed DOM/proxy/selection attempts are retained and are not passes.
+- Before integration, rebase onto current main, preserve the existing Android icon resources/dependency classifications, and compare every feature file byte-for-byte with the reviewed candidate. Record the resulting hashes under `.limen/proof/f004/integrated/`, then run the combined application checks.
+- Native APK/device/emulator/Wasm and a real native keyboard image remain unperformed, outside this browser/widget proof contract. Enlarged 320px RootShell branding overflow is a separate existing defect; no general overflow exemption was added.
