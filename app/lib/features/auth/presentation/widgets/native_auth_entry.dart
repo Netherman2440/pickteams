@@ -24,8 +24,9 @@ class _NativeAuthEntryState extends ConsumerState<NativeAuthEntry> {
     if (kIsWeb) return;
     ref.listenManual(authStateProvider, (_, next) {
       final entity = next.asData?.value;
-      if (entity == null || entity.isAnonymous || entity.accessToken.isEmpty)
+      if (entity == null || entity.isAnonymous || entity.accessToken.isEmpty) {
         return;
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted &&
             widget.router.routeInformationProvider.value.uri.path == '/') {
