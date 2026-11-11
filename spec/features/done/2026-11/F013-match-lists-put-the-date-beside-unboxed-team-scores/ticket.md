@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-11
+landed: 2026-11-11
 ---
 
 # F013 · Match lists put the date beside unboxed team scores
