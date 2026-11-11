@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-11
+landed: 2026-11-11
 ---
 
 # F009 · Android release builds use a compatible toolchain
