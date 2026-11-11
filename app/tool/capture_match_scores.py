@@ -63,9 +63,17 @@ with sync_playwright() as p:
                         field = fields.nth(index)
                         field.click()
                         expect(field).to_be_focused()
+                        # Allow the native editing connection to follow focus.
+                        page.wait_for_timeout(100)
                         # Send real keys through Flutter's editor, not a DOM fill
                         # of the accessibility proxy that Flutter can overwrite.
                         field.press("ControlOrMeta+A")
+                        page.evaluate("""() => new Promise(resolve =>
+                            requestAnimationFrame(() => requestAnimationFrame(resolve)))""")
+                        field.press("Backspace")
+                        page.evaluate("""() => new Promise(resolve =>
+                            requestAnimationFrame(() => requestAnimationFrame(resolve)))""")
+                        expect(field).to_have_value("")
                         field.press_sequentially(value, delay=25)
                         page.evaluate("""() => new Promise(resolve =>
                             requestAnimationFrame(() => requestAnimationFrame(resolve)))""")
