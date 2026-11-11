@@ -14,6 +14,11 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F014-player-rows-are-shared-and-draft-selection-scrolls-as-one-list` (🟠 ACTIVE): Player rows are shared and draft selection scrolls as one list
+- `F013-match-lists-put-the-date-beside-unboxed-team-scores` (🟠 ACTIVE): Match lists put the date beside unboxed team scores
+- `F012-a-match-is-created-only-when-a-proposal-is-accepted` (🟠 ACTIVE): A match is created only when a proposal is accepted
+- `F011-player-details-use-one-edit-mode` (🟠 ACTIVE): Player details use one edit mode
+- `F010-android-identifies-the-app-as-pickteams` (🟠 ACTIVE): Android identifies the app as Pickteams
 - `F006-google-sign-in-returns-to-the-android-app` (🟠 ACTIVE): Google sign-in returns to the Android app
 - `F005-android-launcher-uses-the-pickteams-icon` (🟠 ACTIVE): Android launcher uses the Pickteams icon
 
