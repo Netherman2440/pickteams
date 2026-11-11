@@ -136,6 +136,37 @@ void main() {
     },
   );
 
+  test('SDK failure is not erased by a late launch completion', () async {
+    final launch = Completer<void>();
+    when(
+      () => oauth.execute(domain.AuthProvider.google),
+    ).thenAnswer((_) => launch.future);
+    final result = notifier.signInWithProvider(
+      provider: domain.AuthProvider.google,
+    );
+    events.addError(const AuthException('Provider denied access'));
+    launch.complete();
+    await result;
+    expect(container.read(authStateProvider).hasError, isTrue);
+    expect(container.read(authStateProvider).isLoading, isFalse);
+  });
+
+  test(
+    'failed token storage keeps the session and later events usable',
+    () async {
+      when(
+        () => tokens.setTokensFromEntity(any()),
+      ).thenThrow(Exception('storage unavailable'));
+      events.add(AuthState(AuthChangeEvent.signedIn, session('new')));
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(authStateProvider).value?.accessToken, 'new');
+      events.add(AuthState(AuthChangeEvent.signedOut, null));
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(authStateProvider).value, isNull);
+      verify(() => tokens.clearTokens()).called(1);
+    },
+  );
+
   test('browser close with no callback leaves a usable retry path', () async {
     when(
       () => oauth.execute(domain.AuthProvider.google),

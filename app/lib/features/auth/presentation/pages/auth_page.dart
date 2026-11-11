@@ -143,9 +143,14 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       message = error.message;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
+    // fireImmediately can deliver a failed callback during initState, before
+    // this page has a Scaffold or may depend on inherited widgets.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !ref.read(authStateProvider).hasError) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    });
     _guestLoginRequested = false;
   }
 

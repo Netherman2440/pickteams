@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'features/auth/presentation/widgets/native_auth_entry.dart';
 import 'core/app_config.dart';
 import 'core/app_router.dart';
 import 'core/app_theme.dart';
@@ -42,13 +43,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'pickteams.pl',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      routerConfig: appRouter,
+    return NativeAuthEntry(
+      router: appRouter,
+      child: MaterialApp.router(
+        title: 'pickteams.pl',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        routerConfig: appRouter,
+      ),
     );
   }
 }

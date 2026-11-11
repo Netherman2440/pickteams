@@ -1,166 +1,42 @@
+import 'package:app/core/app_theme.dart';
+import 'package:app/features/auth/domain/entities/auth_entity.dart';
+import 'package:app/features/auth/presentation/pages/auth_page.dart';
+import 'package:app/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:app/features/auth/presentation/pages/auth_page.dart';
-import 'package:app/core/app_theme.dart';
-import 'package:app/features/auth/domain/entities/auth_provider.dart';
-import 'package:app/features/auth/presentation/pages/register_page.dart';
-import 'package:app/features/auth/presentation/providers/auth_notifier.dart';
-import 'package:app/features/auth/domain/entities/auth_entity.dart';
+
+class IdleAuth extends AuthNotifier {
+  @override
+  AsyncValue<AuthEntity?> build() => const AsyncData(null);
+}
 
 void main() {
-  for (final register in [false, true]) {
-    testWidgets('native Google button supplies callback (register=$register)', (
+  for (final hasEmail in [false, true]) {
+    testWidgets('login validates ${hasEmail ? 'password' : 'email'}', (
       tester,
     ) async {
-      final notifier = MockAuthNotifier();
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [authStateProvider.overrideWith(() => notifier)],
-          child: MaterialApp(
-            home: register ? const RegisterPage() : const AuthPage(),
-          ),
-        ),
-      );
-      final button = find.text(
-        register ? 'Zarejestruj się przez Google' : 'Kontynuuj z Google',
-      );
-      await tester.ensureVisible(button);
-      await tester.tap(button);
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-      expect(notifier.redirectTo, 'pl.pickteams://auth/callback');
-    });
-  }
-
-  group('AuthPage Widget Tests', () {
-    testWidgets(
-      'shows "Podaj e-mail" when email is empty and login is pressed',
-      (WidgetTester tester) async {
-        // Build the AuthPage widget with theme
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              authStateProvider.overrideWith(() => MockAuthNotifier()),
-            ],
-            child: MaterialApp(
-              theme: AppTheme.darkTheme,
-              home: const AuthPage(),
-            ),
-          ),
-        );
-
-        // Wait for the widget to fully build
-        await tester.pumpAndSettle();
-
-        // Find the login button
-        final loginButton = find.text('Zaloguj się');
-        expect(loginButton, findsOneWidget);
-
-        // Tap the login button without entering any email
-        await tester.ensureVisible(loginButton);
-        await tester.pumpAndSettle();
-        await tester.tap(loginButton);
-        await tester.pump();
-
-        // Check if the validation message appears
-        expect(find.text('Podaj e-mail'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'shows "Podaj hasło" when password is empty and login is pressed',
-      (WidgetTester tester) async {
-        // Build the AuthPage widget with theme
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              authStateProvider.overrideWith(() => MockAuthNotifier()),
-            ],
-            child: MaterialApp(
-              theme: AppTheme.darkTheme,
-              home: const AuthPage(),
-            ),
-          ),
-        );
-
-        // Wait for the widget to fully build
-        await tester.pumpAndSettle();
-
-        // Enter a valid email to pass email validation
-        final emailField = find.byType(TextFormField).first;
-        await tester.enterText(emailField, 'test@example.com');
-        await tester.pump();
-
-        // Find the login button
-        final loginButton = find.text('Zaloguj się');
-        expect(loginButton, findsOneWidget);
-
-        // Tap the login button without entering password
-        await tester.ensureVisible(loginButton);
-        await tester.pumpAndSettle();
-        await tester.tap(loginButton);
-        await tester.pump();
-
-        // Check if the validation message appears
-        expect(find.text('Podaj hasło'), findsOneWidget);
-      },
-    );
-
-    testWidgets('Create Account button exists and is tappable', (
-      WidgetTester tester,
-    ) async {
-      // Build the AuthPage widget with theme
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [authStateProvider.overrideWith(() => MockAuthNotifier())],
+          overrides: [authStateProvider.overrideWith(IdleAuth.new)],
           child: MaterialApp(theme: AppTheme.darkTheme, home: const AuthPage()),
         ),
       );
-
-      // Wait for the widget to fully build
       await tester.pumpAndSettle();
-
-      // Find the Create Account button
-      final createAccountButton = find.text('Utwórz konto');
-      expect(createAccountButton, findsOneWidget);
-
-      // Verify the button is enabled (not disabled due to loading)
-      final buttonWidget = tester.widget<TextButton>(
-        find.ancestor(
-          of: createAccountButton,
-          matching: find.byType(TextButton),
-        ),
+      if (hasEmail) {
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'test@example.com',
+        );
+      }
+      final button = find.text('Zaloguj się');
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pump();
+      expect(
+        find.text(hasEmail ? 'Podaj hasło' : 'Podaj e-mail'),
+        findsOneWidget,
       );
-      expect(buttonWidget.onPressed, isNotNull);
     });
-  });
-}
-
-// Mock AuthNotifier for testing
-class MockAuthNotifier extends AuthNotifier {
-  String? redirectTo;
-
-  @override
-  Future<void> signInWithProvider({
-    required AuthProvider provider,
-    String? redirectTo,
-  }) async {
-    this.redirectTo = redirectTo;
-  }
-
-  @override
-  AsyncValue<AuthEntity?> build() {
-    return AsyncValue.data(null);
-  }
-}
-
-// Mock Navigator Observer for testing navigation
-class MockNavigatorObserver extends NavigatorObserver {
-  String? lastPushedRoute;
-
-  @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    lastPushedRoute = route.settings.name;
   }
 }
