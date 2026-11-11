@@ -147,7 +147,7 @@ def run(url, output):
                                 capture(field)
                                 pointer(button('Zapisz'), f'save {field}', scroll=False)
                                 # A still-open ordinary dialog is NOT a failed-save frame.
-                                message = 'Exception: Fixture save failed'
+                                message = 'Fixture save failed'
                                 # SelectableText exposes its text as a disabled textarea
                                 # value, unlike the name TextField's error decoration.
                                 error = (page.get_by_text(message, exact=True) if field == 'name'

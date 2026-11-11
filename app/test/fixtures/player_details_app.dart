@@ -34,9 +34,17 @@ class ProfileFixtureData {
   int reads = 0;
   final List<String> writes = [];
   void save(String field) {
-    if (fail) throw Exception('Fixture save failed');
+    if (fail) throw const _FixtureSaveFailure();
     writes.add(field);
   }
+}
+
+// Keep the synthetic error legible in the unchanged single-line name error.
+class _FixtureSaveFailure implements Exception {
+  const _FixtureSaveFailure();
+
+  @override
+  String toString() => 'Fixture save failed';
 }
 
 class PlayerDetailsFixture extends StatefulWidget {
