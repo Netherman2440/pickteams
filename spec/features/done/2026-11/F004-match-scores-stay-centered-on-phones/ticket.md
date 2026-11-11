@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-10
+landed: 2026-11-11
 ---
 
 # F004 · Match scores stay centered on phones
