@@ -2,7 +2,6 @@
 // flutter test --update-goldens --dart-define=F014_FRAME_DIR=/absolute/output \
 //   --dart-define=F014_SDK=/path/to/flutter --concurrency=1 tool/shared_rows_frames_test.dart
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,9 +22,13 @@ void main() {
     final roboto = File(
       '$sdk/bin/cache/artifacts/material_fonts/Roboto-Regular.ttf',
     );
-    await (FontLoader(
-      'Roboto',
-    )..addFont(roboto.readAsBytes().then(ByteData.sublistView))).load();
+    // Flutter tests use Ahem blocks for unspecified font families. Use the
+    // Android default font for that fallback, without changing any page theme.
+    for (final family in ['Roboto', 'Ahem']) {
+      await (FontLoader(
+        family,
+      )..addFont(roboto.readAsBytes().then(ByteData.sublistView))).load();
+    }
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
