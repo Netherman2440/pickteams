@@ -48,6 +48,16 @@ Rect visibleText(
   expect(bounds.top, greaterThanOrEqualTo(card.top));
   expect(bounds.bottom, lessThanOrEqualTo(card.bottom));
   if (!ink) return bounds;
+  // A centered union can hide vertically stacked digits. Check the line
+  // extents before merging any selection boxes into a bounding rectangle.
+  final scoreBoxes = p.getBoxesForSelection(
+    TextSelection(baseOffset: 0, extentOffset: text.length),
+  );
+  expect(
+    scoreBoxes.map((box) => (box.top, box.bottom)).toSet(),
+    hasLength(1),
+    reason: 'One painted score line: $text',
+  );
   return p
       .getBoxesForSelection(
         TextSelection(baseOffset: 0, extentOffset: text.length),

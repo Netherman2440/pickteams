@@ -2,9 +2,9 @@
 
 `match_lists_preview.dart` renders the real `SquadMatchesPage` and `PlayerMatchesPage` inside `RootShell`, with the production theme and bundled fonts. Fake providers supply synthetic auth, member permissions, squad, matches and player name. Services are not initialized. Only the match-details destination is a labelled route-ID stub.
 
-The fixture includes 14:5, 8:16, 0:2, 0:0, a partial result, long names, populated teams without a result, and empty teams with blank names. Query parameters: `page=squad|player`, `scale=1|1.6`, `insets=android` (24 px top/bottom).
+The fixture includes 14:5, 8:16, 0:2, 0:0, 12345:67890, a partial result, long names, populated teams without a result, and empty teams with blank names. Query parameters: `page=squad|player`, `scale=1|1.6`, `insets=android` (24 px top/bottom).
 
-`match_tile_test.dart` replaces the old wide horizontal-card assertions with the same three-column geometry at 360/768/1440 px, each at scales 1 and 1.6, in both real pages. It checks every non-whitespace glyph box, complete paragraphs, date centering beside both rows, score/name/color association, right-aligned score glyphs without bordered containers, full-date semantics and tooltip, provider order, and navigation from labels, date, score and card padding. Empty/error pages and member permissions remain covered. It also checks null teams and constrained desktop content. Half a logical pixel tolerates font metric rounding; wrapping whitespace is not ink.
+`match_tile_test.dart` replaces the old wide horizontal-card assertions with the same three-column geometry at 360/768/1440 px, each at scales 1 and 1.6, in both real pages. It checks every non-whitespace glyph box, complete paragraphs, date centering beside both rows, score/name/color association, right-aligned score glyphs without bordered containers, full-date semantics and tooltip, provider order, and navigation from labels, date, score and card padding. Empty/error pages and member permissions remain covered. It also checks null teams and constrained desktop content. Half a logical pixel tolerates font metric rounding; wrapping whitespace is not ink. Score selection boxes must have exactly one vertical line extent before any union is taken. A centered union alone previously let stacked digits pass.
 
 ## Reproduce
 
@@ -15,7 +15,6 @@ Commit before final validation. Store logs and frames under `/home/agents/dev/pi
 ```sh
 flutter test --no-pub --concurrency=1 test/features/matches/presentation/match_tile_test.dart
 flutter analyze --no-pub
-flutter test --no-pub --concurrency=1 --reporter expanded
 flutter build web --no-pub --release --no-web-resources-cdn --no-wasm-dry-run --target tool/match_lists_preview.dart
 ```
 
@@ -26,7 +25,11 @@ python3 -m http.server 18847 --bind 127.0.0.1 --directory <proof>/fixture-web
 playwright-local python tool/capture_match_lists.py http://127.0.0.1:18847 <proof>/frames
 ```
 
-Stop the server after capture. The script captures 14 actual Flutter frames: both pages at 360×640 and scales 1/1.6 at top/middle/bottom, plus both at 1440×1000. It rejects page errors, external requests, Flutter overflow/exception console messages, document overflow and identical top/bottom frames. Open the PNGs: document width alone does not prove canvas visibility.
+Stop the server after capture. The script covers both real lists at 360×640, 768×900 and 1440×1000, each at scales 1 and 1.6. It scrolls until all nine fixture cards have been fully visible, including the complete long-name card. Each newly covered group gets a PNG and measured paragraph/glyph data in `browser.json`.
+
+`match_lists_metrics.dart` exports a browser-only function from the preview, not production. It reads the actual laid-out RenderParagraph constraints, intrinsic widths, unwrapped equivalent-font dimensions and individual character selection boxes. The capture checks that all score characters share one line, fit inside the paragraph, match the unwrapped height, and align with the correct row and right edge. It also compares paired score heights (14 vs 5, 8 vs 16, and longer values). The instrumented preview uses the same production widget; no copied card or modified font metrics.
+
+Only the exact optional Google Fonts stylesheet referenced by the unchanged HTML shell is fulfilled as empty CSS. That interception is recorded separately. Actual Flutter fonts must load as local bundled TTF assets. All other external requests, console errors, page errors, Flutter overflow/exception messages and document overflow remain failures. The previous failed browser build and images under `F013/review-1/` are immutable evidence. Open the corrected PNGs; measurement assertions alone are not visual acceptance. The coordinator owns the unrelated combined suite.
 
 ## Limits
 

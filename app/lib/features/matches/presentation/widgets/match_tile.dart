@@ -131,6 +131,10 @@ TableRow _teamRow({
         padding: const EdgeInsets.only(left: 12),
         child: Text(
           score,
+          // A score is one indivisible value, even at fractional intrinsic
+          // column widths. Keep its full font size and natural digit width.
+          softWrap: false,
+          maxLines: 1,
           textAlign: TextAlign.right,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
