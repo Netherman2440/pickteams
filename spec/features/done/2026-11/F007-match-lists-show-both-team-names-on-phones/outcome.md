@@ -1,0 +1,3 @@
+# Outcome
+
+Phone squad and player match lists now show each team in its own wrapping row beside the correct color and score, keeping both fallback and custom names readable. Dates, missing-result and unselected-team states, whole-card navigation, and the horizontal desktop layout are preserved. Reviewed source `a8bce0f` landed as `ecb159d`, with closure commit `a3a2faf`, after format, analysis, 154 coverage tests, both JS builds, forty inspected Flutter frames, and an independent review with twenty passing card tests. Rebase checks confirmed identical feature files and preserved the separately accepted score and Android-icon changes. Native APK/device/emulator and Wasm checks were not run.

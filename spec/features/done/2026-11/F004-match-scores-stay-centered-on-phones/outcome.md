@@ -1,0 +1,3 @@
+# Outcome
+
+Phone match scores now stay centered above both teams, independently of the date; floating score-edit labels no longer overlap it. The accepted player rows and historical rankings remain unchanged, all sixteen rows fit the default 360×640 inset view/edit frames, and desktop keeps its central score placement. Reviewed source `af9a39c` landed as `7b86e1b`, with closure commit `2c18e9e`, after format, analysis, 164 coverage tests, both JS builds, twelve inspected Flutter frames, and an independent review with 99 passing score/action tests. Rebase checks confirmed identical feature files and preserved the Android icon resources. Native APK/device/emulator/Wasm and native keyboard-image checks were not run.
