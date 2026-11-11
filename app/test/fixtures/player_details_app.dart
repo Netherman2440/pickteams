@@ -108,11 +108,18 @@ class _PlayerDetailsFixtureState extends State<PlayerDetailsFixture> {
         return PlayerDetailsState(
           player: widget.data.player,
           rankingHistory: [
-            for (final (i, ranking) in [54.0, 57.12, 61.234, 59.36].indexed)
+            // Pre-event rankings and deltas: 54 → 57.12 → 61.234 → 59.36.
+            // Both gains and losses must survive the real graph's delta filter.
+            for (final (i, event) in [
+              (54.0, 3.12),
+              (57.12, 4.114),
+              (61.234, -1.874),
+            ].indexed)
               RankingHistoryEntry(
                 rankingHistoryId: 'h$i',
                 playerId: id,
-                ranking: ranking,
+                ranking: event.$1,
+                change: event.$2,
                 createdAt: DateTime(2026, 1, i + 1),
               ),
           ],

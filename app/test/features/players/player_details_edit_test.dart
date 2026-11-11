@@ -61,7 +61,18 @@ void main() {
       expect(find.byTooltip('Usuń gracza'), findsOneWidget);
       expect(find.text('Ranking: 59.36'), findsOneWidget);
       expect(find.text('5.36'), findsOneWidget);
-      expect(find.byType(RankingHistoryGraphWidget), findsOneWidget);
+      final graph = tester.widget<RankingHistoryGraphWidget>(
+        find.byType(RankingHistoryGraphWidget),
+      );
+      expect(graph.history.every((entry) => entry.change != null), isTrue);
+      expect(
+        graph.history.fold(
+          graph.baseRanking,
+          (sum, entry) => sum + entry.change!,
+        ),
+        closeTo(59.36, 0.000001),
+      );
+      expect(find.text('Brak zmian rankingu'), findsNothing);
       for (final label in fields) {
         expect(field(label), findsNothing);
       }
