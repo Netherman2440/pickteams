@@ -51,13 +51,8 @@ class MatchTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Table(
-                      columnWidths: const {
-                        0: FlexColumnWidth(),
-                        1: _ScoreColumnWidth(),
-                      },
-                      defaultVerticalAlignment:
-                          TableCellVerticalAlignment.middle,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _teamRow(
                           name: _displayTeamName(
@@ -107,64 +102,37 @@ class MatchTile extends StatelessWidget {
   }
 }
 
-// CanvasKit intrinsic text widths can be smaller than the laid-out tabular
-// digits. Measure the complete non-wrapping cells instead, including padding.
-// Dry layout stays in sync with font, text-scale and content layout changes.
-class _ScoreColumnWidth extends TableColumnWidth {
-  const _ScoreColumnWidth();
-
-  @override
-  double minIntrinsicWidth(Iterable<RenderBox> cells, double containerWidth) {
-    var width = 0.0;
-    for (final cell in cells) {
-      final naturalWidth = cell.getDryLayout(const BoxConstraints()).width;
-      if (naturalWidth > width) width = naturalWidth;
-    }
-    return width.ceilToDouble();
-  }
-
-  @override
-  double maxIntrinsicWidth(Iterable<RenderBox> cells, double containerWidth) =>
-      minIntrinsicWidth(cells, containerWidth);
-}
-
-TableRow _teamRow({
+Widget _teamRow({
   required String name,
   required Color color,
   required TextStyle? style,
   required String? score,
-}) => TableRow(
-  children: [
-    Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          _TeamColorBox(color: color),
-          const SizedBox(width: 8),
-          Expanded(child: Text(name.toUpperCase(), style: style)),
-        ],
-      ),
-    ),
-    if (score == null)
-      const SizedBox.shrink()
-    else
-      Padding(
-        padding: const EdgeInsets.only(left: 12),
-        child: Text(
-          score,
-          // A score is one indivisible value, even at fractional intrinsic
-          // column widths. Keep its full font size and natural digit width.
-          softWrap: false,
-          maxLines: 1,
-          textAlign: TextAlign.right,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            fontFeatures: [FontFeature.tabularFigures()],
+}) => Padding(
+  padding: const EdgeInsets.symmetric(vertical: 4),
+  child: Row(
+    children: [
+      _TeamColorBox(color: color),
+      const SizedBox(width: 8),
+      Expanded(child: Text(name.toUpperCase(), style: style)),
+      if (score != null)
+        Padding(
+          padding: const EdgeInsets.only(left: 12),
+          // A non-flex child receives its actual unwrapped layout width.
+          // This avoids the table's underestimated intrinsic/dry text width.
+          child: Text(
+            score,
+            softWrap: false,
+            maxLines: 1,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           ),
         ),
-      ),
-  ],
+    ],
+  ),
 );
 
 bool _teamsAreEmpty(Match match) {
