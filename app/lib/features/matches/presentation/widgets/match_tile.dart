@@ -41,6 +41,7 @@ class MatchTile extends StatelessWidget {
                     message: fullDate,
                     excludeFromSemantics: true,
                     child: Semantics(
+                      container: true,
                       label: fullDate,
                       excludeSemantics: true,
                       child: Text(
@@ -107,32 +108,38 @@ Widget _teamRow({
   required Color color,
   required TextStyle? style,
   required String? score,
-}) => Padding(
-  padding: const EdgeInsets.symmetric(vertical: 4),
-  child: Row(
-    children: [
-      _TeamColorBox(color: color),
-      const SizedBox(width: 8),
-      Expanded(child: Text(name.toUpperCase(), style: style)),
-      if (score != null)
-        Padding(
-          padding: const EdgeInsets.only(left: 12),
-          // A non-flex child receives its actual unwrapped layout width.
-          // This avoids the table's underestimated intrinsic/dry text width.
-          child: Text(
-            score,
-            softWrap: false,
-            maxLines: 1,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
+}) => Row(
+  children: [
+    Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            _TeamColorBox(color: color),
+            const SizedBox(width: 8),
+            Expanded(child: Text(name.toUpperCase(), style: style)),
+          ],
+        ),
+      ),
+    ),
+    if (score != null)
+      Padding(
+        padding: const EdgeInsets.only(left: 12),
+        // A non-flex child receives its actual unwrapped layout width.
+        // This avoids the table's underestimated intrinsic/dry text width.
+        child: Text(
+          score,
+          softWrap: false,
+          maxLines: 1,
+          textAlign: TextAlign.right,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),
-    ],
-  ),
+      ),
+  ],
 );
 
 bool _teamsAreEmpty(Match match) {
