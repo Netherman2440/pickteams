@@ -233,10 +233,13 @@ void main() {
     );
   }
 
-  Future<void> prepareOAuth(WidgetTester tester) async {
+  Future<void> prepareOAuth(
+    WidgetTester tester, {
+    String redirect = callback,
+  }) async {
     var ready = false;
     final result = Supabase.instance.client.auth
-        .getOAuthSignInUrl(provider: OAuthProvider.google, redirectTo: callback)
+        .getOAuthSignInUrl(provider: OAuthProvider.google, redirectTo: redirect)
         .then((_) => ready = true);
     await pumpSdkUntil(tester, () => ready);
     await result;
@@ -267,6 +270,14 @@ void main() {
         expect(find.text('AUTHENTICATED APP'), findsOneWidget);
         expect(requests, hasLength(1));
         expect(pkceStorage.values, isEmpty);
+        // A stale return has no remaining verifier. The real SDK emits an
+        // error, but neither it nor the app may discard the newer session.
+        final signedIn = Supabase.instance.client.auth.currentSession;
+        await sendLink(tester, '$callback?code=stale-code');
+        expect(sdkErrors.single, isA<AuthException>());
+        expect(Supabase.instance.client.auth.currentSession, signedIn);
+        expect(find.text('AUTHENTICATED APP'), findsOneWidget);
+        expect(requests, hasLength(1));
       },
     );
 
@@ -318,6 +329,26 @@ void main() {
     expect(find.text('AUTHENTICATED APP'), findsOneWidget);
     expect(requests, hasLength(1));
   });
+
+  testWidgets(
+    'SDK accepts the existing web URL shape without a second exchange',
+    (tester) async {
+      await pumpApp(tester, '/auth/callback');
+      await prepareOAuth(
+        tester,
+        redirect: 'https://web.test.invalid/#/auth/callback',
+      );
+      // The parser is shared by the SDK's native stream and web initial-URL path.
+      // This tests parsing, not a real browser/provider redirect.
+      await sendLink(
+        tester,
+        'https://web.test.invalid/?code=test-code#/auth/callback',
+      );
+      expect(sdkErrors, isEmpty);
+      expect(find.text('AUTHENTICATED APP'), findsOneWidget);
+      expect(requests, hasLength(1));
+    },
+  );
 
   testWidgets(
     'callback with no event offers retry, times out, and still accepts late success',
