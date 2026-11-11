@@ -4,7 +4,9 @@ Run: playwright-local python tool/capture_match_scores.py URL OUTPUT_DIR
 """
 import json
 from pathlib import Path
+import re
 import sys
+from time import monotonic
 from urllib.parse import urlparse
 
 from playwright.sync_api import expect, sync_playwright
@@ -55,16 +57,31 @@ with sync_playwright() as p:
                     expect(fields.nth(0)).to_have_value("14")
                     fields.nth(1).click()
                     expect(fields.nth(1)).to_have_value("5")
-                    fields.nth(0).fill("15")
-                    fields.nth(1).fill("6")
-                    # Leave the values from the reported image in the proof frame.
-                    fields.nth(0).fill("14")
-                    fields.nth(1).fill("5")
+                    # Let Flutter apply each semantics edit before moving focus.
+                    # Restore the reported values for the final proof frame.
+                    for index, value in [(0, "15"), (1, "6"), (0, "14"), (1, "5")]:
+                        field = fields.nth(index)
+                        field.click()
+                        expect(field).to_be_focused()
+                        # Send real keys through Flutter's editor, not a DOM fill
+                        # of the accessibility proxy that Flutter can overwrite.
+                        field.press("ControlOrMeta+A")
+                        field.press_sequentially(value, delay=25)
+                        page.evaluate("""() => new Promise(resolve =>
+                            requestAnimationFrame(() => requestAnimationFrame(resolve)))""")
+                        expect(field).to_have_value(value)
                 elif state == "resaved":
                     page.get_by_role("button", name="Zapisz", exact=True).click()
                     expect(page.get_by_role("textbox")).to_have_count(0)
-                    page.get_by_text("14", exact=True).wait_for()
-                    page.get_by_text("5", exact=True).wait_for()
+                    # Read the accessibility tree across Flutter's shadow roots;
+                    # adjacent static text can be merged into a single node.
+                    deadline = monotonic() + 5
+                    while True:
+                        semantics = page.locator("flt-semantics-host").aria_snapshot()
+                        if re.search(r"\b14\s*:\s*5\b", semantics):
+                            break
+                        assert monotonic() < deadline, semantics
+                        page.wait_for_timeout(50)
                 page.wait_for_timeout(500)
                 path = out / f"match-{state}-{width}x{height}-scale{scale}-insets{int(insets)}.png"
                 page.screenshot(path=str(path), full_page=False)
@@ -81,6 +98,22 @@ with sync_playwright() as p:
                     "semantics": page.locator("flt-semantics-host").aria_snapshot(),
                 })
             page.close()
+    except BaseException:
+        if "page" in locals() and not page.is_closed():
+            try:
+                page.screenshot(path=str(out / "failure.png"))
+                (out / "failure.html").write_text(page.content())
+                (out / "failure.json").write_text(json.dumps({
+                    "state": locals().get("state"),
+                    "viewport": page.viewport_size,
+                    "semantics": page.locator("flt-semantics-host").aria_snapshot(),
+                    "inputs": page.locator("input").evaluate_all(
+                        "nodes => nodes.map(node => ({label: node.getAttribute('aria-label'), value: node.value}))"
+                    ),
+                }, indent=2))
+            except Exception:
+                pass
+        raise
     finally:
         browser.close()
 (out / "browser.json").write_text(json.dumps(records, indent=2))
