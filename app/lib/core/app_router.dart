@@ -49,6 +49,7 @@ enum AppRoute {
   squadDetails,
   players,
   draftSelection,
+  draftPreview,
   draftCreate,
   draftRelations,
   draftAgainstRelations,
@@ -239,6 +240,28 @@ final appRouter = () {
                   initialSelectedIds: selectedIds,
                   initialDraftRules: draftRules,
                   matchId: matchId,
+                  playWithSubstitute: extra is Map<String, dynamic>
+                      ? (extra['playWithSubstitute'] as bool?) ?? true
+                      : true,
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/squads/:squadId/matches/preview',
+            name: AppRoute.draftPreview.name,
+            pageBuilder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>? ?? {};
+              return NoTransitionPage(
+                child: DraftResultsPage(
+                  squadId: state.pathParameters['squadId'] ?? '',
+                  selectedPlayerIds:
+                      (extra['selectedIds'] as List<dynamic>?)
+                          ?.cast<String>() ??
+                      [],
+                  draftRules: _decodeDraftRules(extra['draftRules']),
+                  playWithSubstitute:
+                      (extra['playWithSubstitute'] as bool?) ?? true,
                 ),
               );
             },

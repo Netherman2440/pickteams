@@ -10,13 +10,12 @@ import 'package:app/core/widgets/probability_slider.dart';
 import 'package:app/features/draft/domain/entities/draft_rule.dart';
 import 'package:app/features/draft/domain/services/draft_algorithm_policy.dart';
 import 'package:app/features/draft/application/get_match_draft_use_case.dart';
-import 'package:app/features/draft/application/save_match_draft_use_case.dart';
+import 'package:app/features/draft/application/accept_match_draft_use_case.dart';
+import 'package:app/features/draft/infrastructure/repositories/supabase_draft_acceptance_repository.dart';
 import 'package:app/features/draft/presentation/controllers/draft_session_notifier.dart';
 import 'package:app/features/draft/presentation/widgets/draft_draggable_player_tile.dart';
 import 'package:app/features/draft/presentation/widgets/draft_relation_widgets.dart';
-import 'package:app/features/matches/application/dto/match_details_dto.dart';
 import 'package:app/features/matches/application/usecases/get_match_usecase.dart';
-import 'package:app/features/matches/presentation/controllers/create_match_controller.dart';
 import 'package:app/features/matches/presentation/controllers/match_details_notifier.dart';
 import 'package:app/features/matches/presentation/controllers/squad_matches_notifier.dart';
 import 'package:app/features/players/domain/entities/player.dart';
@@ -46,6 +45,37 @@ class DraftResultsPage extends ConsumerStatefulWidget {
 
 class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
   bool _playWithSubstitute = true;
+  bool _accepting = false;
+  bool _acceptanceStarted = false;
+  late final DraftSessionNotifier _session;
+
+  @override
+  void dispose() {
+    _session.cancelLoad();
+    super.dispose();
+  }
+
+  void _back() {
+    if (_accepting) return;
+    if (widget.selectedPlayerIds.isEmpty && _loadMatchId != null) {
+      context.goNamed(
+        AppRoute.matchDetails.name,
+        pathParameters: {'squadId': widget.squadId, 'matchId': _loadMatchId!},
+      );
+      return;
+    }
+    context.goNamed(
+      AppRoute.draftSelection.name,
+      pathParameters: {'squadId': widget.squadId},
+      extra: {
+        'selectedIds': widget.selectedPlayerIds,
+        'draftRules': serializeDraftRules(widget.draftRules),
+        'playWithSubstitute': _playWithSubstitute,
+        'matchId': _loadMatchId,
+      },
+    );
+  }
+
   int? _loadingPlayerCount;
   _DraftLoadingMode _loadingMode = _DraftLoadingMode.generating;
 
@@ -60,23 +90,23 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
   @override
   void initState() {
     super.initState();
+    _session = ref.read(draftSessionNotifierProvider.notifier);
     _playWithSubstitute = widget.playWithSubstitute;
     _loadingPlayerCount = widget.selectedPlayerIds.length;
     _loadingMode = widget.selectedPlayerIds.length >= 2
         ? _DraftLoadingMode.generating
         : _DraftLoadingMode.checkingExisting;
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => ref
-          .read(draftSessionNotifierProvider.notifier)
-          .load(
-            squadId: widget.squadId,
-            selectedPlayerIds: widget.selectedPlayerIds,
-            algorithm: _preferredAlgorithm,
-            matchId: _loadMatchId,
-            playWithSubstitute: _playWithSubstitute,
-            rules: widget.draftRules,
-          ),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _session.load(
+        squadId: widget.squadId,
+        selectedPlayerIds: widget.selectedPlayerIds,
+        algorithm: _preferredAlgorithm,
+        matchId: _loadMatchId,
+        playWithSubstitute: _playWithSubstitute,
+        rules: widget.draftRules,
+      );
+    });
     Future.microtask(_resolveLoadingModeAndCount);
   }
 
@@ -200,120 +230,130 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(draftSessionNotifierProvider);
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: _loadMatchId == null,
-        leading: _loadMatchId == null
-            ? null
-            : IconButton(
-                tooltip: 'Wróć do meczu',
-                onPressed: () {
-                  context.goNamed(
-                    AppRoute.matchDetails.name,
-                    pathParameters: {
-                      'squadId': widget.squadId,
-                      'matchId': _loadMatchId!,
-                    },
-                  );
-                },
-                icon: const Icon(Icons.arrow_back),
-              ),
-        title: const Text('Propozycja'),
-        toolbarHeight: 48,
-        titleTextStyle: Theme.of(context).textTheme.titleMedium,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _CreateMatchButton(
-              squadId: widget.squadId,
-              matchId: widget.matchId,
-            ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _back();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            tooltip: 'Wstecz',
+            onPressed: _accepting ? null : _back,
+            icon: const Icon(Icons.arrow_back),
           ),
-        ],
-      ),
-      body: state.when(
-        loading: () => _DraftLoadingBody(
-          selectedPlayerCount:
-              _loadingPlayerCount ?? widget.selectedPlayerIds.length,
-          showCombinationCount: _loadingMode == _DraftLoadingMode.generating,
+          title: const Text('Propozycja'),
+          toolbarHeight: 48,
+          titleTextStyle: Theme.of(context).textTheme.titleMedium,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _CreateMatchButton(
+                squadId: widget.squadId,
+                matchId: widget.matchId,
+                onSubmitting: (pending) => setState(() {
+                  _accepting = pending;
+                  _acceptanceStarted = true;
+                }),
+              ),
+            ),
+          ],
         ),
-        error: (error, _) => _ErrorBody(
-          error: error,
-          squadId: widget.squadId,
-          matchId: _loadMatchId,
-          selectedPlayerIds: widget.selectedPlayerIds,
-          playWithSubstitute: _playWithSubstitute,
-          draftRules: widget.draftRules,
-        ),
-        data: (data) {
-          if (data.proposals.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Brak propozycji. Wróć i wybierz graczy.'),
-            );
-          }
+        body: state.when(
+          loading: () => _DraftLoadingBody(
+            selectedPlayerCount:
+                _loadingPlayerCount ?? widget.selectedPlayerIds.length,
+            showCombinationCount: _loadingMode == _DraftLoadingMode.generating,
+          ),
+          error: (error, _) => _ErrorBody(
+            error: error,
+            squadId: widget.squadId,
+            matchId: _loadMatchId,
+            selectedPlayerIds: widget.selectedPlayerIds,
+            playWithSubstitute: _playWithSubstitute,
+            draftRules: widget.draftRules,
+          ),
+          data: (data) {
+            if (data.proposals.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Brak propozycji. Wróć i wybierz graczy.'),
+              );
+            }
 
-          return Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Column(
-                  children: [
-                    _ProposalNavigator(
-                      index: data.selectedIndex,
-                      total: data.proposals.length,
-                      onPrev: data.selectedIndex == 0
-                          ? null
-                          : () => ref
-                                .read(draftSessionNotifierProvider.notifier)
-                                .selectProposal(data.selectedIndex - 1),
-                      onNext: data.selectedIndex == data.proposals.length - 1
-                          ? null
-                          : () => ref
-                                .read(draftSessionNotifierProvider.notifier)
-                                .selectProposal(data.selectedIndex + 1),
+            return AbsorbPointer(
+              absorbing: _acceptanceStarted,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact =
-                            constraints.maxWidth < AppConfig.compactWidth;
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (final home in [true, false]) ...[
-                              if (!home) const SizedBox(width: 12),
-                              Expanded(
-                                child: _RosterPanel(
-                                  title: home ? 'Gospodarze' : 'Goście',
-                                  players: home ? data.home : data.away,
-                                  compact: compact,
-                                  onAcceptPlayerId: (id) => ref
-                                      .read(
-                                        draftSessionNotifierProvider.notifier,
-                                      )
-                                      .movePlayer(playerId: id, toHome: home),
-                                ),
-                              ),
-                            ],
-                          ],
-                        );
-                      },
+                    child: Column(
+                      children: [
+                        _ProposalNavigator(
+                          index: data.selectedIndex,
+                          total: data.proposals.length,
+                          onPrev: data.selectedIndex == 0
+                              ? null
+                              : () => ref
+                                    .read(draftSessionNotifierProvider.notifier)
+                                    .selectProposal(data.selectedIndex - 1),
+                          onNext:
+                              data.selectedIndex == data.proposals.length - 1
+                              ? null
+                              : () => ref
+                                    .read(draftSessionNotifierProvider.notifier)
+                                    .selectProposal(data.selectedIndex + 1),
+                        ),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final compact =
+                                constraints.maxWidth < AppConfig.compactWidth;
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (final home in [true, false]) ...[
+                                  if (!home) const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _RosterPanel(
+                                      title: home ? 'Gospodarze' : 'Goście',
+                                      players: home ? data.home : data.away,
+                                      compact: compact,
+                                      onAcceptPlayerId: (id) => ref
+                                          .read(
+                                            draftSessionNotifierProvider
+                                                .notifier,
+                                          )
+                                          .movePlayer(
+                                            playerId: id,
+                                            toHome: home,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        _TotalsRow(
+                          homePlayers: data.home,
+                          awayPlayers: data.away,
+                          playWithSubstitute: _playWithSubstitute,
+                          homeWinProbability: data.homeWinProbability,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    _TotalsRow(
-                      homePlayers: data.home,
-                      awayPlayers: data.away,
-                      playWithSubstitute: _playWithSubstitute,
-                      homeWinProbability: data.homeWinProbability,
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -376,22 +416,36 @@ class _DraftLoadingBody extends StatelessWidget {
 
 enum _DraftLoadingMode { checkingExisting, generating }
 
-class _CreateMatchButton extends ConsumerWidget {
-  const _CreateMatchButton({required this.squadId, this.matchId});
-
+class _CreateMatchButton extends ConsumerStatefulWidget {
+  const _CreateMatchButton({
+    required this.squadId,
+    this.matchId,
+    required this.onSubmitting,
+  });
   final String squadId;
   final String? matchId;
+  final ValueChanged<bool> onSubmitting;
+  @override
+  ConsumerState<_CreateMatchButton> createState() => _CreateMatchButtonState();
+}
+
+class _CreateMatchButtonState extends ConsumerState<_CreateMatchButton> {
+  late final _accept = AcceptMatchDraftUseCase(
+    ref.read(draftAcceptanceRepositoryProvider),
+  );
+  bool _pending = false;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final draftState = ref.watch(draftSessionNotifierProvider);
-    final createMatchState = ref.watch(createMatchControllerProvider);
     final draftData = draftState.asData?.value;
 
-    final isExistingMatch = matchId != null && matchId!.isNotEmpty;
+    final matchId = widget.matchId;
+    final squadId = widget.squadId;
+    final isExistingMatch = matchId != null && matchId.isNotEmpty;
     final hasProposals = draftData != null && draftData.proposals.isNotEmpty;
 
-    final isLoading = createMatchState.isLoading;
+    final isLoading = _pending;
 
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
@@ -402,76 +456,44 @@ class _CreateMatchButton extends ConsumerWidget {
       onPressed: isLoading || !hasProposals
           ? null
           : () async {
-              MatchDetailsDto? match;
-              if (isExistingMatch) {
-                match = await ref
-                    .read(createMatchControllerProvider.notifier)
-                    .updateMatch(
-                      matchId: matchId!,
-                      homePlayers: draftData.home,
-                      awayPlayers: draftData.away,
-                    );
-              } else {
-                match = await ref
-                    .read(createMatchControllerProvider.notifier)
-                    .createMatch(
-                      squadId: squadId,
-                      homePlayers: draftData.home,
-                      awayPlayers: draftData.away,
-                      // Could prompt for team names/colors here if needed
-                    );
-              }
-
-              final persistedMatchId = isExistingMatch
-                  ? matchId
-                  : match?.matchId;
-              if (persistedMatchId != null) {
-                try {
-                  await ref
-                      .read(saveMatchDraftUseCaseProvider)
-                      .executeCompleted(
-                        squadId: squadId,
-                        matchId: persistedMatchId,
-                        proposals: draftData.proposals,
-                        winRateMatrix: draftData.winRateMatrix,
-                        teamCount: draftData.proposals.first.teams.length,
-                        seed: draftData.seed,
-                      );
-                } catch (error) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Mecz zapisany, ale nie udało się zapisać danych propozycji: $error',
-                        ),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                  }
-                }
-              }
-
-              if (context.mounted && match != null) {
+              if (_pending) return;
+              setState(() => _pending = true);
+              widget.onSubmitting(true);
+              try {
+                final acceptedId = await _accept.execute(
+                  squadId: squadId,
+                  matchId: matchId,
+                  homePlayerIds: draftData.home.map((p) => p.playerId).toList(),
+                  awayPlayerIds: draftData.away.map((p) => p.playerId).toList(),
+                  proposals: draftData.proposals,
+                  selectedIndex: draftData.selectedIndex,
+                  winRateMatrix: draftData.winRateMatrix,
+                  seed: draftData.seed,
+                );
+                if (!context.mounted) return;
                 if (isExistingMatch) {
-                  ref.invalidate(matchDetailsProvider(matchId!));
+                  ref.invalidate(matchDetailsProvider(matchId));
                 }
                 ref.invalidate(squadMatchesProvider(squadId));
                 context.goNamed(
                   AppRoute.matchDetails.name,
-                  pathParameters: {
-                    'squadId': squadId,
-                    'matchId': match.matchId,
-                  },
+                  pathParameters: {'squadId': squadId, 'matchId': acceptedId},
                 );
-              } else if (context.mounted && createMatchState.hasError) {
+              } catch (error) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Nie udało się ${isExistingMatch ? 'zaktualizować' : 'utworzyć'} meczu: ${createMatchState.error}',
+                      'Nie udało się zapisać propozycji. Ponów akceptację tej propozycji: $error',
                     ),
                     backgroundColor: Colors.red,
                   ),
                 );
+              } finally {
+                if (mounted) {
+                  setState(() => _pending = false);
+                  widget.onSubmitting(false);
+                }
               }
             },
       child: isLoading

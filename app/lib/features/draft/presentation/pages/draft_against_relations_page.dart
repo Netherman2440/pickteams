@@ -10,8 +10,6 @@ import 'package:app/features/draft/presentation/controllers/draft_selection_cont
 import 'package:app/features/draft/presentation/state/draft_selection_state.dart';
 import 'package:app/features/draft/presentation/widgets/draft_relation_widgets.dart';
 import 'package:app/features/matches/presentation/controllers/create_match_controller.dart';
-import 'package:app/features/matches/presentation/controllers/squad_matches_notifier.dart';
-import 'package:app/features/players/domain/entities/player.dart';
 
 class DraftAgainstRelationsPage extends ConsumerStatefulWidget {
   const DraftAgainstRelationsPage({
@@ -208,42 +206,14 @@ class _DraftAgainstRelationsPageState
 
     final ids = data.selectedPlayerIds.toList(growable: false);
 
-    var targetMatchId = widget.matchId;
-    if (targetMatchId == null || targetMatchId.isEmpty) {
-      final createdMatch = await ref
-          .read(createMatchControllerProvider.notifier)
-          .createMatch(
-            squadId: widget.squadId,
-            homePlayers: const <Player>[],
-            awayPlayers: const <Player>[],
-            rankingHistoryPlayerIds: ids,
-          );
-      targetMatchId = createdMatch?.matchId;
-
-      if (targetMatchId == null || targetMatchId.isEmpty) {
-        if (!mounted) {
-          return;
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nie udało się utworzyć meczu.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      ref.invalidate(squadMatchesProvider(widget.squadId));
-    }
-
-    if (!mounted) {
-      return;
-    }
-    final resolvedMatchId = targetMatchId;
-
+    final targetMatchId = widget.matchId;
+    final existing = targetMatchId != null && targetMatchId.isNotEmpty;
     context.pushNamed(
-      AppRoute.matchDraft.name,
-      pathParameters: {'squadId': widget.squadId, 'matchId': resolvedMatchId},
+      existing ? AppRoute.matchDraft.name : AppRoute.draftPreview.name,
+      pathParameters: {
+        'squadId': widget.squadId,
+        if (existing) 'matchId': targetMatchId,
+      },
       extra: {
         'selectedIds': ids,
         'playWithSubstitute': _playWithSubstitute,

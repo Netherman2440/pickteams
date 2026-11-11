@@ -12,7 +12,6 @@ import 'package:app/features/draft/presentation/state/draft_selection_state.dart
 import 'package:app/features/draft/presentation/widgets/draft_draggable_player_tile.dart';
 import 'package:app/features/draft/presentation/widgets/draft_relation_widgets.dart';
 import 'package:app/features/matches/presentation/controllers/create_match_controller.dart';
-import 'package:app/features/matches/presentation/controllers/squad_matches_notifier.dart';
 import 'package:app/features/players/domain/entities/player.dart';
 
 class DraftSelectionPage extends ConsumerStatefulWidget {
@@ -21,6 +20,7 @@ class DraftSelectionPage extends ConsumerStatefulWidget {
     required this.squadId,
     this.initialSelectedIds,
     this.initialDraftRules = const [],
+    this.playWithSubstitute = true,
     this.matchId,
   });
 
@@ -28,6 +28,7 @@ class DraftSelectionPage extends ConsumerStatefulWidget {
   final List<String>? initialSelectedIds;
   final List<DraftRule> initialDraftRules;
   final String? matchId;
+  final bool playWithSubstitute;
 
   @override
   ConsumerState<DraftSelectionPage> createState() => _DraftSelectionPageState();
@@ -39,6 +40,7 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
   @override
   void initState() {
     super.initState();
+    _playWithSubstitute = widget.playWithSubstitute;
     Future.microtask(
       () => ref
           .read(draftSelectionControllerProvider.notifier)
@@ -204,42 +206,19 @@ class _DraftSelectionPageState extends ConsumerState<DraftSelectionPage> {
   Future<void> _generateWithoutRelations(DraftSelectionState data) async {
     final ids = data.selectedPlayerIds.toList(growable: false);
 
-    var targetMatchId = widget.matchId;
-    if (targetMatchId == null || targetMatchId.isEmpty) {
-      final createdMatch = await ref
-          .read(createMatchControllerProvider.notifier)
-          .createMatch(
-            squadId: widget.squadId,
-            homePlayers: const <Player>[],
-            awayPlayers: const <Player>[],
-            rankingHistoryPlayerIds: ids,
-          );
-      targetMatchId = createdMatch?.matchId;
-
-      if (targetMatchId == null || targetMatchId.isEmpty) {
-        if (!mounted) {
-          return;
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nie udało się utworzyć meczu.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      ref.invalidate(squadMatchesProvider(widget.squadId));
-    }
-
-    if (!mounted) {
-      return;
-    }
-
+    final targetMatchId = widget.matchId;
+    final existing = targetMatchId != null && targetMatchId.isNotEmpty;
     context.pushNamed(
-      AppRoute.matchDraft.name,
-      pathParameters: {'squadId': widget.squadId, 'matchId': targetMatchId},
-      extra: {'selectedIds': ids, 'playWithSubstitute': _playWithSubstitute},
+      existing ? AppRoute.matchDraft.name : AppRoute.draftPreview.name,
+      pathParameters: {
+        'squadId': widget.squadId,
+        if (existing) 'matchId': targetMatchId,
+      },
+      extra: {
+        'selectedIds': ids,
+        'playWithSubstitute': _playWithSubstitute,
+        'draftRules': serializeDraftRules(data.draftRules),
+      },
     );
   }
 }
