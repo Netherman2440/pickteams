@@ -11,6 +11,7 @@ import re
 import struct
 import subprocess
 import sys
+import traceback
 from urllib.parse import urlencode, urlparse
 
 IMAGE_PYTHON = Path.home() / '.local/share/pickteams-image-tools/bin/python'
@@ -228,6 +229,11 @@ def capture(url, output):
                         assert len(home_fields) == 1, fields
                         r = home_fields[0]
                         page.mouse.click(r['x'] + r['width']/2, r['y'] + r['height']/2)
+                        # Flutter replaces the semantics input with the native
+                        # editor asynchronously. Do not send Ctrl+A to the old
+                        # proxy before the existing value has reached the editor.
+                        page.wait_for_function("document.activeElement?.tagName === 'INPUT' && document.activeElement.value === 'Niebiescy'")
+                        page.wait_for_timeout(400)
                         page.keyboard.press('Control+A')
                         page.keyboard.type('Changed team')
                         assert page.locator('input:focus').input_value() == 'Changed team'
@@ -246,6 +252,7 @@ def capture(url, output):
                 except Exception as error:
                     record['status'] = 'failed'
                     record['failure'] = str(error)
+                    record['traceback'] = traceback.format_exc()
                     image = page.screenshot(path=str(out / f'{prefix}-failure.png'), full_page=False)
                     assert png_size(image) == (width, height)
                     (out / f'{prefix}-failure.html').write_text(page.content())
