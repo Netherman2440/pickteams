@@ -4,6 +4,7 @@ import 'package:app/features/matches/presentation/widgets/match_player_tile.dart
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../fixtures/player_lists_app.dart';
 
 void main() {
@@ -54,16 +55,16 @@ void main() {
         final scoreBounds = tester
             .getRect(find.text('14'))
             .expandToInclude(tester.getRect(find.text('5')));
-        final teamsCenter =
-            (tester.getCenter(find.text('Niebiescy')).dx +
-                tester.getCenter(find.text('Czerwoni')).dx) /
-            2;
-        expect(scoreBounds.center.dx, closeTo(teamsCenter, 0.5));
-        if (width < 792) {
-          expect(scoreY, lessThan(teamY));
-        } else {
-          expect(scoreY, greaterThan(teamY));
-        }
+        final pageCenter = tester
+            .getRect(find.byType(CustomScrollView))
+            .center
+            .dx;
+        expect(scoreBounds.center.dx, closeTo(pageCenter, 0.5));
+        expect(scoreY, lessThan(teamY));
+        expect(
+          tester.getCenter(find.textContaining('10.11.2026')).dx,
+          closeTo(pageCenter, 0.5),
+        );
         expect(find.byTooltip('Edytuj składy'), findsNothing);
         expect(find.byTooltip('Usuń mecz'), findsNothing);
         expect(find.text('Wprowadź wynik'), findsNothing);
@@ -90,7 +91,7 @@ void main() {
         final inputBounds = tester
             .getRect(inputs.first)
             .expandToInclude(tester.getRect(inputs.last));
-        expect(inputBounds.center.dx, closeTo(teamsCenter, 0.5));
+        expect(inputBounds.center.dx, closeTo(pageCenter, 0.5));
         await tester.enterText(inputs.first, '14');
         await tester.enterText(inputs.last, '5');
         await tester.tap(find.byTooltip('Zapisz'));
@@ -142,12 +143,16 @@ void main() {
             expect(find.text('50.13'), findsOneWidget);
             expect(find.text('60.25'), findsNothing);
             if (width == 360 && scale == 1) {
+              tester
+                  .state<ScrollableState>(find.byType(Scrollable).last)
+                  .position
+                  .jumpTo(48);
+              await tester.pumpAndSettle();
               for (final row in rows.evaluate()) {
                 expect(
                   tester.getRect(find.byWidget(row.widget)).bottom,
                   lessThanOrEqualTo(616),
-                  reason:
-                      'The date must not push the eight-player lists below the viewport',
+                  reason: 'The collapsed identity must leave all eight rows visible',
                 );
               }
             }

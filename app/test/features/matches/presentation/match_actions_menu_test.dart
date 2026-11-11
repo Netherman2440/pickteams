@@ -216,7 +216,9 @@ void main() {
       expect(writes.deletions, action == 'Usuń mecz' ? 1 : 0);
       expect(writes.rematches, action == 'Rewanż' ? 1 : 0);
       expect(find.byType(AlertDialog), findsNothing);
-      expect(find.text('Szczegóły meczu'), findsOneWidget);
+      expect(find.byKey(const ValueKey('lineup-home-badge')), findsOneWidget);
+      expect(find.text('Niebiescy'), findsOneWidget);
+      expect(find.text('Czerwoni'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

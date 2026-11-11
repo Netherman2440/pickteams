@@ -15,6 +15,7 @@ import 'package:app/features/squads/presentation/state/squad_detail_notifier.dar
 import 'package:app/features/matches/presentation/controllers/squad_matches_notifier.dart';
 import 'package:app/core/app_config.dart';
 import 'package:app/core/widgets/probability_slider.dart';
+import 'package:app/core/widgets/lineup_header.dart';
 
 enum _MatchDetailsEditMode { none, teams, score }
 
@@ -491,9 +492,34 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                     },
                     icon: const Icon(Icons.arrow_back),
                   ),
-            title: const Text('Szczegóły meczu'),
+            title: _isEditing || !matchAsync.hasValue
+                ? const Text('Szczegóły meczu')
+                : null,
+            // The full toolbar, not its asymmetric action slot, owns centering.
+            flexibleSpace: !_isEditing && matchAsync.hasValue
+                ? SafeArea(
+                    child: IgnorePointer(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              DateFormat(
+                                'dd.MM.yyyy HH:mm',
+                              ).format(matchAsync.value!.createdAt.toLocal()),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            _buildScoreBoard(matchAsync.value!, compact: true),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                : null,
             titleTextStyle: Theme.of(context).textTheme.titleMedium,
-            toolbarHeight: 48,
+            toolbarHeight: _isEditing
+                ? 48
+                : MediaQuery.textScalerOf(context).scale(56),
             actions: [
               if (canManage && matchAsync.hasValue) ...[
                 if (_isEditing) ...[
@@ -613,109 +639,131 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1000),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
-          child: Column(
-            children: [
-              Text(
-                dateFormat.format(match.createdAt.toLocal()),
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
+        child: CustomScrollView(
+          key: ValueKey(_isEditing),
+          slivers: [
+            if (!_isEditing)
+              LineupHeader(
+                homeName: _displayTeamName(match.homeTeam?.name, 'Gospodarze'),
+                awayName: _displayTeamName(match.awayTeam?.name, 'Goście'),
+                homeColor: _parseColor(match.homeTeam?.color),
+                awayColor: _parseColor(match.awayTeam?.color),
               ),
-              if (compact && _isScoreEditing)
-                SizedBox(height: MediaQuery.textScalerOf(context).scale(8)),
-              if (compact)
-                _isScoreEditing
-                    ? _buildEditScoreBoard(compact: true)
-                    : _buildScoreBoard(match, compact: true),
-              const SizedBox(height: 4),
-              Builder(
-                builder: (context) {
-                  final scoreBoard = _isScoreEditing
-                      ? _buildEditScoreBoard(compact: compact)
-                      : _buildScoreBoard(match, compact: compact);
-                  final homeSection = _buildTeamSection(
-                    context,
-                    _isTeamEditing
-                        ? _homePlayers
-                        : (match.homeTeam?.players ?? const <PlayerDto>[]),
-                    match.homeTeam?.name,
-                    'Gospodarze',
-                    'home',
-                    _isTeamEditing ? _homeTeamColorHex : match.homeTeam?.color,
-                    opponentCount: _isTeamEditing
-                        ? _awayPlayers.length
-                        : (match.awayTeam?.players.length ?? 0),
-                    nameController: _isTeamEditing
-                        ? _homeTeamNameController
-                        : null,
-                    compact: compact,
-                  );
-                  final awaySection = _buildTeamSection(
-                    context,
-                    _isTeamEditing
-                        ? _awayPlayers
-                        : (match.awayTeam?.players ?? const <PlayerDto>[]),
-                    match.awayTeam?.name,
-                    'Goście',
-                    'away',
-                    _isTeamEditing ? _awayTeamColorHex : match.awayTeam?.color,
-                    opponentCount: _isTeamEditing
-                        ? _homePlayers.length
-                        : (match.homeTeam?.players.length ?? 0),
-                    nameController: _isTeamEditing
-                        ? _awayTeamNameController
-                        : null,
-                    compact: compact,
-                  );
+            LineupBody(
+              collapseExtent: _isEditing ? 0 : 48,
+              padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
+              child: Column(
+                children: [
+                  if (_isEditing) ...[
+                    Text(
+                      dateFormat.format(match.createdAt.toLocal()),
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: MediaQuery.textScalerOf(context).scale(8)),
+                    _isScoreEditing
+                        ? _buildEditScoreBoard(compact: compact)
+                        : _buildScoreBoard(match, compact: compact),
+                    const SizedBox(height: 8),
+                  ],
+                  Builder(
+                    builder: (context) {
+                      final homeSection = _buildTeamSection(
+                        context,
+                        _isTeamEditing
+                            ? _homePlayers
+                            : (match.homeTeam?.players ?? const <PlayerDto>[]),
+                        match.homeTeam?.name,
+                        'Gospodarze',
+                        'home',
+                        _isTeamEditing
+                            ? _homeTeamColorHex
+                            : match.homeTeam?.color,
+                        opponentCount: _isTeamEditing
+                            ? _awayPlayers.length
+                            : (match.awayTeam?.players.length ?? 0),
+                        nameController: _isTeamEditing
+                            ? _homeTeamNameController
+                            : null,
+                        compact: true,
+                        showHeader: _isEditing,
+                      );
+                      final awaySection = _buildTeamSection(
+                        context,
+                        _isTeamEditing
+                            ? _awayPlayers
+                            : (match.awayTeam?.players ?? const <PlayerDto>[]),
+                        match.awayTeam?.name,
+                        'Goście',
+                        'away',
+                        _isTeamEditing
+                            ? _awayTeamColorHex
+                            : match.awayTeam?.color,
+                        opponentCount: _isTeamEditing
+                            ? _homePlayers.length
+                            : (match.homeTeam?.players.length ?? 0),
+                        nameController: _isTeamEditing
+                            ? _awayTeamNameController
+                            : null,
+                        compact: true,
+                        showHeader: _isEditing,
+                      );
 
-                  final gap = compact ? 8.0 : 16.0;
+                      final gap = compact ? 8.0 : 16.0;
 
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: homeSection),
-                      SizedBox(width: gap),
-                      if (!compact) ...[
-                        SizedBox(
-                          width: 220,
-                          child: Align(
-                            alignment: Alignment.topCenter,
-                            child: scoreBoard,
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                      ],
-                      Expanded(child: awaySection),
-                    ],
-                  );
-                },
-              ),
-
-              if (_isTeamEditing) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'Przeciągnij by zmienić drużyny.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: homeSection),
+                          SizedBox(width: gap),
+                          Expanded(child: awaySection),
+                        ],
+                      );
+                    },
                   ),
-                ),
-              ],
-              if (!_isEditing && match.homeWinProbability != null) ...[
-                const SizedBox(height: 24),
-                ProbabilitySlider(
-                  title: 'Szansa na wygraną',
-                  homeColor: _parseColor(match.homeTeam?.color),
-                  awayColor: _parseColor(match.awayTeam?.color),
-                  homeProbability: match.homeWinProbability!,
-                  infoText:
-                      'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
-                      'graczami w tym składzie.',
-                ),
-              ],
-            ],
-          ),
+
+                  if (_isTeamEditing) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Przeciągnij by zmienić drużyny.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  if (!_isTeamEditing) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final home in [true, false])
+                          Expanded(
+                            child: Text(
+                              'Ranking: ${_effectiveTeamRating((home ? match.homeTeam : match.awayTeam)?.players ?? [], (home ? match.awayTeam : match.homeTeam)?.players.length ?? 0).toStringAsFixed(1)}',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                  if (!_isEditing && match.homeWinProbability != null) ...[
+                    const SizedBox(height: 24),
+                    ProbabilitySlider(
+                      title: 'Szansa na wygraną',
+                      homeColor: _parseColor(match.homeTeam?.color),
+                      awayColor: _parseColor(match.awayTeam?.color),
+                      homeProbability: match.homeWinProbability!,
+                      infoText:
+                          'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
+                          'graczami w tym składzie.',
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

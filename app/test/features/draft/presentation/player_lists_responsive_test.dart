@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:app/core/widgets/player_list_row.dart';
 import 'package:app/features/draft/presentation/widgets/draft_draggable_player_tile.dart';
 import 'package:app/features/matches/presentation/widgets/match_player_tile.dart';
+import 'package:app/features/matches/presentation/pages/match_details_page.dart';
 import 'package:app/features/squads/domain/entities/user_squad_role.dart';
 import '../../../fixtures/player_lists_app.dart';
 
@@ -24,6 +25,11 @@ void main() {
       tester,
     ) async {
       await _pump(tester, page);
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).last)
+          .position
+          .jumpTo(page == 'match' ? 48 : 96);
+      await tester.pumpAndSettle();
       final rows = _rows(page);
       expect(rows, findsNWidgets(16));
       for (final element in rows.evaluate()) {
@@ -43,12 +49,12 @@ void main() {
       expect(find.byTooltip('Otwórz nawigację'), findsOneWidget);
       if (page == 'match') {
         expect(
-          tester.getCenter(find.text('Niebiescy')).dx,
-          closeTo(tester.getCenter(rows.first).dx, 1),
+          tester.getRect(find.text('Niebiescy')).right,
+          lessThanOrEqualTo(tester.getRect(rows.first).right),
         );
         expect(
-          tester.getCenter(find.text('Czerwoni')).dx,
-          closeTo(tester.getCenter(rows.last).dx, 1),
+          tester.getRect(find.text('Czerwoni')).left,
+          greaterThanOrEqualTo(tester.getRect(rows.last).left),
         );
         expect(
           find.text('50.13'),
@@ -150,7 +156,8 @@ void main() {
     expect(tester.getCenter(firstName).dx, greaterThan(180));
     await tester.tap(find.text('Zakceptuj propozycję'));
     await tester.pumpAndSettle();
-    expect(find.text('Szczegóły meczu'), findsOneWidget);
+    expect(find.byType(MatchDetailsPage), findsOneWidget);
+    expect(find.byKey(const ValueKey('lineup-home-badge')), findsOneWidget);
     expect(writes.acceptances, 1);
     expect(writes.homeIds, hasLength(7));
     expect(writes.awayIds, hasLength(9));

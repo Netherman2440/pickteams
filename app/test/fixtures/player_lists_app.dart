@@ -80,6 +80,7 @@ class PlayerListsFixture extends StatefulWidget {
     this.match,
     this.textScale,
     this.systemPadding,
+    this.players,
   });
   final String page;
   final SquadRole role;
@@ -87,6 +88,7 @@ class PlayerListsFixture extends StatefulWidget {
   final MatchDetailsDto? match;
   final double? textScale;
   final EdgeInsets? systemPadding;
+  final List<Player>? players;
   @override
   State<PlayerListsFixture> createState() => _PlayerListsFixtureState();
 }
@@ -166,7 +168,9 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
   Widget _results() => DraftResultsPage(
     squadId: 'fixture',
     matchId: 'match',
-    selectedPlayerIds: fixturePlayers.take(16).map((p) => p.playerId).toList(),
+    selectedPlayerIds: (widget.players ?? fixturePlayers.take(16))
+        .map((p) => p.playerId)
+        .toList(),
   );
 
   @override
@@ -193,7 +197,9 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
       getSquadPlayersUseCaseProvider.overrideWithValue(
         GetSquadPlayersUseCase(_FixturePlayers()),
       ),
-      draftSessionNotifierProvider.overrideWith(_FixtureDraft.new),
+      draftSessionNotifierProvider.overrideWith(
+        () => _FixtureDraft(widget.players),
+      ),
       matchDetailsProvider.overrideWith(
         () => FixtureMatch(initial: widget.match, writes: widget.writes),
       ),
@@ -242,6 +248,9 @@ class _FixturePlayers implements PlayerRepository {
 }
 
 class _FixtureDraft extends DraftSessionNotifier {
+  _FixtureDraft(this.players);
+  final List<Player>? players;
+
   @override
   Future<void> load({
     required String squadId,
@@ -251,8 +260,10 @@ class _FixtureDraft extends DraftSessionNotifier {
     String? matchId,
     bool playWithSubstitute = true,
   }) async {
-    final home = fixturePlayers.take(8).toList();
-    final away = fixturePlayers.skip(8).take(8).toList();
+    final roster = players ?? fixturePlayers.take(16).toList();
+    final half = roster.length ~/ 2;
+    final home = roster.take(half).toList();
+    final away = roster.skip(half).toList();
     state = AsyncData(
       DraftSessionState(
         proposals: [
@@ -287,7 +298,9 @@ MatchDetailsDto fixtureMatch({
   List<String>? awayIds,
   String? tournamentId,
   bool withoutTeams = false,
+  List<Player>? players,
 }) {
+  final roster = players ?? fixturePlayers;
   TeamDto team(String id, String name, String color, List<String> ids) =>
       TeamDto(
         teamId: id,
@@ -298,11 +311,10 @@ MatchDetailsDto fixtureMatch({
           for (final id in ids)
             PlayerDto(
               playerId: id,
-              name: fixturePlayers.firstWhere((p) => p.playerId == id).name,
+              name: roster.firstWhere((p) => p.playerId == id).name,
               // Snapshot differs from today's ranking in the selection fixture.
               ranking:
-                  fixturePlayers.firstWhere((p) => p.playerId == id).ranking -
-                  10.125,
+                  roster.firstWhere((p) => p.playerId == id).ranking - 10.125,
             ),
         ],
       );

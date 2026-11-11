@@ -7,6 +7,7 @@ import 'package:app/core/app_router.dart';
 import 'package:app/core/error/failure.dart';
 import 'package:app/core/utils/team_ranking.dart';
 import 'package:app/core/widgets/probability_slider.dart';
+import 'package:app/core/widgets/lineup_header.dart';
 import 'package:app/features/draft/domain/entities/draft_rule.dart';
 import 'package:app/features/draft/domain/services/draft_algorithm_policy.dart';
 import 'package:app/features/draft/application/get_match_draft_use_case.dart';
@@ -287,14 +288,10 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 900),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Column(
-                      children: [
-                        _ProposalNavigator(
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: _ProposalNavigator(
                           index: data.selectedIndex,
                           total: data.proposals.length,
                           onPrev: data.selectedIndex == 0
@@ -309,20 +306,26 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                                     .read(draftSessionNotifierProvider.notifier)
                                     .selectProposal(data.selectedIndex + 1),
                         ),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final compact =
-                                constraints.maxWidth < AppConfig.compactWidth;
-                            return Row(
+                      ),
+                      LineupHeader(
+                        homeName: 'Gospodarze',
+                        awayName: 'Goście',
+                        homeColor: Theme.of(context).colorScheme.primary,
+                        awayColor: Theme.of(context).colorScheme.secondary,
+                      ),
+                      LineupBody(
+                        collapseExtent: 96,
+                        child: Column(
+                          children: [
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 for (final home in [true, false]) ...[
                                   if (!home) const SizedBox(width: 12),
                                   Expanded(
                                     child: _RosterPanel(
-                                      title: home ? 'Gospodarze' : 'Goście',
                                       players: home ? data.home : data.away,
-                                      compact: compact,
+                                      compact: true,
                                       onAcceptPlayerId: (id) => ref
                                           .read(
                                             draftSessionNotifierProvider
@@ -336,18 +339,18 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                                   ),
                                 ],
                               ],
-                            );
-                          },
+                            ),
+                            const SizedBox(height: 8),
+                            _TotalsRow(
+                              homePlayers: data.home,
+                              awayPlayers: data.away,
+                              playWithSubstitute: _playWithSubstitute,
+                              homeWinProbability: data.homeWinProbability,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        _TotalsRow(
-                          homePlayers: data.home,
-                          awayPlayers: data.away,
-                          playWithSubstitute: _playWithSubstitute,
-                          homeWinProbability: data.homeWinProbability,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -633,13 +636,11 @@ class _TotalChip extends StatelessWidget {
 
 class _RosterPanel extends StatelessWidget {
   const _RosterPanel({
-    required this.title,
     required this.players,
     required this.compact,
     required this.onAcceptPlayerId,
   });
 
-  final String title;
   final List<Player> players;
   final bool compact;
   final ValueChanged<String> onAcceptPlayerId;
@@ -675,14 +676,6 @@ class _RosterPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontSize: compact ? 14 : null,
-                ),
-              ),
-              const SizedBox(height: 4),
               if (players.isEmpty) const Text('Brak graczy.'),
               for (final p in sortedPlayers)
                 DraftDraggablePlayerTile(
