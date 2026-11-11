@@ -17,7 +17,7 @@ import '../widgets/ranking_history_graph_widget.dart';
 import '../widgets/edit_player_name_dialog.dart';
 import '../widgets/edit_player_ranking_dialog.dart';
 
-class PlayerDetailsPage extends ConsumerWidget {
+class PlayerDetailsPage extends ConsumerStatefulWidget {
   final String squadId;
   final String playerId;
 
@@ -28,7 +28,24 @@ class PlayerDetailsPage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PlayerDetailsPage> createState() => _PlayerDetailsPageState();
+}
+
+class _PlayerDetailsPageState extends ConsumerState<PlayerDetailsPage> {
+  bool _editing = false;
+  String get squadId => widget.squadId;
+  String get playerId => widget.playerId;
+
+  @override
+  void didUpdateWidget(covariant PlayerDetailsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.playerId != playerId || oldWidget.squadId != squadId) {
+      _editing = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final stateAsync = ref.watch(playerDetailsProvider(playerId));
     final squadAsync = ref.watch(squadDetailProvider(squadId));
     final role = squadAsync.maybeWhen(
@@ -36,6 +53,7 @@ class PlayerDetailsPage extends ConsumerWidget {
       orElse: () => SquadRole.none,
     );
     final canEdit = role == SquadRole.owner || role == SquadRole.admin;
+    if (!canEdit) _editing = false;
     final playerName = stateAsync.maybeWhen(
       data: (state) => state.player.name,
       orElse: () => null,
@@ -93,146 +111,112 @@ class PlayerDetailsPage extends ConsumerWidget {
                 )
               : baseNameStyle;
 
+          final fields = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _EditableProfileField(
+                label: 'Edytuj nazwę',
+                onTap: _editing
+                    ? () => _editField(
+                        EditPlayerNameDialog(
+                          playerId: playerId,
+                          initialName: player.name,
+                        ),
+                      )
+                    : null,
+                child: Text(player.name, style: nameStyle, softWrap: true),
+              ),
+              const SizedBox(height: 8),
+              _EditableProfileField(
+                label: 'Edytuj ranking',
+                onTap: _editing
+                    ? () => _editField(
+                        EditPlayerRankingDialog(
+                          playerId: playerId,
+                          currentRanking: player.ranking,
+                        ),
+                      )
+                    : null,
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'Ranking: ${player.ranking.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    _RankingDifferenceIndicator(
+                      difference: difference,
+                      isPositive: isPositive,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              _EditableProfileField(
+                label: 'Edytuj pozycję',
+                onTap: _editing
+                    ? () => _editField(
+                        EditPlayerPositionDialog(
+                          playerId: playerId,
+                          initialPosition: player.position,
+                        ),
+                      )
+                    : null,
+                child: Text(
+                  'Pozycja: $positionLabel',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          );
+          final avatar = CircleAvatar(
+            radius: 40,
+            child: Text(
+              player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
+              style: const TextStyle(fontSize: 32),
+            ),
+          );
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      child: Text(
-                        player.name.isNotEmpty
-                            ? player.name[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(fontSize: 32),
-                      ),
+                if (canEdit) ...[
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() => _editing = !_editing),
+                      icon: Icon(_editing ? Icons.check : Icons.edit),
+                      label: Text(_editing ? 'Gotowe' : 'Edytuj gracza'),
                     ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  player.name,
-                                  style: nameStyle,
-                                  softWrap: true,
-                                  maxLines: isNarrowScreen ? 3 : 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (canEdit)
-                                IconButton(
-                                  tooltip: 'Edit name',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 40,
-                                    minHeight: 40,
-                                  ),
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: () async {
-                                    final result = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) =>
-                                          EditPlayerNameDialog(
-                                            playerId: playerId,
-                                            initialName: player.name,
-                                          ),
-                                    );
-                                    if (result == true) {
-                                      ref.invalidate(
-                                        playerDetailsProvider(playerId),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.edit),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                'Ranking: ${player.ranking.toStringAsFixed(2)}',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              const SizedBox(width: 12),
-                              _RankingDifferenceIndicator(
-                                difference: difference,
-                                isPositive: isPositive,
-                              ),
-                              if (canEdit) ...[
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  tooltip: 'Edit ranking',
-                                  onPressed: () async {
-                                    final result = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) =>
-                                          EditPlayerRankingDialog(
-                                            playerId: playerId,
-                                            currentRanking: player.ranking,
-                                          ),
-                                    );
-                                    if (result == true) {
-                                      ref.invalidate(
-                                        playerDetailsProvider(playerId),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.edit),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                'Pozycja: $positionLabel',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              if (canEdit) ...[
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  tooltip: 'Edytuj pozycję',
-                                  onPressed: () async {
-                                    final result = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) =>
-                                          EditPlayerPositionDialog(
-                                            playerId: playerId,
-                                            initialPosition: player.position,
-                                          ),
-                                    );
-                                    if (result == true) {
-                                      ref.invalidate(
-                                        playerDetailsProvider(playerId),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.edit),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (isNarrowScreen) ...[
+                  avatar,
+                  const SizedBox(height: 16),
+                  fields,
+                ] else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      avatar,
+                      const SizedBox(width: 24),
+                      Expanded(child: fields),
+                    ],
+                  ),
                 const SizedBox(height: 24),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Text(
-                      'Historia rankingu',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Flexible(
+                      child: Text(
+                        'Historia rankingu',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     InkWell(
@@ -284,6 +268,16 @@ class PlayerDetailsPage extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _editField(Widget dialog) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => dialog,
+    );
+    if (result == true && mounted) {
+      ref.invalidate(playerDetailsProvider(playerId));
+    }
   }
 
   Future<void> _confirmDeletePlayer(
@@ -338,6 +332,44 @@ class PlayerDetailsPage extends ConsumerWidget {
   }
 }
 
+/// Only edit mode exposes a focusable button; the whole region is its target.
+class _EditableProfileField extends StatelessWidget {
+  const _EditableProfileField({
+    required this.label,
+    required this.child,
+    this.onTap,
+  });
+
+  final String label;
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Align(alignment: Alignment.centerLeft, child: child),
+      ),
+    );
+    if (onTap == null) return content;
+    final border = BorderRadius.circular(8);
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        shape: RoundedRectangleBorder(
+          borderRadius: border,
+          side: BorderSide(color: Theme.of(context).colorScheme.primary),
+        ),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: InkWell(onTap: onTap, borderRadius: border, child: content),
+      ),
+    );
+  }
+}
+
 class _RankingDifferenceIndicator extends StatelessWidget {
   final double difference;
   final bool isPositive;
@@ -355,6 +387,7 @@ class _RankingDifferenceIndicator extends StatelessWidget {
     final icon = isPositive ? Icons.arrow_upward : Icons.arrow_downward;
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, color: color, size: 20),
         const SizedBox(width: 4),
@@ -383,8 +416,10 @@ class _PlayerTabs extends StatelessWidget {
       children: [
         const Divider(),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        Wrap(
+          alignment: WrapAlignment.spaceEvenly,
+          spacing: 16,
+          runSpacing: 16,
           children: [
             _TabButton(
               label: 'Mecze',
