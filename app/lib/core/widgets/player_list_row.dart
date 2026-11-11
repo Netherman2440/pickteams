@@ -1,25 +1,44 @@
 import 'package:flutter/material.dart';
 
-/// A growing row: mobile rankings sit below names; desktop keeps them inline.
+/// Density sets a minimum, not a fixed height: long names and large text grow.
+enum PlayerRowDensity { compact, comfortable }
+
+/// Shared inline name/rating geometry for rosters and interactive player lists.
 class PlayerListRow extends StatelessWidget {
   const PlayerListRow({
     super.key,
     required this.name,
     required this.ranking,
-    required this.compact,
+    this.compact = false,
+    this.density,
+    this.leading,
     this.trailing,
+    this.supporting,
     this.onTap,
   });
 
   final String name;
   final double ranking;
+
+  /// Compatibility for existing roster callers. Prefer [density] in new code.
   final bool compact;
+  final PlayerRowDensity? density;
+  final Widget? leading;
   final Widget? trailing;
+
+  /// Optional metadata; the name and rating always keep their inline layout.
+  final Widget? supporting;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isCompact =
+        (density ??
+            (compact
+                ? PlayerRowDensity.compact
+                : PlayerRowDensity.comfortable)) ==
+        PlayerRowDensity.compact;
     final nameText = Text(
       name,
       style: theme.textTheme.bodyMedium?.copyWith(
@@ -30,8 +49,8 @@ class PlayerListRow extends StatelessWidget {
     final rankingText = Text(
       ranking.toStringAsFixed(2),
       style: theme.textTheme.bodySmall?.copyWith(
-        fontSize: compact ? 11 : 12,
-        height: 13 / 11,
+        fontSize: 12,
+        height: 16 / 12,
         color: theme.colorScheme.onSurfaceVariant,
       ),
     );
@@ -40,8 +59,11 @@ class PlayerListRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          constraints: BoxConstraints(minHeight: compact ? 42 : 48),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+          constraints: BoxConstraints(minHeight: isCompact ? 32 : 48),
+          padding: EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: isCompact ? 3 : 8,
+          ),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
@@ -49,24 +71,27 @@ class PlayerListRow extends StatelessWidget {
               ),
             ),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: compact
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [nameText, rankingText],
-                      )
-                    : Row(
-                        children: [
-                          Expanded(child: nameText),
-                          const SizedBox(width: 12),
-                          rankingText,
-                        ],
-                      ),
+              Row(
+                children: [
+                  if (leading != null) ...[leading!, const SizedBox(width: 8)],
+                  Expanded(child: nameText),
+                  const SizedBox(width: 8),
+                  rankingText,
+                  if (trailing != null) ...[
+                    const SizedBox(width: 4),
+                    trailing!,
+                  ],
+                ],
               ),
-              if (trailing != null) ...[const SizedBox(width: 4), trailing!],
+              if (supporting != null) ...[
+                const SizedBox(height: 4),
+                supporting!,
+              ],
             ],
           ),
         ),

@@ -9,6 +9,8 @@ class MatchPlayerTile extends StatelessWidget {
     required this.player,
     this.trailing,
     this.compact = false,
+    this.density,
+    this.leading,
     this.onTap,
     this.dragData,
     this.snapshotRanking,
@@ -19,6 +21,8 @@ class MatchPlayerTile extends StatelessWidget {
   final PlayerDto player;
   final Widget? trailing;
   final bool compact;
+  final PlayerRowDensity? density;
+  final Widget? leading;
   final VoidCallback? onTap;
   final Object? dragData;
 
@@ -35,6 +39,8 @@ class MatchPlayerTile extends StatelessWidget {
       name: player.name,
       ranking: displayRanking,
       compact: compact,
+      density: density,
+      leading: leading,
       trailing: trailing,
       onTap: onTap,
     );

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:app/core/app_config.dart';
+import 'package:app/core/widgets/player_list_row.dart';
 import 'package:app/core/app_router.dart';
 import 'package:app/core/error/failure.dart';
 import 'package:app/features/draft/domain/entities/draft_rule.dart';
@@ -409,8 +410,7 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: _scrollController,
+    return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -436,37 +436,52 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
             onEditingComplete: _addHighlightedPlayer,
           ),
           const SizedBox(height: 8),
-          widget.selectedPanel,
-          const SizedBox(height: 12),
-          Column(
-            key: const ValueKey('available-players'),
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Dostępni gracze',
-                style: Theme.of(context).textTheme.titleMedium,
+          Expanded(
+            child: SingleChildScrollView(
+              key: const ValueKey('selection-scroll'),
+              controller: _scrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  widget.selectedPanel,
+                  const SizedBox(height: 12),
+                  Column(
+                    key: const ValueKey('available-players'),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Dostępni gracze',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      if (widget.players.isEmpty)
+                        Text(
+                          widget.searchQuery.trim().isEmpty
+                              ? 'Brak dostępnych graczy.'
+                              : 'Brak dostępnych graczy dla „${widget.searchQuery}”.',
+                        ),
+                      for (final (index, p) in widget.players.indexed)
+                        DraftDraggablePlayerTile(
+                          key: index == _highlightIndex
+                              ? _highlightedTileKey
+                              : null,
+                          player: p,
+                          leading: const Icon(Icons.radio_button_unchecked),
+                          trailing: const SizedBox.shrink(),
+                          density: PlayerRowDensity.comfortable,
+                          onTap: () {
+                            widget.onToggle(p.playerId);
+                            _refocusSearchField();
+                          },
+                          dragData: p.playerId,
+                          compact: widget.compact,
+                          simple: true,
+                        ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              if (widget.players.isEmpty)
-                Text(
-                  widget.searchQuery.trim().isEmpty
-                      ? 'Brak dostępnych graczy.'
-                      : 'Brak dostępnych graczy dla „${widget.searchQuery}”.',
-                ),
-              for (final (index, p) in widget.players.indexed)
-                DraftDraggablePlayerTile(
-                  key: index == _highlightIndex ? _highlightedTileKey : null,
-                  player: p,
-                  trailing: const Icon(Icons.add_circle_outline),
-                  onTap: () {
-                    widget.onToggle(p.playerId);
-                    _refocusSearchField();
-                  },
-                  dragData: p.playerId,
-                  compact: widget.compact,
-                  simple: true,
-                ),
-            ],
+            ),
           ),
         ],
       ),
@@ -523,7 +538,12 @@ class _SelectedPlayersPanel extends StatelessWidget {
         for (final p in players)
           DraftDraggablePlayerTile(
             player: p,
-            trailing: const Icon(Icons.remove_circle_outline),
+            leading: Icon(
+              Icons.check_circle,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            trailing: const SizedBox.shrink(),
+            density: PlayerRowDensity.comfortable,
             onTap: () => onToggle(p.playerId),
             dragData: p.playerId,
             compact: compact,

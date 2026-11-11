@@ -12,6 +12,8 @@ class DraftDraggablePlayerTile extends StatelessWidget {
     required this.trailing,
     this.compact = false,
     this.simple = false,
+    this.density,
+    this.leading,
     this.onTap,
     this.dragData,
   });
@@ -20,92 +22,36 @@ class DraftDraggablePlayerTile extends StatelessWidget {
   final Widget trailing;
   final bool compact;
   final bool simple;
+  final PlayerRowDensity? density;
+  final Widget? leading;
 
   final VoidCallback? onTap;
   final Object? dragData;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final difference = player.ranking - player.baseRanking;
     final positionText = playerPositionPolishLabel(player.position);
 
-    final tile = simple
-        ? PlayerListRow(
-            name: player.name,
-            ranking: player.ranking,
-            compact: compact,
-            trailing: trailing,
-            onTap: onTap,
-          )
-        : Card(
-            child: ListTile(
-              dense: compact,
-              visualDensity: compact
-                  ? VisualDensity.compact
-                  : VisualDensity.standard,
-              contentPadding: compact
-                  ? const EdgeInsets.symmetric(horizontal: 8)
-                  : null,
-              leading: CircleAvatar(
-                radius: compact ? 14 : null,
-                child: Text(
-                  player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
-                  style: compact ? theme.textTheme.labelSmall : null,
-                ),
-              ),
-              title: Text(
-                player.name,
-                maxLines: compact ? 2 : 1,
-                overflow: TextOverflow.ellipsis,
-                style: compact ? theme.textTheme.bodyMedium : null,
-              ),
-              subtitle: compact
-                  ? Text(
-                      'Ranking: ${player.ranking.toStringAsFixed(2)}',
-                      style: theme.textTheme.bodySmall,
-                    )
-                  : Wrap(
-                      spacing: 12,
-                      runSpacing: 4,
-                      children: [
-                        if (positionText != null) ...[
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.sports_soccer,
-                                size: 16,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(positionText),
-                            ],
-                          ),
-                        ],
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.insights,
-                              size: 16,
-                              color: theme.colorScheme.tertiary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Ranking: ${player.ranking.toStringAsFixed(2)}',
-                            ),
-                          ],
-                        ),
-                        if (difference.abs() > 0) ...[
-                          _RankingDifference(difference: difference),
-                        ],
-                      ],
-                    ),
-              trailing: trailing,
-              onTap: onTap,
-            ),
-          );
+    final tile = PlayerListRow(
+      name: player.name,
+      ranking: player.ranking,
+      compact: compact,
+      density: density,
+      leading: leading,
+      trailing: trailing,
+      onTap: onTap,
+      supporting: !simple && (positionText != null || difference != 0)
+          ? Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                if (positionText != null) Text(positionText),
+                if (difference != 0) _RankingDifference(difference: difference),
+              ],
+            )
+          : null,
+    );
 
     final data = dragData;
     if (data == null) {
@@ -171,6 +117,7 @@ class _RankingDifference extends StatelessWidget {
         '${difference.toStringAsFixed(2)}';
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           isPositiveOrFlat ? Icons.arrow_drop_up : Icons.arrow_drop_down,

@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../fixtures/shared_rows_app.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:app/features/draft/presentation/pages/draft_selection_page.dart';
 import 'package:app/features/draft/presentation/widgets/draft_draggable_player_tile.dart';
-import 'package:app/features/players/application/usecases/get_squad_players_usecase.dart';
 import 'package:app/features/players/domain/entities/player.dart';
-import 'package:app/features/players/domain/entities/player_head_to_head_stat.dart';
-import 'package:app/features/players/domain/entities/player_stats.dart';
-import 'package:app/features/players/domain/repositories/player_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    for (final family in ['OpenSans', 'Nunito']) {
+      await (FontLoader(
+        '${family}_regular',
+      )..addFont(rootBundle.load('assets/fonts/$family-Regular.ttf'))).load();
+    }
+  });
 
   testWidgets(
-    'phone selection puts search before both lists without overflow',
+    '100 players share one scroll below fixed search; toggles never duplicate',
     (tester) async {
       await _pumpPage(
         tester,
@@ -28,12 +32,46 @@ void main() {
         lessThan(tester.getTopLeft(find.textContaining('Wybrani gracze')).dy),
       );
       expect(find.byType(SingleChildScrollView), findsOneWidget);
+      final scroll = find.byKey(const ValueKey('selection-scroll'));
       expect(
-        find.byWidgetPredicate(
-          (w) => w is ScrollView && w.physics is! NeverScrollableScrollPhysics,
-        ),
-        findsNothing,
+        find.descendant(of: scroll, matching: find.byType(Scrollable)),
+        findsOneWidget,
       );
+      expect(
+        tester.getTopLeft(_sectionCard('Wybrani gracze')).dy,
+        lessThan(tester.getTopLeft(_sectionCard('Dostępni gracze')).dy),
+      );
+      final searchPosition = tester.getTopLeft(find.byType(TextField));
+      await tester.scrollUntilVisible(
+        find.text('Gracz 100'),
+        400,
+        scrollable: find.descendant(
+          of: scroll,
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(find.text('Gracz 100').hitTestable(), findsOneWidget);
+      expect(tester.getTopLeft(find.byType(TextField)), searchPosition);
+      await tester.tap(find.text('Gracz 100'));
+      await tester.pumpAndSettle();
+      expect(find.text('Gracz 100'), findsOneWidget);
+      expect(_findInSection('Wybrani gracze', 'Gracz 100'), findsOneWidget);
+      await tester.ensureVisible(find.text('Gracz 100'));
+      await tester.tap(find.text('Gracz 100'));
+      await tester.pumpAndSettle();
+      expect(find.text('Gracz 100'), findsOneWidget);
+      expect(_findInSection('Dostępni gracze', 'Gracz 100'), findsOneWidget);
+      await _enterSearchQuery(tester, 'Gracz 100');
+      expect(find.text('Wybrani gracze (16)'), findsOneWidget);
+      await tester.ensureVisible(find.text('Wyczyść'));
+      await tester.tap(find.text('Wyczyść'));
+      await tester.pumpAndSettle();
+      expect(find.text('Wybrani gracze (0)'), findsOneWidget);
+      final generate = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Wygeneruj'),
+      );
+      expect(generate.onPressed, isNull);
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -290,7 +328,10 @@ Future<void> _pumpPage(
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
   final players = phone
-      ? List.generate(22, (i) => _player('p${i + 1}', 'Gracz ${i + 1}', 40 + i))
+      ? List.generate(
+          100,
+          (i) => _player('p${i + 1}', 'Gracz ${i + 1}', 40 + i),
+        )
       : [
           _player('p1', 'Anna', 40),
           _player('p2', 'Bartek', 41),
@@ -298,19 +339,7 @@ Future<void> _pumpPage(
         ];
 
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        getSquadPlayersUseCaseProvider.overrideWithValue(
-          GetSquadPlayersUseCase(_FakePlayerRepository(players)),
-        ),
-      ],
-      child: MaterialApp(
-        home: DraftSelectionPage(
-          squadId: 'squad-1',
-          initialSelectedIds: initialSelectedIds,
-        ),
-      ),
-    ),
+    SharedRowsFixture(players: players, initialSelectedIds: initialSelectedIds),
   );
   await tester.pumpAndSettle();
 }
@@ -354,66 +383,6 @@ String? _highlightedPlayerName(WidgetTester tester) {
   expect(finder, findsOneWidget);
   final tile = tester.widget<DraftDraggablePlayerTile>(finder);
   return tile.player.name;
-}
-
-class _FakePlayerRepository implements PlayerRepository {
-  _FakePlayerRepository(this.players);
-
-  final List<Player> players;
-
-  @override
-  Future<Player> addPlayer({
-    required String squadId,
-    required String name,
-    String? position,
-    required int baseRanking,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> deletePlayer({required String playerId}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<Player> getPlayer({required String playerId}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<List<PlayerHeadToHeadStat>> getPlayerHeadToHeadStats({
-    required String playerId,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<PlayerStats> getPlayerStats({required String playerId}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<List<Player>> getSquadPlayers({required String squadId}) async {
-    return players;
-  }
-
-  @override
-  Future<Player> updatePlayer({
-    required String playerId,
-    String? name,
-    String? position,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> updatePlayerRanking({
-    required String playerId,
-    required double newRanking,
-  }) {
-    throw UnimplementedError();
-  }
 }
 
 Player _player(String id, String name, int ranking) {

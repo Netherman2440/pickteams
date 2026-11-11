@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app/core/app_router.dart';
+import 'package:app/core/widgets/player_list_row.dart';
 
 import 'package:app/features/players/domain/entities/player.dart';
 import 'package:app/features/players/domain/entities/player_position.dart';
@@ -17,7 +18,6 @@ class PlayersListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: players.length,
@@ -25,62 +25,28 @@ class PlayersListWidget extends StatelessWidget {
         final player = players[index];
         final difference = player.ranking - player.baseRanking;
         final positionText = playerPositionPolishLabel(player.position);
-        final hasPosition = positionText != null;
 
-        return Card(
-          child: ListTile(
-            onTap: () {
-              context.pushNamed(
-                AppRoute.playerDetails.name,
-                pathParameters: {
-                  'squadId': squadId,
-                  'playerId': player.playerId,
-                },
-              );
-            },
-            leading: CircleAvatar(
-              child: Text(
-                player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
-              ),
-            ),
-            title: Text(player.name),
-            subtitle: Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              children: [
-                if (hasPosition) ...[
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.sports_soccer,
-                        size: 16,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(positionText),
-                    ],
-                  ),
-                ],
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+        return PlayerListRow(
+          name: player.name,
+          ranking: player.ranking,
+          density: PlayerRowDensity.comfortable,
+          onTap: () {
+            context.pushNamed(
+              AppRoute.playerDetails.name,
+              pathParameters: {'squadId': squadId, 'playerId': player.playerId},
+            );
+          },
+          supporting: positionText != null || difference != 0
+              ? Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
                   children: [
-                    Icon(
-                      Icons.insights,
-                      size: 16,
-                      color: theme.colorScheme.tertiary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text('Ranking: ${player.ranking.toStringAsFixed(2)}'),
-                    if (difference.abs() > 0) ...[
-                      const SizedBox(width: 8),
+                    if (positionText != null) Text(positionText),
+                    if (difference != 0)
                       _RankingDifference(difference: difference),
-                    ],
                   ],
-                ),
-              ],
-            ),
-          ),
+                )
+              : null,
         );
       },
     );
