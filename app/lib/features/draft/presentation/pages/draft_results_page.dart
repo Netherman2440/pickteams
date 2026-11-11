@@ -560,11 +560,20 @@ class _TotalsRow extends StatelessWidget {
       playWithSubstitute: playWithSubstitute,
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 700;
-        final theme = Theme.of(context);
-        final slider = ProbabilitySlider(
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _TotalChip(label: 'Ranking gospodarzy', value: effectiveHome),
+            _TotalChip(label: 'Ranking gości', value: effectiveAway),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ProbabilitySlider(
           title: 'Szansa wygranej propozycji',
           homeColor: theme.colorScheme.primary,
           awayColor: theme.colorScheme.secondary,
@@ -572,49 +581,8 @@ class _TotalsRow extends StatelessWidget {
           infoText:
               'Obliczono na podstawie współczynników wygranych bezpośrednich '
               'pojedynków między wybranymi graczami.',
-        );
-
-        if (isCompact) {
-          return Column(
-            children: [
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                children: [
-                  _TotalChip(label: 'Ranking gospodarzy', value: effectiveHome),
-                  _TotalChip(label: 'Ranking gości', value: effectiveAway),
-                ],
-              ),
-              const SizedBox(height: 12),
-              slider,
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Align(
-                alignment: Alignment.center,
-                child: _TotalChip(
-                  label: 'Ranking gospodarzy',
-                  value: effectiveHome,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Flexible(flex: 2, child: slider),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Align(
-                alignment: Alignment.center,
-                child: _TotalChip(label: 'Ranking gości', value: effectiveAway),
-              ),
-            ),
-          ],
-        );
-      },
+        ),
+      ],
     );
   }
 }
@@ -645,7 +613,21 @@ class _TotalChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(label: Text('$label: ${value.toStringAsFixed(1)}'));
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: ShapeDecoration(
+        color: theme.chipTheme.backgroundColor,
+        shape: theme.chipTheme.shape ?? const StadiumBorder(),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Text(
+          '$label: ${value.toStringAsFixed(1)}',
+          softWrap: true,
+          style: theme.textTheme.labelLarge?.merge(theme.chipTheme.labelStyle),
+        ),
+      ),
+    );
   }
 }
 
