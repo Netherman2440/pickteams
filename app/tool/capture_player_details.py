@@ -147,8 +147,18 @@ def run(url, output):
                                 capture(field)
                                 pointer(button('Zapisz'), f'save {field}', scroll=False)
                                 # A still-open ordinary dialog is NOT a failed-save frame.
-                                error = page.get_by_text('Exception: Fixture save failed', exact=True)
+                                message = 'Exception: Fixture save failed'
+                                # SelectableText exposes its text as a disabled textarea
+                                # value, unlike the name TextField's error decoration.
+                                error = (page.get_by_text(message, exact=True) if field == 'name'
+                                         else dialog().locator('textarea[disabled]'))
                                 expect(error).to_be_visible()
+                                if field != 'name':
+                                    # Read-only SelectableText keeps its passive semantic
+                                    # textarea empty. A real tap activates text selection
+                                    # and exposes the rendered string in its semantics.
+                                    pointer(error, f'select {field} error text', scroll=False)
+                                    expect(error).to_have_value(message)
                                 expect(dialog()).to_have_count(1)
                                 settled_box(button('Anuluj'))
                                 capture(f'{field}-error')
@@ -156,7 +166,8 @@ def run(url, output):
                                 expect(dialog()).to_have_count(0)
                                 expect(error).to_have_count(0)
                                 expect(button('Gotowe')).to_be_attached()
-                                expect(page.get_by_text('Ranking: 59.36', exact=True)).to_be_attached()
+                                expect(page.get_by_role('button', name=re.compile(
+                                    r'^Edytuj ranking.*Ranking: 59\.36', re.S))).to_be_attached()
                             pointer(button('Gotowe'), 'exit edit')
                             expect(button('Edytuj gracza')).to_be_visible()
                             for label in ['Edytuj nazwę', 'Edytuj ranking', 'Edytuj pozycję']:
@@ -172,12 +183,30 @@ def run(url, output):
                         # The graph is real canvas output; populated state is also checked
                         # in widget tests. Scroll naturally to expose graph and footer.
                         expect(page.get_by_text('Brak zmian rankingu', exact=True)).to_have_count(0)
-                        footer = page.get_by_text('Statystyki', exact=True)
+                        heading = page.get_by_text('Historia rankingu', exact=True)
+                        previous = None
+                        for _ in range(12):
+                            box = settled_box(heading)
+                            if abs(box['y'] - 130) < 3 or box == previous:
+                                break
+                            previous = box
+                            page.mouse.move(width - 24, height / 2)
+                            page.mouse.wheel(0, box['y'] - 130)
+                            page.wait_for_timeout(100)
+                        settled_box(heading)
+                        capture('graph')
+                        def footer_text(label):
+                            # Desktop navigation also has a Stats button. The profile's
+                            # footer labels are text spans beside its icon buttons.
+                            return page.locator('flt-semantics span').filter(
+                                has_text=re.compile('^' + label + '$'))
+
+                        footer = footer_text('Statystyki')
                         reveal(footer)
                         settled_box(footer)
-                        capture('graph-footer')
+                        capture('footer')
                         for label in ['Mecze', 'Turnieje', 'Statystyki']:
-                            expect(page.get_by_text(label, exact=True)).to_be_visible()
+                            expect(footer_text(label)).to_be_visible()
                         page.close()
                         page = None
         except Exception as error:
