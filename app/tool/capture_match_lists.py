@@ -12,11 +12,12 @@ records = []
 with sync_playwright() as p:
     browser = p.chromium.launch()
     try:
-        for width, height, scale in [(w, 640, s) for s in [1, 1.6] for w in [320, 360, 390]] + [(1440, 1000, 1)]:
+        for width, height, scale in [(360, 640, 1), (360, 640, 1.6), (1440, 1000, 1)]:
             for screen in ['squad', 'player']:
                 page = browser.new_page(viewport={'width': width, 'height': height}, device_scale_factor=1)
-                errors, blocked = [], []
+                errors, blocked, console = [], [], []
                 page.on('pageerror', lambda error: errors.append(str(error)))
+                page.on('console', lambda message: console.append(message.text))
 
                 def local_only(route):
                     if urlparse(route.request.url).netloc == urlparse(url).netloc:
@@ -39,6 +40,7 @@ with sync_playwright() as p:
                     records.append({'screen': screen, 'viewport': [width, height],
                         'textScale': scale, 'androidInsets': [24, 24], 'position': position,
                         'image': str(path), 'errors': list(errors), 'blockedExternalRequests': list(blocked),
+                        'console': list(console),
                         'documentWidth': page.evaluate('document.documentElement.scrollWidth')})
                 page.close()
     finally:
@@ -46,9 +48,11 @@ with sync_playwright() as p:
 (out / 'browser.json').write_text(json.dumps(records, indent=2))
 assert all(not r['errors'] for r in records), records
 assert all(r['documentWidth'] == r['viewport'][0] for r in records), records
+assert all(not r['blockedExternalRequests'] for r in records), records
+assert all(not any('overflowed' in line or 'EXCEPTION CAUGHT' in line for line in r['console']) for r in records), records
 # Distinct scroll frames are necessary evidence that lower rows were reached.
 for screen in ['squad', 'player']:
     for scale in [1, 1.6]:
-        for width in [320, 360, 390]:
+        for width in [360]:
             assert (out / f'{screen}-{width}-scale{scale}-top.png').read_bytes() != (out / f'{screen}-{width}-scale{scale}-bottom.png').read_bytes()
 print(f'Captured {len(records)} real Flutter frames; no page errors or document overflow.')

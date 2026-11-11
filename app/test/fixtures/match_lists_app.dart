@@ -52,6 +52,8 @@ Match sampleMatch({
 final sampleMatches = [
   sampleMatch(),
   sampleMatch(id: 'reverse', homeScore: 8, awayScore: 16),
+  sampleMatch(id: 'zero', homeScore: 0, awayScore: 2),
+  sampleMatch(id: 'partial', homeScore: 8, awayScore: null),
   sampleMatch(
     id: 'long',
     home: 'Przykładowi gospodarze z północnej dzielnicy',
@@ -78,8 +80,10 @@ class MatchListsFixture extends StatefulWidget {
     this.textScale = 1,
     this.androidInsets = false,
     this.contentWidth,
+    this.fail = false,
   });
   final bool player;
+  final bool fail;
   final List<Match>? matches;
   final double textScale;
   final bool androidInsets;
@@ -153,11 +157,12 @@ class _MatchListsFixtureState extends State<MatchListsFixture> {
         ),
       ),
       squadMatchesProvider.overrideWith(
-        () => _FakeMatches(widget.matches ?? sampleMatches),
+        () => _FakeMatches(widget.matches ?? sampleMatches, widget.fail),
       ),
-      playerMatchesProvider.overrideWith(
-        (ref, id) async => widget.matches ?? sampleMatches,
-      ),
+      playerMatchesProvider.overrideWith((ref, id) async {
+        if (widget.fail) throw StateError('Offline fixture failure');
+        return widget.matches ?? sampleMatches;
+      }),
       playerNameProvider.overrideWith((ref, id) async => 'Gracz przykładowy'),
     ],
     child: MaterialApp.router(
@@ -181,10 +186,13 @@ class _MatchListsFixtureState extends State<MatchListsFixture> {
 }
 
 class _FakeMatches extends SquadMatchesNotifier {
-  _FakeMatches(this.matches);
+  _FakeMatches(this.matches, this.fail);
   final List<Match> matches;
+  final bool fail;
   @override
-  AsyncValue<List<Match>> build(String squadId) => AsyncData(matches);
+  AsyncValue<List<Match>> build(String squadId) => fail
+      ? AsyncError(StateError('Offline fixture failure'), StackTrace.current)
+      : AsyncData(matches);
   @override
   Future<void> refresh() async {}
 }

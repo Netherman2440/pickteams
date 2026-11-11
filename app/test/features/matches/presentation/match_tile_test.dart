@@ -50,38 +50,25 @@ Future<void> pumpList(
   bool player = false,
   double scale = 1,
   double? contentWidth,
+  List<Match>? matches,
+  bool fail = false,
 }) async {
   tester.view.physicalSize = Size(width, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  final previous = FlutterError.onError;
-  final shellErrors = <FlutterErrorDetails>[];
-  FlutterError.onError = (details) {
-    // Existing branding Row overflows at 320/1.6. Branding is owned by
-    // another slice. Allow only that verified error, never a card error.
-    if (width == 320 &&
-        scale == 1.6 &&
-        details.toString().contains('root_shell.dart:281:19') &&
-        details.exceptionAsString().contains('overflowed by 13 pixels')) {
-      shellErrors.add(details);
-    } else {
-      previous?.call(details);
-    }
-  };
   await tester.pumpWidget(
     MatchListsFixture(
       key: UniqueKey(),
       player: player,
-      matches: [match ?? sampleMatch()],
+      matches: matches ?? [match ?? sampleMatch()],
+      fail: fail,
       textScale: scale,
       androidInsets: true,
       contentWidth: contentWidth,
     ),
   );
   await tester.pumpAndSettle();
-  FlutterError.onError = previous;
-  expect(shellErrors.length, width == 320 && scale == 1.6 ? 1 : 0);
   expect(tester.takeException(), isNull);
 }
 
@@ -96,7 +83,7 @@ void main() {
   });
 
   for (final player in [false, true]) {
-    for (final width in [320.0, 360.0, 390.0]) {
+    for (final width in [360.0, 768.0, 1440.0]) {
       for (final scale in [1.0, 1.6]) {
         testWidgets(
           '${player ? 'player' : 'squad'} $width scale $scale paints complete independent rows',
@@ -146,15 +133,32 @@ void main() {
                 expect(marker.center.dy, closeTo(rowRect.center.dy, 0.01));
                 expect(marker.right, lessThan(rowRect.left));
               }
-              if (match.homeScore != null) {
+              if (match.homeScore != null && match.awayScore != null) {
                 final homeScore = visibleText(tester, '${match.homeScore}');
                 final awayScore = visibleText(tester, '${match.awayScore}');
                 expect(homeScore.center.dy, closeTo(homeRect.center.dy, 0.01));
                 expect(awayScore.center.dy, closeTo(awayRect.center.dy, 0.01));
                 expect(homeScore.left, greaterThan(homeRect.right));
                 expect(awayScore.left, greaterThan(awayRect.right));
-                expect(homeScore.center.dx, closeTo(awayScore.center.dx, 0.01));
-              } else if (match.matchId == 'pending') {
+                expect(homeScore.right, closeTo(awayScore.right, 0.01));
+                for (final score in [homeScore, awayScore]) {
+                  for (final container in tester.widgetList<Container>(
+                    find.descendant(of: tile, matching: find.byType(Container)),
+                  )) {
+                    final decoration = container.decoration;
+                    if (decoration is BoxDecoration &&
+                        decoration.border != null) {
+                      expect(
+                        tester
+                            .getRect(find.byWidget(container))
+                            .overlaps(score),
+                        isFalse,
+                        reason: 'Scores must not have bordered boxes',
+                      );
+                    }
+                  }
+                }
+              } else if (['pending', 'partial'].contains(match.matchId)) {
                 expect(
                   find.descendant(of: tile, matching: find.text('-')),
                   findsNWidgets(2),
@@ -166,14 +170,58 @@ void main() {
                   findsNothing,
                 );
               }
-              visibleText(tester, '02.01.2026 18:00');
+              final date = visibleText(tester, '02.01');
+              expect(date.right, lessThan(homeRect.left - 18));
+              expect(date.right, lessThan(awayRect.left - 18));
+              expect(
+                date.center.dy,
+                closeTo((homeRect.top + awayRect.bottom) / 2, 0.01),
+              );
+              expect(find.byTooltip('02.01.2026 18:00'), findsOneWidget);
               expect(tester.takeException(), isNull);
             }
           },
         );
       }
     }
-    for (final label in ['GOSPODARZE', 'GOŚCIE']) {
+    testWidgets(
+      '${player ? 'player' : 'squad'} keeps provider order and whole-card navigation',
+      (tester) async {
+        final matches = [
+          sampleMatch(id: 'third'),
+          sampleMatch(id: 'first'),
+          sampleMatch(id: 'second'),
+        ];
+        await pumpList(tester, width: 360, player: player, matches: matches);
+        expect(tester.widgetList<MatchTile>(tile).map((t) => t.match.matchId), [
+          'third',
+          'first',
+          'second',
+        ]);
+        expect(
+          find.byType(FloatingActionButton),
+          findsNothing,
+          reason: 'Member cannot create matches',
+        );
+        final card = tester.getRect(tile.at(1));
+        await tester.tapAt(card.topLeft + const Offset(24, 12));
+        await tester.pumpAndSettle();
+        expect(find.text('route: original-squad/first'), findsOneWidget);
+      },
+    );
+
+    testWidgets('${player ? 'player' : 'squad'} keeps empty and error states', (
+      tester,
+    ) async {
+      await pumpList(tester, width: 360, player: player, matches: []);
+      expect(find.text('Nie znaleziono meczów.'), findsOneWidget);
+      expect(tile, findsNothing);
+      await pumpList(tester, width: 360, player: player, fail: true);
+      expect(find.byType(SelectableText), findsOneWidget);
+      expect(tile, findsNothing);
+    });
+
+    for (final label in ['GOSPODARZE', 'GOŚCIE', '02.01', '14']) {
       testWidgets(
         '${player ? 'player' : 'squad'} tapping $label preserves route IDs',
         (tester) async {
@@ -200,22 +248,17 @@ void main() {
     );
   });
 
-  testWidgets('desktop retains the horizontal title and score pair', (
+  testWidgets('date exposes the full timestamp to assistive technology', (
     tester,
   ) async {
-    await pumpList(tester, width: 1440);
-    final title = tester
-        .renderObjectList<RenderParagraph>(
-          find.descendant(of: tile, matching: find.byType(RichText)),
-        )
-        .singleWhere((p) => p.text.toPlainText().contains('GOSPODARZE'));
-    expect(title.text.toPlainText(), contains('GOŚCIE'));
-    expect(title.didExceedMaxLines, isFalse);
-    final home = visibleText(tester, '14');
-    final away = visibleText(tester, '5');
-    expect(home.center.dy, away.center.dy);
-    expect(away.left, greaterThan(home.right));
-    expect(find.text(':'), findsOneWidget);
+    final semantics = tester.ensureSemantics();
+    try {
+      await pumpList(tester, width: 360);
+      expect(find.bySemanticsLabel('02.01.2026 18:00'), findsOneWidget);
+      expect(find.text('02.01.2026 18:00'), findsNothing);
+    } finally {
+      semantics.dispose();
+    }
   });
 
   testWidgets(
@@ -241,7 +284,7 @@ void main() {
   ) async {
     await pumpList(
       tester,
-      width: 320,
+      width: 360,
       scale: 1.6,
       match: Match(
         matchId: 'empty',

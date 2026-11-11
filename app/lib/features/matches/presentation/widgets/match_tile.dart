@@ -1,3 +1,5 @@
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:app/features/matches/domain/entities/match.dart';
@@ -13,25 +15,14 @@ class MatchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
-    final homeTeamName = _displayTeamName(
-      match.homeTeam?.name,
-      'gospodarze',
-    ).toUpperCase();
-    final awayTeamName = _displayTeamName(
-      match.awayTeam?.name,
-      'goście',
-    ).toUpperCase();
-    final homeTeamColor = _parseColor(match.homeTeam?.color);
-    final awayTeamColor = _parseColor(match.awayTeam?.color);
+    final date = match.createdAt.toLocal();
+    final fullDate = DateFormat('dd.MM.yyyy HH:mm').format(date);
     final titleStyle = theme.textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w700,
       letterSpacing: 0.3,
     );
     final hasScore = match.homeScore != null && match.awayScore != null;
     final teamsNotSelected = !hasScore && _teamsAreEmpty(match);
-    final homeScore = hasScore ? match.homeScore.toString() : '-';
-    final awayScore = hasScore ? match.awayScore.toString() : '-';
 
     return Card(
       child: InkWell(
@@ -42,105 +33,75 @@ class MatchTile extends StatelessWidget {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth <
-                  600 * MediaQuery.textScalerOf(context).scale(14) / 14) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TeamRow(
-                      name: homeTeamName,
-                      color: homeTeamColor,
-                      style: titleStyle,
-                      score: teamsNotSelected ? null : homeScore,
-                    ),
-                    const SizedBox(height: 8),
-                    _TeamRow(
-                      name: awayTeamName,
-                      color: awayTeamColor,
-                      style: titleStyle,
-                      score: teamsNotSelected ? null : awayScore,
-                    ),
-                    if (teamsNotSelected) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Nie wybrano jeszcze drużyn',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 4),
-                    Text(
-                      dateFormat.format(match.createdAt.toLocal()),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                );
-              }
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
+                  Tooltip(
+                    message: fullDate,
+                    excludeFromSemantics: true,
+                    child: Semantics(
+                      label: fullDate,
+                      excludeSemantics: true,
+                      child: Text(
+                        DateFormat('dd.MM').format(date),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Table(
+                      columnWidths: const {
+                        0: FlexColumnWidth(),
+                        1: IntrinsicColumnWidth(),
+                      },
+                      defaultVerticalAlignment:
+                          TableCellVerticalAlignment.middle,
                       children: [
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle,
-                                child: _TeamColorBox(color: homeTeamColor),
-                              ),
-                              TextSpan(
-                                text: ' $homeTeamName',
-                                style: titleStyle,
-                              ),
-                              TextSpan(text: '  -  ', style: titleStyle),
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle,
-                                child: _TeamColorBox(color: awayTeamColor),
-                              ),
-                              TextSpan(
-                                text: ' $awayTeamName',
-                                style: titleStyle,
-                              ),
-                            ],
+                        _teamRow(
+                          name: _displayTeamName(
+                            match.homeTeam?.name,
+                            'gospodarze',
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          color: _parseColor(match.homeTeam?.color),
+                          style: titleStyle,
+                          score: teamsNotSelected
+                              ? null
+                              : hasScore
+                              ? '${match.homeScore}'
+                              : '-',
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          dateFormat.format(match.createdAt.toLocal()),
-                          style: theme.textTheme.bodySmall,
+                        _teamRow(
+                          name: _displayTeamName(
+                            match.awayTeam?.name,
+                            'goście',
+                          ),
+                          color: _parseColor(match.awayTeam?.color),
+                          style: titleStyle,
+                          score: teamsNotSelected
+                              ? null
+                              : hasScore
+                              ? '${match.awayScore}'
+                              : '-',
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  if (teamsNotSelected)
-                    Text(
-                      'Nie wybrano jeszcze drużyn',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    )
-                  else
-                    Row(
-                      children: [
-                        _ScoreBox(score: homeScore),
-                        const SizedBox(width: 8),
-                        const Text(':'),
-                        const SizedBox(width: 8),
-                        _ScoreBox(score: awayScore),
-                      ],
-                    ),
                 ],
-              );
-            },
+              ),
+              if (teamsNotSelected) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Nie wybrano jeszcze drużyn',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -148,32 +109,40 @@ class MatchTile extends StatelessWidget {
   }
 }
 
-class _TeamRow extends StatelessWidget {
-  const _TeamRow({
-    required this.name,
-    required this.color,
-    required this.style,
-    required this.score,
-  });
-
-  final String name;
-  final Color color;
-  final TextStyle? style;
-  final String? score;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      _TeamColorBox(color: color),
-      const SizedBox(width: 8),
-      Expanded(child: Text(name, style: style)),
-      if (score != null) ...[
-        const SizedBox(width: 12),
-        _ScoreBox(score: score!),
-      ],
-    ],
-  );
-}
+TableRow _teamRow({
+  required String name,
+  required Color color,
+  required TextStyle? style,
+  required String? score,
+}) => TableRow(
+  children: [
+    Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          _TeamColorBox(color: color),
+          const SizedBox(width: 8),
+          Expanded(child: Text(name.toUpperCase(), style: style)),
+        ],
+      ),
+    ),
+    if (score == null)
+      const SizedBox.shrink()
+    else
+      Padding(
+        padding: const EdgeInsets.only(left: 12),
+        child: Text(
+          score,
+          textAlign: TextAlign.right,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+      ),
+  ],
+);
 
 bool _teamsAreEmpty(Match match) {
   final homeHasPlayers =
@@ -202,32 +171,6 @@ Color _parseColor(String? colorHex) {
     return Color(int.parse('0xFF$hex'));
   } catch (_) {
     return Colors.grey;
-  }
-}
-
-class _ScoreBox extends StatelessWidget {
-  final String score;
-
-  const _ScoreBox({required this.score});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.textScalerOf(
-        context,
-      ).scale(40).clamp(40, double.infinity),
-      constraints: const BoxConstraints(minHeight: 40),
-      padding: const EdgeInsets.all(4),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        score,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-      ),
-    );
   }
 }
 
