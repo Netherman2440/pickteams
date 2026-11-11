@@ -54,7 +54,7 @@ class MatchTile extends StatelessWidget {
                     child: Table(
                       columnWidths: const {
                         0: FlexColumnWidth(),
-                        1: IntrinsicColumnWidth(),
+                        1: _ScoreColumnWidth(),
                       },
                       defaultVerticalAlignment:
                           TableCellVerticalAlignment.middle,
@@ -105,6 +105,27 @@ class MatchTile extends StatelessWidget {
       ),
     );
   }
+}
+
+// CanvasKit intrinsic text widths can be smaller than the laid-out tabular
+// digits. Measure the complete non-wrapping cells instead, including padding.
+// Dry layout stays in sync with font, text-scale and content layout changes.
+class _ScoreColumnWidth extends TableColumnWidth {
+  const _ScoreColumnWidth();
+
+  @override
+  double minIntrinsicWidth(Iterable<RenderBox> cells, double containerWidth) {
+    var width = 0.0;
+    for (final cell in cells) {
+      final naturalWidth = cell.getDryLayout(const BoxConstraints()).width;
+      if (naturalWidth > width) width = naturalWidth;
+    }
+    return width.ceilToDouble();
+  }
+
+  @override
+  double maxIntrinsicWidth(Iterable<RenderBox> cells, double containerWidth) =>
+      minIntrinsicWidth(cells, containerWidth);
 }
 
 TableRow _teamRow({
