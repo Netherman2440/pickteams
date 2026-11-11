@@ -28,6 +28,9 @@ List<Map<String, Object?>> _cards() {
             textDirection: object.textDirection,
             textScaler: object.textScaler,
             locale: object.locale,
+            strutStyle: object.strutStyle,
+            textHeightBehavior: object.textHeightBehavior,
+            textWidthBasis: object.textWidthBasis,
           )..layout();
           paragraphs.add({
             'text': text,
@@ -38,7 +41,9 @@ List<Map<String, Object?>> _cards() {
             'height': object.size.height,
             'minIntrinsic': object.getMinIntrinsicWidth(double.infinity),
             'maxIntrinsic': object.getMaxIntrinsicWidth(double.infinity),
-            'maxWidth': object.constraints.maxWidth,
+            'maxWidth': object.constraints.maxWidth.isFinite
+                ? object.constraints.maxWidth
+                : null,
             'exceededMaxLines': object.didExceedMaxLines,
             'unwrappedWidth': unwrapped.width,
             'unwrappedHeight': unwrapped.height,
