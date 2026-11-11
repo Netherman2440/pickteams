@@ -163,6 +163,7 @@ void main() {
             expect(fieldBounds.center.dx, closeTo(width / 2, 0.5));
             final date = tester.getRect(find.textContaining('10.11.2026'));
             expect(date.bottom, lessThanOrEqualTo(fieldBounds.top));
+            _expectScoreLabelsBelowDate(tester, date);
             expect(fieldBounds.left, greaterThanOrEqualTo(8));
             expect(fieldBounds.right, lessThanOrEqualTo(width - 8));
             tester.view.viewInsets = const FakeViewPadding(bottom: 280);
@@ -193,6 +194,26 @@ void main() {
         );
       }
     }
+  }
+}
+
+void _expectScoreLabelsBelowDate(WidgetTester tester, Rect date) {
+  for (final text in ['Gospodarze', 'Goście']) {
+    final label = find.descendant(
+      of: find.byType(TextField),
+      matching: find.text(text),
+    );
+    expect(label, findsOneWidget);
+    final box = tester.renderObject<RenderBox>(label);
+    final paintedBounds = MatrixUtils.transformRect(
+      box.getTransformTo(null),
+      Offset.zero & box.size,
+    );
+    expect(
+      paintedBounds.top,
+      greaterThanOrEqualTo(date.bottom),
+      reason: 'The floating $text label must not overlap the date',
+    );
   }
 }
 

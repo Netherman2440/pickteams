@@ -622,6 +622,8 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                 style: Theme.of(context).textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
+              if (compact && _isScoreEditing)
+                SizedBox(height: MediaQuery.textScalerOf(context).scale(8)),
               if (compact)
                 _isScoreEditing
                     ? _buildEditScoreBoard(compact: true)
@@ -748,7 +750,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
 
   Widget _buildEditScoreBoard({required bool compact}) {
     final fontSize = compact ? 24.0 : 32.0;
-    final width = compact ? MediaQuery.textScalerOf(context).scale(80) : 80.0;
+    final width = compact ? MediaQuery.textScalerOf(context).scale(96) : 80.0;
     final padding = compact ? 8.0 : 16.0;
 
     return Row(
