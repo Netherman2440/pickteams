@@ -21,5 +21,6 @@ For a fresh disposable PostgreSQL database, run `psql -X -v ON_ERROR_STOP=1 -f s
 - `draft_results_page.dart`: session lifecycle, back handling, PopScope, acceptance button and pointer lock. Roster/header appearance is unchanged; the new wrappers cause formatting changes.
 - `app_router.dart`: `draftPreview` route and selection substitute extra decoding. Existing route names and widget constructor arguments stay compatible.
 - `DraftSessionNotifier`: removes all persistence, rejects stale asynchronous results after cancel/new load. Algorithms, scoring and limits are unchanged.
+- `app/test/fixtures/player_lists_app.dart`: add the new route names and replace the sequential create/save fake with the atomic acceptance fake. Existing responsive drag/accept checks now count acceptance calls. Coordinate this small fixture change with the shared-row work.
 
 The navigation checks use the actual router configuration and RootShell with fake repositories. They replace the old rule-forwarding-only widget check. Backend checks inject a payload-write failure after match/team/ranking writes to prove transaction rollback, including redraw, rather than merely rejecting invalid input before writes.

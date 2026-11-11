@@ -7,10 +7,10 @@ import 'package:app/core/app_theme.dart';
 import 'package:app/core/root_shell.dart';
 import 'package:app/features/auth/domain/entities/auth_entity.dart';
 import 'package:app/features/auth/presentation/providers/auth_notifier.dart';
-import 'package:app/features/draft/application/save_match_draft_use_case.dart';
+import 'package:app/features/draft/domain/repositories/draft_acceptance_repository.dart';
+import 'package:app/features/draft/infrastructure/repositories/supabase_draft_acceptance_repository.dart';
 import 'package:app/features/draft/domain/entities/draft.dart';
 import 'package:app/features/draft/domain/entities/draft_rule.dart';
-import 'package:app/features/draft/domain/repositories/draft_persistence_repository.dart';
 import 'package:app/features/draft/presentation/controllers/draft_session_notifier.dart';
 import 'package:app/features/draft/presentation/pages/draft_results_page.dart';
 import 'package:app/features/draft/presentation/pages/draft_selection_page.dart';
@@ -18,7 +18,6 @@ import 'package:app/features/draft/presentation/state/draft_session_state.dart';
 import 'package:app/features/matches/application/dto/match_details_dto.dart';
 import 'package:app/features/matches/application/dto/player_dto.dart';
 import 'package:app/features/matches/application/dto/team_dto.dart';
-import 'package:app/features/matches/presentation/controllers/create_match_controller.dart';
 import 'package:app/features/matches/presentation/controllers/match_details_notifier.dart';
 import 'package:app/features/matches/presentation/pages/match_details_page.dart';
 import 'package:app/features/players/application/usecases/get_squad_players_usecase.dart';
@@ -66,6 +65,7 @@ final fixturePlayers = [
 class FixtureWrites {
   List<String> homeIds = [];
   List<String> awayIds = [];
+  int acceptances = 0;
   int deletions = 0;
   int rematches = 0;
   Object? draftExtra;
@@ -112,6 +112,21 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
                     fixturePlayers.take(16).map((p) => p.playerId).toList(),
               );
             },
+          ),
+          GoRoute(
+            path: '/squads/:squadId/matches/draft',
+            name: 'draftSelection',
+            builder: (_, state) => DraftSelectionPage(
+              squadId: 'fixture',
+              initialSelectedIds:
+                  (state.extra as Map<String, dynamic>?)?['selectedIds']
+                      as List<String>?,
+            ),
+          ),
+          GoRoute(
+            path: '/squads/:squadId/matches/preview',
+            name: 'draftPreview',
+            builder: (_, _) => _results(),
           ),
           GoRoute(
             path: '/squads/:squadId/results',
@@ -182,11 +197,8 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
       matchDetailsProvider.overrideWith(
         () => FixtureMatch(initial: widget.match, writes: widget.writes),
       ),
-      createMatchControllerProvider.overrideWith(
-        () => _FixtureCreate(widget.writes),
-      ),
-      saveMatchDraftUseCaseProvider.overrideWithValue(
-        SaveMatchDraftUseCase(_FixturePersistence()),
+      draftAcceptanceRepositoryProvider.overrideWithValue(
+        _FixtureAcceptance(widget.writes),
       ),
     ],
     child: MaterialApp.router(
@@ -366,44 +378,20 @@ class FixtureMatch extends MatchDetailsNotifier {
   }
 }
 
-class _FixtureCreate extends CreateMatchController {
-  _FixtureCreate(this.writes);
+class _FixtureAcceptance implements DraftAcceptanceRepository {
+  _FixtureAcceptance(this.writes);
   final FixtureWrites? writes;
 
-  MatchDetailsDto _accept(List<Player> home, List<Player> away) {
-    writes?.homeIds = home.map((p) => p.playerId).toList();
-    writes?.awayIds = away.map((p) => p.playerId).toList();
-    return fixtureMatch();
+  @override
+  Future<String> accept({
+    required String requestId,
+    required String squadId,
+    String? matchId,
+    required Map<String, dynamic> payload,
+  }) async {
+    if (writes != null) writes!.acceptances++;
+    writes?.homeIds = (payload['home'] as List).cast<String>();
+    writes?.awayIds = (payload['away'] as List).cast<String>();
+    return matchId ?? 'match';
   }
-
-  @override
-  Future<MatchDetailsDto?> createMatch({
-    required String squadId,
-    required List<Player> homePlayers,
-    required List<Player> awayPlayers,
-    List<String> rankingHistoryPlayerIds = const [],
-    String? homeTeamName,
-    String? awayTeamName,
-  }) async => _accept(homePlayers, awayPlayers);
-  @override
-  Future<MatchDetailsDto?> updateMatch({
-    required String matchId,
-    required List<Player> homePlayers,
-    required List<Player> awayPlayers,
-  }) async => _accept(homePlayers, awayPlayers);
-}
-
-class _FixturePersistence implements DraftPersistenceRepository {
-  @override
-  Future<void> upsertCompletedDraft({
-    required String squadId,
-    required String matchId,
-    required List<Draft> proposals,
-    required Map<String, Map<String, double>> winRateMatrix,
-    required int teamCount,
-    int? seed,
-  }) async {}
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnsupportedError('Fixture: ${invocation.memberName}');
 }

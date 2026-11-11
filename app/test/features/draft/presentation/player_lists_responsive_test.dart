@@ -116,7 +116,8 @@ void main() {
   testWidgets('phone selection removes, searches, adds and generates', (
     tester,
   ) async {
-    await _pump(tester, 'selection');
+    final writes = FixtureWrites();
+    await _pump(tester, 'selection', writes: writes);
     expect(find.text('Wybrani gracze (16)'), findsOneWidget);
     await tester.tap(find.text('Michał Kowalski'));
     await tester.pumpAndSettle();
@@ -129,6 +130,7 @@ void main() {
     await tester.tap(find.text('Wygeneruj'));
     await tester.pumpAndSettle();
     expect(find.text('Propozycja 1 z 2'), findsOneWidget);
+    expect(writes.acceptances, 0);
     expect(tester.takeException(), isNull);
   });
   testWidgets('proposal navigation, drag and acceptance use the actual page', (
@@ -149,6 +151,7 @@ void main() {
     await tester.tap(find.text('Zakceptuj propozycję'));
     await tester.pumpAndSettle();
     expect(find.text('Szczegóły meczu'), findsOneWidget);
+    expect(writes.acceptances, 1);
     expect(writes.homeIds, hasLength(7));
     expect(writes.awayIds, hasLength(9));
     expect(writes.awayIds, contains('p0'));
