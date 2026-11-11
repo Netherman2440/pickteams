@@ -33,4 +33,4 @@ Szczegóły meczu i podgląd propozycji pokazują zwarte, dwukolumnowe składy z
 
 ## Notes
 
-Wykorzystuje wspólny wiersz gracza przygotowywany dla wyboru i składów. Dopasowanie 11-osobowego składu dotyczy renderowania listy, nie zwiększenia limitu generatora ponad 16 uczestników. Osiem na stronę jest twardą kontrolą podstawową; 11 na stronę jest celem przy zachowaniu czytelności. Panel szans może wymagać dalszego przewinięcia.
+Wykorzystuje wspólny wiersz gracza przygotowywany dla wyboru i składów. Dopasowanie 11-osobowego składu dotyczy renderowania listy, nie zmiany istniejących limitów generatora. Konfiguracja kodu już wcześniej wskazuje 22 graczy; rozbieżność z opisem MVP nie jest przedmiotem tej poprawki. Osiem na stronę jest twardą kontrolą podstawową; 11 na stronę jest celem przy zachowaniu czytelności. Panel szans może wymagać dalszego przewinięcia.

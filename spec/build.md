@@ -14,6 +14,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F015-lineups-keep-a-compact-team-header-while-scrolling` (🟠 ACTIVE): Lineups keep a compact team header while scrolling
 - `F014-player-rows-are-shared-and-draft-selection-scrolls-as-one-list` (🟠 ACTIVE): Player rows are shared and draft selection scrolls as one list
 - `F013-match-lists-put-the-date-beside-unboxed-team-scores` (🟠 ACTIVE): Match lists put the date beside unboxed team scores
 - `F012-a-match-is-created-only-when-a-proposal-is-accepted` (🟠 ACTIVE): A match is created only when a proposal is accepted
