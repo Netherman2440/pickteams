@@ -10,16 +10,23 @@ import '../../../fixtures/match_lists_app.dart';
 
 Finder get tile => find.byType(MatchTile);
 
-RenderParagraph paragraph(WidgetTester tester, String text) => tester
-    .renderObjectList<RenderParagraph>(
-      find.descendant(of: tile, matching: find.byType(RichText)),
-    )
-    .singleWhere((p) => p.text.toPlainText() == text);
+RenderParagraph paragraph(WidgetTester tester, String text, int occurrence) =>
+    tester
+        .renderObjectList<RenderParagraph>(
+          find.descendant(of: tile, matching: find.byType(RichText)),
+        )
+        .where((p) => p.text.toPlainText() == text)
+        .elementAt(occurrence);
 
 // Text presence is not visibility: check every laid-out glyph box, overflow,
 // and the painted paragraph's global bounds against the actual card.
-Rect visibleText(WidgetTester tester, String text) {
-  final p = paragraph(tester, text);
+Rect visibleText(
+  WidgetTester tester,
+  String text, {
+  int occurrence = 0,
+  bool ink = false,
+}) {
+  final p = paragraph(tester, text, occurrence);
   expect(p.didExceedMaxLines, isFalse, reason: text);
   for (var i = 0; i < text.length; i++) {
     // A wrapping space has a selection box beyond the line, but no ink.
@@ -40,7 +47,14 @@ Rect visibleText(WidgetTester tester, String text) {
   expect(bounds.right, lessThanOrEqualTo(card.right));
   expect(bounds.top, greaterThanOrEqualTo(card.top));
   expect(bounds.bottom, lessThanOrEqualTo(card.bottom));
-  return bounds;
+  if (!ink) return bounds;
+  return p
+      .getBoxesForSelection(
+        TextSelection(baseOffset: 0, extentOffset: text.length),
+      )
+      .map((box) => box.toRect())
+      .reduce((a, b) => a.expandToInclude(b))
+      .shift(p.localToGlobal(Offset.zero));
 }
 
 Future<void> pumpList(
@@ -134,13 +148,24 @@ void main() {
                 expect(marker.right, lessThan(rowRect.left));
               }
               if (match.homeScore != null && match.awayScore != null) {
-                final homeScore = visibleText(tester, '${match.homeScore}');
-                final awayScore = visibleText(tester, '${match.awayScore}');
-                expect(homeScore.center.dy, closeTo(homeRect.center.dy, 0.01));
-                expect(awayScore.center.dy, closeTo(awayRect.center.dy, 0.01));
+                final homeScore = visibleText(
+                  tester,
+                  '${match.homeScore}',
+                  ink: true,
+                );
+                final awayScore = visibleText(
+                  tester,
+                  '${match.awayScore}',
+                  ink: true,
+                  occurrence: match.homeScore == match.awayScore ? 1 : 0,
+                );
+                // Glyph metrics can differ from the paragraph center by a
+                // fraction of a pixel; the painted scores must stay on-row.
+                expect(homeScore.center.dy, closeTo(homeRect.center.dy, 0.5));
+                expect(awayScore.center.dy, closeTo(awayRect.center.dy, 0.5));
                 expect(homeScore.left, greaterThan(homeRect.right));
                 expect(awayScore.left, greaterThan(awayRect.right));
-                expect(homeScore.right, closeTo(awayScore.right, 0.01));
+                expect(homeScore.right, closeTo(awayScore.right, 0.5));
                 for (final score in [homeScore, awayScore]) {
                   for (final container in tester.widgetList<Container>(
                     find.descendant(of: tile, matching: find.byType(Container)),

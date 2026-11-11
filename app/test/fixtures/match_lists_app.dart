@@ -53,6 +53,7 @@ final sampleMatches = [
   sampleMatch(),
   sampleMatch(id: 'reverse', homeScore: 8, awayScore: 16),
   sampleMatch(id: 'zero', homeScore: 0, awayScore: 2),
+  sampleMatch(id: 'draw', homeScore: 0, awayScore: 0),
   sampleMatch(id: 'partial', homeScore: 8, awayScore: null),
   sampleMatch(
     id: 'long',

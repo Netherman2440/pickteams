@@ -2,9 +2,9 @@
 
 `match_lists_preview.dart` renders the real `SquadMatchesPage` and `PlayerMatchesPage` inside `RootShell`, with the production theme and bundled fonts. Fake providers supply synthetic auth, member permissions, squad, matches and player name. Services are not initialized. Only the match-details destination is a labelled route-ID stub.
 
-The fixture includes 14:5, 8:16, 0:2, a partial result, long names, populated teams without a result, and empty teams with blank names. Query parameters: `page=squad|player`, `scale=1|1.6`, `insets=android` (24 px top/bottom).
+The fixture includes 14:5, 8:16, 0:2, 0:0, a partial result, long names, populated teams without a result, and empty teams with blank names. Query parameters: `page=squad|player`, `scale=1|1.6`, `insets=android` (24 px top/bottom).
 
-`match_tile_test.dart` replaces the old wide horizontal-card assertions with the same three-column geometry at 360/768/1440 px, each at scales 1 and 1.6, in both real pages. It checks every non-whitespace glyph box, complete paragraphs, date centering beside both rows, score/name/color association, right-aligned scores without bordered containers, full-date semantics and tooltip, provider order, and navigation from labels, date, score and card padding. Empty/error pages and member permissions remain covered. It also checks null teams and constrained desktop content. Half a logical pixel tolerates font metric rounding; wrapping whitespace is not ink.
+`match_tile_test.dart` replaces the old wide horizontal-card assertions with the same three-column geometry at 360/768/1440 px, each at scales 1 and 1.6, in both real pages. It checks every non-whitespace glyph box, complete paragraphs, date centering beside both rows, score/name/color association, right-aligned score glyphs without bordered containers, full-date semantics and tooltip, provider order, and navigation from labels, date, score and card padding. Empty/error pages and member permissions remain covered. It also checks null teams and constrained desktop content. Half a logical pixel tolerates font metric rounding; wrapping whitespace is not ink.
 
 ## Reproduce
 
