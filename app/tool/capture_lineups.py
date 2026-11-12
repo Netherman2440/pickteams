@@ -134,7 +134,8 @@ def capture(url, output):
                     locator.click()
                     # Normal pointer departure dismisses hover tooltips. Flutter
                     # aria-owns can otherwise add tooltip text to a button name.
-                    page.mouse.move(2, height / 2)
+                    # Avoid the left edge: RootShell expands its rail on hover.
+                    page.mouse.move(width - 2, height - 2)
                     page.wait_for_timeout(400)
 
                 def frame(state, identity=False):
