@@ -24,18 +24,22 @@ class LineupHeader extends StatelessWidget {
       final scaler = MediaQuery.textScalerOf(context);
       // Reserve the largest badge width when measuring so neither transition
       // nor large text can clip a team name.
-      double nameHeight(String name) =>
-          (TextPainter(
-                text: TextSpan(text: name, style: style),
-                textDirection: Directionality.of(context),
-                textScaler: scaler,
-              )..layout(
-                maxWidth: math.max(
-                  1,
-                  (constraints.crossAxisExtent - 24) / 2 - 56,
-                ),
-              ))
-              .height;
+      double nameHeight(String name) {
+        final painter = TextPainter(
+          text: TextSpan(text: name, style: style),
+          textDirection: Directionality.of(context),
+          textScaler: scaler,
+        );
+        try {
+          painter.layout(
+            maxWidth: math.max(1, (constraints.crossAxisExtent - 24) / 2 - 56),
+          );
+          return painter.height;
+        } finally {
+          painter.dispose();
+        }
+      }
+
       final minimum = math.max(
         36.0,
         math.max(nameHeight(homeName), nameHeight(awayName)) + 8,

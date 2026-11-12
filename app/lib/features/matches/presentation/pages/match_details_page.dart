@@ -732,7 +732,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                       ),
                     ),
                   ],
-                  if (!_isTeamEditing) ...[
+                  if (!_isEditing) ...[
                     const SizedBox(height: 12),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,

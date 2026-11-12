@@ -39,6 +39,22 @@ void main() {
       );
       expect(tester.takeException(), isNull);
     });
+    testWidgets('score editing shows each ranking once at $width', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, width == 360 ? 640 : 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(lineupFixture(savedScore: false));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Akcje meczu'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Wprowadź wynik'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Zapisz'), findsOneWidget);
+      expect(find.textContaining('Ranking:'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
   }
   for (final page in ['match', 'results']) {
     for (final count in [8, 11]) {
