@@ -81,6 +81,8 @@ source_check before-build
 cmp "$PROOF_DIR/inputs-before.sha256" "$PROOF_DIR/inputs-before-build.sha256"
 cd app
 run capture-unit python3 -m unittest discover -s tool -p test_match_view_capture.py -v
+run fixture-format dart format --output=none --set-exit-if-changed tool/match_view_preview.dart
+run fixture-analyze flutter analyze --no-pub tool/match_view_preview.dart
 awk '/MemAvailable:/ {print; if ($2 < 2621440) exit 1}' /proc/meminfo >> "$PROOF_DIR/resource.log"
 run build flutter build web --no-pub --profile --no-web-resources-cdn --no-wasm-dry-run --target tool/match_view_preview.dart
 cd "$ROOT"

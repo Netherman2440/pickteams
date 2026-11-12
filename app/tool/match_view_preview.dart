@@ -65,6 +65,7 @@ void main() {
     Object? teams;
     Object? footer;
     Object? viewport;
+    Object? headerGeometry;
     void visit(Element element) {
       final widget = element.widget;
       if (element is RenderObjectElement &&
@@ -85,6 +86,16 @@ void main() {
             'name': widget.awayName,
             'color': widget.awayColor.toARGB32(),
           },
+        };
+      }
+      if (widget is SliverPersistentHeader &&
+          element.renderObject is RenderSliverPersistentHeader) {
+        final render = element.renderObject! as RenderSliverPersistentHeader;
+        headerGeometry = {
+          'minExtent': widget.delegate.minExtent,
+          'maxExtent': widget.delegate.maxExtent,
+          'scrollOffset': render.constraints.scrollOffset,
+          'paintExtent': render.geometry?.paintExtent,
         };
       }
       if (widget is MatchViewPlayerPanel) {
@@ -127,6 +138,7 @@ void main() {
       'labels': labels,
       'footer': footer,
       'viewport': viewport,
+      'headerGeometry': headerGeometry,
       'errors': errors,
     }).toJS;
   }).toJS;
