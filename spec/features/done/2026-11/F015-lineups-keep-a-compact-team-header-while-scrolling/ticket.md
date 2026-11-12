@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-11
+landed: 2026-11-12
 ---
 
 # F015 · Lineups keep a compact team header while scrolling
