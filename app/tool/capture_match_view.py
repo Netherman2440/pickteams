@@ -1,6 +1,7 @@
 """Source-pinned real RootShell captures; normal pointer/wheel input only."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -8,6 +9,10 @@ import traceback
 from urllib.parse import urlencode, urlparse
 
 from capture_lineups import CHROMIUM, IMAGE_PYTHON, METRICS, check_viewport, png_size
+
+# Explicit CI overrides; preserve the prepared local runner's defaults.
+CHROMIUM = Path(os.environ.get('MATCH_VIEW_CHROMIUM', CHROMIUM))
+IMAGE_PYTHON = Path(os.environ.get('MATCH_VIEW_IMAGE_PYTHON', IMAGE_PYTHON))
 
 
 def inside(inner, outer, tolerance=.1):
