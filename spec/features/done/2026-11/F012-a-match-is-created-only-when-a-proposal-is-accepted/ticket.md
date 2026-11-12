@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-11
+landed: 2026-11-12
 ---
 
 # F012 · A match is created only when a proposal is accepted
