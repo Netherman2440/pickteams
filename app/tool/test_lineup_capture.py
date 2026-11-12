@@ -26,6 +26,9 @@ class CaptureContractTest(unittest.TestCase):
     def test_only_explained_invisible_semantics_overflow_is_allowed(self):
         metrics = self.metrics()
         check_viewport(metrics, (360, 640))
+        # Chromium reports integer scrollWidth, but Range geometry is fractional.
+        metrics['overflowText'][0]['rect']['right'] = 473.015625
+        check_viewport(metrics, (360, 640))
         for mutation in ['visible', 'body', 'document', 'flutter', 'canvas']:
             changed = copy.deepcopy(metrics)
             if mutation == 'visible':

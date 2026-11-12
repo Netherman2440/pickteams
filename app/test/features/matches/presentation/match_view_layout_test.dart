@@ -65,6 +65,28 @@ void main() {
         }
         final paragraph = tester.renderObject<RenderParagraph>(label);
         expect(paragraph.didExceedMaxLines, isFalse);
+        if (stacked) {
+          final header = tester.widget<SliverPersistentHeader>(
+            find.byType(SliverPersistentHeader),
+          );
+          final extent = header.delegate.maxExtent - header.delegate.minExtent;
+          for (final fraction in [.25, .5, .75]) {
+            tester
+                .state<ScrollableState>(find.byType(Scrollable))
+                .position
+                .jumpTo(extent * fraction);
+            await tester.pumpAndSettle();
+            final render = tester.renderObject<RenderSliverPersistentHeader>(
+              find.byType(SliverPersistentHeader),
+            );
+            final clip = Rect.fromLTWH(0, 0, 320, render.geometry!.paintExtent);
+            for (final identity in [badge, label]) {
+              final rect = tester.getRect(identity);
+              expect(clip.contains(rect.topLeft), isTrue);
+              expect(rect.bottom, lessThanOrEqualTo(clip.bottom));
+            }
+          }
+        }
         tester
             .state<ScrollableState>(find.byType(Scrollable))
             .position
