@@ -31,6 +31,7 @@ Widget lineupFixture({
   bool longNames = false,
   bool savedScore = true,
   bool wideRankings = false,
+  bool guest = false,
   int? awayCount,
   SquadRole role = SquadRole.owner,
 }) {
@@ -42,6 +43,7 @@ Widget lineupFixture({
   return PlayerListsFixture(
     page: page,
     role: role,
+    guest: guest,
     players: players,
     textScale: scale,
     match: fixtureMatch(
