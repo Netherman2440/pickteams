@@ -16,7 +16,6 @@ jobs:
     timeout-minutes: 30
     env:
       SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
-      PROOF_DIR: ${{ runner.temp }}/match-view-proof
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - name: Checkout exact PR head
@@ -28,6 +27,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export PROOF_DIR="$RUNNER_TEMP/match-view-proof"
+          printf 'PROOF_DIR=%s\n' "$PROOF_DIR" >> "$GITHUB_ENV"
           mkdir -p "$PROOF_DIR"
           cp .github/workflows/match-view-proof.yml "$PROOF_DIR/workflow-as-executed.yml"
           cp app/tool/run_match_view_ci.sh "$PROOF_DIR/runner-as-executed.sh"
