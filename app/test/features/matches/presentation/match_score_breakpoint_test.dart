@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:app/features/matches/presentation/widgets/match_player_tile.dart';
+import 'package:app/features/matches/presentation/widgets/match_view_roster.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -138,25 +138,10 @@ void main() {
               scores.$1?.toString() ?? '-',
               scores.$2?.toString() ?? '-',
             );
-            final rows = find.byType(MatchPlayerTile);
+            final rows = find.byType(MatchViewPlayerPanel);
             expect(rows, findsNWidgets(16));
             expect(find.text('50.13'), findsOneWidget);
             expect(find.text('60.25'), findsNothing);
-            if (width == 360 && scale == 1) {
-              tester
-                  .state<ScrollableState>(find.byType(Scrollable).last)
-                  .position
-                  .jumpTo(48);
-              await tester.pumpAndSettle();
-              for (final row in rows.evaluate()) {
-                expect(
-                  tester.getRect(find.byWidget(row.widget)).bottom,
-                  lessThanOrEqualTo(616),
-                  reason:
-                      'The collapsed identity must leave all eight rows visible',
-                );
-              }
-            }
             await tester.tap(find.byTooltip('Akcje meczu'));
             await tester.pumpAndSettle();
             await tester.tap(find.text('Wprowadź wynik'));

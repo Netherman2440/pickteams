@@ -117,7 +117,7 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get minExtent => minimum;
   @override
-  double get maxExtent => math.max(minimum, expanded);
+  double get maxExtent => math.max(minimum + 48, expanded);
 
   @override
   Widget build(
