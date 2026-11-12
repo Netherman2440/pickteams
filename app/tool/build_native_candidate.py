@@ -109,7 +109,10 @@ def main():
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=sdk).decode().strip()
         assert revision == FRAMEWORK, 'Wrong framework'
         flutter = str(sdk / 'bin/flutter')
-        version = json.loads(run('flutter-version', [flutter, '--version', '--machine']))
+        run('flutter-version', [flutter, '--version', '--machine'])
+        # First-start notices can precede JSON even on stdout. The fresh SDK
+        # writes this canonical version file during that successful invocation.
+        version = json.loads((sdk / 'bin/cache/flutter.version.json').read_text())
         assert version['frameworkRevision'] == FRAMEWORK
         assert version['engineRevision'] == ENGINE
         assert version['frameworkVersion'] == '3.47.9'
