@@ -112,7 +112,9 @@ export MATCH_VIEW_CHROMIUM
 MATCH_VIEW_CHROMIUM=$(python3 -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')
 export MATCH_VIEW_IMAGE_PYTHON
 MATCH_VIEW_IMAGE_PYTHON=$(python3 -c 'import sys; print(sys.executable)')
-run capture timeout 900s python3 tool/capture_match_view.py "http://127.0.0.1:$port" "$PROOF_DIR/frames"
+capture_args=()
+if [[ -n "${MATCH_VIEW_CASE:-}" ]]; then capture_args+=(--case "$MATCH_VIEW_CASE"); fi
+run capture timeout 900s python3 tool/capture_match_view.py "http://127.0.0.1:$port" "$PROOF_DIR/frames" "${capture_args[@]}"
 cd "$ROOT"
 source_check after-capture
 cmp "$PROOF_DIR/inputs-before-build.sha256" "$PROOF_DIR/inputs-after-capture.sha256"

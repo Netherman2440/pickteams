@@ -85,7 +85,7 @@ def clear_region(metrics):
     return [viewport[0], header_bottom, viewport[2], viewport[1] + viewport[3] - header_bottom]
 
 
-def capture(url, output):
+def capture(url, output, case_filter=None):
     from playwright.sync_api import sync_playwright
     origin = urlparse(url)
     assert origin.hostname in ('127.0.0.1', 'localhost', '::1')
@@ -99,6 +99,13 @@ def capture(url, output):
               (390, 1.6, 11, True, True, 5, False),
               (320, 1.6, 2, False, False, None, False),
               (360, 1, 2, False, False, None, False)]
+    if case_filter:
+        cases = [case for case in cases if '-'.join(map(str, case)) == case_filter]
+        assert len(cases) == 1, f'Unknown development case: {case_filter}'
+    scope = dict(mode='DEVELOPMENT ONLY - NOT ACCEPTANCE' if case_filter else 'FULL MATRIX',
+                 caseFilter=case_filter, cases=len(cases))
+    (out / 'scope.json').write_text(json.dumps(scope, indent=2))
+    print(json.dumps(scope), flush=True)
     with sync_playwright() as pw:
         browser = pw.chromium.launch(executable_path=str(CHROMIUM), args=['--disable-dev-shm-usage'])
         try:
@@ -306,4 +313,10 @@ def capture(url, output):
 
 
 if __name__ == '__main__':
-    sys.exit(capture(sys.argv[1], sys.argv[2]))
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('url')
+    parser.add_argument('output')
+    parser.add_argument('--case', help='Development-only exact case; never full acceptance')
+    args = parser.parse_args()
+    sys.exit(capture(args.url, args.output, args.case))
