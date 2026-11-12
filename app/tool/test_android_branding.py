@@ -15,8 +15,9 @@ application-label-pl:'Pickteams'
 launchable-activity: name='com.example.app.MainActivity' label='Pickteams' icon='res/icon.png'
 """
 
-# Relevant records captured from aapt2 36.0.0 on the fc616d7 universal APK.
+# Relevant records captured from build-tools 36.0.0 on the fc616d7 APK.
 # Unrelated attributes/components and localized application-label variants omitted.
+# TREE is legacy aapt; AAPT2_TREE is the actual aapt2 format.
 REAL_BADGING = """package: name='com.example.app' versionCode='2026111201' versionName='1.0.2'
 application-label:'Pickteams'
 application-label-pl:'Pickteams'
@@ -35,6 +36,36 @@ TREE = '''N: android=http://schemas.android.com/apk/res/android
           E: category (line=77)
             A: android:name(0x01010003)="android.intent.category.LAUNCHER" (Raw: "android.intent.category.LAUNCHER")
 '''
+AAPT2_TREE = '''N: android=http://schemas.android.com/apk/res/android (line=2)
+  E: manifest (line=2)
+    A: package="com.example.app" (Raw: "com.example.app")
+      E: application (line=33)
+        A: http://schemas.android.com/apk/res/android:label(0x01010001)=@0x7f0d001c
+          E: activity (line=39)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)="com.example.app.MainActivity" (Raw: "com.example.app.MainActivity")
+              E: intent-filter (line=74)
+                  E: action (line=75)
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.MAIN" (Raw: "android.intent.action.MAIN")
+                  E: category (line=77)
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.category.LAUNCHER" (Raw: "android.intent.category.LAUNCHER")
+'''
+
+
+def aapt2_format(tree):
+    """Apply the same mutations to both supported SDK tree formats."""
+    lines = []
+    for line in tree.splitlines():
+        text = line.lstrip()
+        indent = len(line) - len(text)
+        if text.startswith('N: '):
+            lines.append(text + ' (line=2)')
+        else:
+            indent = 2 * indent - (2 if text.startswith('E: ') else 4)
+            lines.append(' ' * max(0, indent) + text.replace(
+                'A: android:', 'A: http://schemas.android.com/apk/res/android:'))
+    return '\n'.join(lines) + '\n'
+
+
 ACTIVITY = '      E: activity (line=39)\n'
 FILTER = '        E: intent-filter (line=74)\n'
 
@@ -122,7 +153,7 @@ class AndroidBrandingTest(unittest.TestCase):
     @patch("check_android_branding.subprocess.run")
     def test_apk_tool_invocation(self, run):
         run.side_effect = [subprocess.CompletedProcess([], 0, REAL_BADGING),
-                           subprocess.CompletedProcess([], 0, TREE)]
+                           subprocess.CompletedProcess([], 0, AAPT2_TREE)]
         check_apk(Path("final combined.apk"), "/sdk/build-tools/aapt2")
         self.assertEqual(run.call_args_list, [
             call(["/sdk/build-tools/aapt2", "dump", "badging", "final combined.apk"],
@@ -135,6 +166,8 @@ class AndroidBrandingTest(unittest.TestCase):
     def test_compiled_inheritance_requires_tree(self):
         with self.assertRaises(ValueError):
             check_badging(REAL_BADGING)
+        self.assertEqual(aapt2_format(TREE), AAPT2_TREE)
+        check_badging(REAL_BADGING, AAPT2_TREE)
         check_badging(REAL_BADGING, TREE)
         for value in ('"Pickteams"', '@0x7f0d001c'):
             check_badging(REAL_BADGING, TREE.replace(FILTER,
@@ -161,8 +194,9 @@ class AndroidBrandingTest(unittest.TestCase):
             mutations.append(TREE.replace(FILTER, FILTER +
                              '          A: android:label(0x01010001)=' + value + '\n'))
         for tree in mutations:
-            with self.subTest(tree=tree), self.assertRaises(ValueError):
-                check_badging(REAL_BADGING, tree)
+            for evidence in (tree, aapt2_format(tree)):
+                with self.subTest(tree=evidence), self.assertRaises(ValueError):
+                    check_badging(REAL_BADGING, evidence)
         for badging in (REAL_BADGING.replace("label=''", "label='app'"),
                         REAL_BADGING.replace("application-label-pl:'Pickteams'", "application-label-pl:'app'"),
                         REAL_BADGING + REAL_BADGING.splitlines()[-1] + '\n'):
@@ -175,6 +209,7 @@ class AndroidBrandingTest(unittest.TestCase):
         alias = TREE.replace(ACTIVITY, target + '      E: activity-alias (line=39)\n'
                              '        A: android:targetActivity(0x01010202)=".Target"\n')
         check_badging(REAL_BADGING, alias)
+        check_badging(REAL_BADGING, aapt2_format(alias))
         for value in ('"Pickteams"', '@0x7f0d001c'):
             check_badging(REAL_BADGING, alias.replace(target, target +
                           '        A: android:label(0x01010001)=' + value + '\n'))
@@ -186,8 +221,9 @@ class AndroidBrandingTest(unittest.TestCase):
             mutations.append(alias.replace(FILTER,
                              '        A: android:label(0x01010001)=' + value + '\n' + FILTER))
         for tree in mutations:
-            with self.subTest(tree=tree), self.assertRaises(ValueError):
-                check_badging(REAL_BADGING, tree)
+            for evidence in (tree, aapt2_format(tree)):
+                with self.subTest(tree=evidence), self.assertRaises(ValueError):
+                    check_badging(REAL_BADGING, evidence)
 
     @patch("check_android_branding.subprocess.run")
     def test_xmltree_tool_failure_is_not_a_pass(self, run):

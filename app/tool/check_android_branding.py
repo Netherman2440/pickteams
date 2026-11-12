@@ -49,6 +49,7 @@ def parse_xmltree(output):
     """Parse aapt2's indentation tree; reject incomplete or ambiguous evidence."""
     root = ET.Element("dump")
     stack = [(-2, root)]
+    element_step = 2
     for line in output.splitlines():
         if not line.strip():
             continue
@@ -56,27 +57,34 @@ def parse_xmltree(output):
         text = line[indent:]
         require(indent % 2 == 0, "Invalid xmltree indentation")
         if text.startswith("N: "):
-            require(indent == 0 and len(root) == 0
-                    and text == "N: android=http://schemas.android.com/apk/res/android",
+            namespace = re.fullmatch(
+                r"N: android=http://schemas.android.com/apk/res/android( \(line=\d+\))?", text)
+            require(indent == 0 and len(root) == 0 and namespace is not None,
                     "Unexpected xmltree namespace")
-            stack = [(0, root)]
+            # aapt2 uses four spaces per element level, two for attributes.
+            # Legacy aapt uses two for both, without namespace line numbers.
+            element_step = 4 if namespace[1] else 2
+            stack = [(2 - element_step, root)]
             continue
         if text.startswith("E: "):
             match = re.fullmatch(r"E: ([\w-]+) \(line=\d+\)", text)
             require(match is not None, "Malformed xmltree element")
             while stack and stack[-1][0] >= indent:
                 stack.pop()
-            require(stack and indent == stack[-1][0] + 2,
+            require(stack and indent == stack[-1][0] + element_step,
                     "Missing xmltree parent")
             node = ET.SubElement(stack[-1][1], match[1])
             stack.append((indent, node))
         elif text.startswith("A: "):
-            match = re.fullmatch(r"A: ([\w:.-]+)(?:\(0x[0-9a-fA-F]+\))?=(.+)", text)
+            match = re.fullmatch(
+                r"A: ((?:http://schemas.android.com/apk/res/android:)?[\w:.-]+)"
+                r"(?:\(0x[0-9a-fA-F]+\))?=(.+)", text)
             require(match is not None and indent == stack[-1][0] + 2,
                     "Malformed xmltree attribute")
             node = stack[-1][1]
-            require(match[1] not in node.attrib, "Duplicate xmltree attribute")
-            node.set(match[1], match[2])
+            key = match[1].replace("http://schemas.android.com/apk/res/android:", "android:")
+            require(key not in node.attrib, "Duplicate xmltree attribute")
+            node.set(key, match[2])
         else:
             raise ValueError("Unknown xmltree record")
     require(len(root) == 1 and root[0].tag == "manifest", "Missing manifest tree")
