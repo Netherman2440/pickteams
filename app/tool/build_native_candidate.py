@@ -62,6 +62,12 @@ def audit_apk(path, config):
     return sorted(names)
 
 
+def capture(args, cwd, stdout, stderr):
+    """Keep bootstrap diagnostics out of machine-readable stdout."""
+    with stdout.open('wb') as out, stderr.open('wb') as err:
+        return subprocess.run(args, cwd=cwd, stdout=out, stderr=err)
+
+
 def main():
     os.umask(0o077)
     assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Ephemeral CI only'
@@ -76,9 +82,9 @@ def main():
 
     def run(label, args, cwd=app):
         log = raw / (label + '.log')
-        with log.open('wb') as out:
-            result = subprocess.run(args, cwd=cwd, stdout=out, stderr=subprocess.STDOUT)
-        steps.append({'step': label, 'exit': result.returncode, 'log_sha256': digest(log.read_bytes())})
+        errors = raw / (label + '.stderr')
+        result = capture(args, cwd, log, errors)
+        steps.append({'step': label, 'exit': result.returncode, 'stdout_sha256': digest(log.read_bytes()), 'stderr_sha256': digest(errors.read_bytes())})
         print(f'{label}: exit {result.returncode}', flush=True)
         assert result.returncode == 0, f'{label} failed; no private log exported'
         return log.read_bytes()
@@ -134,7 +140,7 @@ def main():
         cert = next(line.split(': ', 1)[1] for line in signature.splitlines() if line.startswith('Signer #1 certificate SHA-256 digest:'))
         assert cert != 'b33c674d593a79cce25b7b98c78b2eedd4cfea49b93538f23c10d30059b31e18'
         run('zipalign', [str(tools / 'zipalign'), '-c', '-P', '16', '4', str(apk)])
-        java = run('java-version', ['java', '-version']).decode().splitlines()[0]
+        java = run('java-version', ['java', '--version']).decode().splitlines()[0]
         metadata = {
             'source_sha': head, 'reviewed_ui_source': UI_SOURCE,
             'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
