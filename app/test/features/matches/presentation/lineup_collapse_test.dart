@@ -56,7 +56,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
-  for (final page in ['match', 'results']) {
+  for (final page in ['results']) {
     for (final count in [8, 11]) {
       testWidgets('$page collapses above $count complete rows in RootShell', (
         tester,

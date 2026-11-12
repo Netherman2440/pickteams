@@ -4,7 +4,11 @@ import 'package:app/features/squads/domain/entities/user_squad_role.dart';
 
 import 'player_lists_app.dart';
 
-List<Player> lineupPlayers(int count, {bool longNames = false}) => [
+List<Player> lineupPlayers(
+  int count, {
+  bool longNames = false,
+  bool wideRankings = false,
+}) => [
   for (final player in fixturePlayers.take(count * 2))
     Player(
       playerId: player.playerId,
@@ -13,7 +17,9 @@ List<Player> lineupPlayers(int count, {bool longNames = false}) => [
           ? '${player.name} Aleksander Długie-Nazwisko'
           : player.name,
       baseRanking: player.baseRanking,
-      ranking: player.ranking,
+      ranking: wideRankings
+          ? (player == fixturePlayers.first ? 105.25 : 9.90) + 10.125
+          : player.ranking,
       createdAt: player.createdAt,
     ),
 ];
@@ -24,9 +30,15 @@ Widget lineupFixture({
   double scale = 1,
   bool longNames = false,
   bool savedScore = true,
+  bool wideRankings = false,
+  int? awayCount,
   SquadRole role = SquadRole.owner,
 }) {
-  final players = lineupPlayers(count, longNames: longNames);
+  final players = lineupPlayers(
+    count,
+    longNames: longNames,
+    wideRankings: wideRankings,
+  );
   return PlayerListsFixture(
     page: page,
     role: role,
@@ -36,7 +48,11 @@ Widget lineupFixture({
       homeScore: savedScore ? 14 : null,
       awayScore: savedScore ? 5 : null,
       homeIds: players.take(count).map((p) => p.playerId).toList(),
-      awayIds: players.skip(count).map((p) => p.playerId).toList(),
+      awayIds: players
+          .skip(count)
+          .take(awayCount ?? count)
+          .map((p) => p.playerId)
+          .toList(),
       players: players,
     ),
   );
