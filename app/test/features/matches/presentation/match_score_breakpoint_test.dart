@@ -152,7 +152,8 @@ void main() {
                 expect(
                   tester.getRect(find.byWidget(row.widget)).bottom,
                   lessThanOrEqualTo(616),
-                  reason: 'The collapsed identity must leave all eight rows visible',
+                  reason:
+                      'The collapsed identity must leave all eight rows visible',
                 );
               }
             }
