@@ -17,6 +17,8 @@ jobs:
     env:
       SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
       PYTHONDONTWRITEBYTECODE: '1'
+      # Development repro only. Remove the filter for final 36-case acceptance.
+      MATCH_VIEW_CASE: '320-1.6-11-True-False-None-False'
     steps:
       - name: Checkout exact PR head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

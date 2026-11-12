@@ -23,8 +23,51 @@ List<double> _rect(RenderBox box, [Rect? local]) {
 
 Map<String, Object?> _paragraph(RenderParagraph paragraph) {
   final text = paragraph.text.toPlainText();
+  final painter =
+      TextPainter(
+        text: paragraph.text,
+        textAlign: paragraph.textAlign,
+        textDirection: paragraph.textDirection,
+        textScaler: paragraph.textScaler,
+        locale: paragraph.locale,
+        strutStyle: paragraph.strutStyle,
+        textWidthBasis: paragraph.textWidthBasis,
+        textHeightBehavior: paragraph.textHeightBehavior,
+      )..layout(
+        minWidth: paragraph.constraints.minWidth,
+        maxWidth: paragraph.constraints.maxWidth,
+      );
+  final natural = {
+    'width': painter.width,
+    'height': painter.height,
+    'lines': painter.computeLineMetrics().length,
+  };
+  painter.dispose();
+  final ancestors = <Object?>[];
+  for (
+    RenderObject? parent = paragraph;
+    parent != null;
+    parent = parent.parent
+  ) {
+    if (parent is RenderBox) {
+      ancestors.add({
+        'type': parent.runtimeType.toString(),
+        'constraints': parent.constraints.toString(),
+        'size': [parent.size.width, parent.size.height],
+        if (parent is RenderConstrainedBox)
+          'additionalConstraints': parent.additionalConstraints.toString(),
+      });
+    }
+  }
   return {
     'text': text,
+    'natural': natural,
+    'ancestors': ancestors,
+    'style': paragraph.text.style.toString(),
+    'locale': paragraph.locale.toString(),
+    'textDirection': paragraph.textDirection.toString(),
+    'textWidthBasis': paragraph.textWidthBasis.toString(),
+    'textHeightBehavior': paragraph.textHeightBehavior.toString(),
     'rect': _rect(paragraph),
     'maxLines': paragraph.maxLines,
     'exceeded': paragraph.didExceedMaxLines,
