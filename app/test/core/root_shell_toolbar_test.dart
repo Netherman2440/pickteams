@@ -43,7 +43,12 @@ void main() {
     }
   });
   for (final guest in [true, false]) {
-    for (final size in [(320.0, 1.6), (360.0, 1.0), (1440.0, 1.6)]) {
+    for (final size in [
+      (320.0, 1.0),
+      (320.0, 1.6),
+      (360.0, 1.0),
+      (1440.0, 1.6),
+    ]) {
       testWidgets('toolbar guest=$guest width=${size.$1} scale=${size.$2}', (
         tester,
       ) async {
@@ -105,7 +110,9 @@ void main() {
         );
         expect(tester.widget<Text>(brand).semanticsLabel, 'pickteams.pl');
         expect(find.byTooltip('pickteams.pl'), findsOneWidget);
-        if (size.$1 != 320) expect(paragraph.didExceedMaxLines, isFalse);
+        if (size.$1 != 320 || size.$2 == 1) {
+          expect(paragraph.didExceedMaxLines, isFalse);
+        }
         expect(
           find.byTooltip('Otwórz nawigację').hitTestable(),
           findsOneWidget,

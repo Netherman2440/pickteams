@@ -106,9 +106,8 @@ void main() {
   }
 
   for (final width in [320.0, 360.0, 393.0, 412.0]) {
-    // At 320px enlarged text overflows the existing RootShell title Row.
-    // Keep that navigation defect separate from match-header coverage.
-    for (final scale in width == 320 ? [1.0] : [1.0, 1.6, 2.0]) {
+    // The bounded RootShell brand now permits the required 320px/1.6 lane.
+    for (final scale in width == 320 ? [1.0, 1.6] : [1.0, 1.6, 2.0]) {
       for (final scores in [(14, 5), (null, null), (123, 98)]) {
         testWidgets(
           'phone $width scale $scale score $scores with Android keyboard',
