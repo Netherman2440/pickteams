@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:js_interop';
 
 import 'package:app/core/widgets/probability_slider.dart';
+import 'package:app/core/widgets/lineup_header.dart';
 import 'package:app/features/matches/presentation/widgets/match_view_roster.dart';
 import 'package:app/features/squads/domain/entities/user_squad_role.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +28,10 @@ Map<String, Object?> _paragraph(RenderParagraph paragraph) {
     'rect': _rect(paragraph),
     'maxLines': paragraph.maxLines,
     'exceeded': paragraph.didExceedMaxLines,
+    'fontSize': paragraph.text.style?.fontSize,
+    'scaledFontSize': paragraph.textScaler.scale(
+      paragraph.text.style?.fontSize ?? 14,
+    ),
     'glyphs': [
       for (var index = 0; index < text.length; index++)
         if (text[index].trim().isNotEmpty)
@@ -56,10 +61,32 @@ void main() {
   _metrics = (() {
     final panels = <Object?>[];
     final identities = <String, Object?>{};
+    final labels = <Object?>[];
+    Object? teams;
     Object? footer;
     Object? viewport;
     void visit(Element element) {
       final widget = element.widget;
+      if (element is RenderObjectElement &&
+          element.renderObject is RenderParagraph) {
+        final paragraph = element.renderObject as RenderParagraph;
+        labels.add({
+          'text': paragraph.text.toPlainText(),
+          'rect': _rect(paragraph),
+        });
+      }
+      if (widget is LineupHeader) {
+        teams = {
+          'home': {
+            'name': widget.homeName,
+            'color': widget.homeColor.toARGB32(),
+          },
+          'away': {
+            'name': widget.awayName,
+            'color': widget.awayColor.toARGB32(),
+          },
+        };
+      }
       if (widget is MatchViewPlayerPanel) {
         final texts = <Object?>[];
         void paragraphs(Element child) {
@@ -96,6 +123,8 @@ void main() {
     return jsonEncode({
       'panels': panels,
       'identities': identities,
+      'teams': teams,
+      'labels': labels,
       'footer': footer,
       'viewport': viewport,
       'errors': errors,
@@ -110,6 +139,7 @@ void main() {
       longNames: params['long'] != 'false',
       wideRankings: true,
       savedScore: params['saved'] != 'false',
+      guest: params['guest'] == 'true',
       role: params['reader'] == 'true' ? SquadRole.member : SquadRole.owner,
     ),
   );

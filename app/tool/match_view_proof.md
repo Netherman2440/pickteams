@@ -1,45 +1,59 @@
-# Match view full-name proof
+# Final A match-view proof
 
-The candidate implements the final approved A layout, not the earlier two-line
-clamp. `match_view_preview.dart` uses the real RootShell and match page with
-synthetic data, local fonts, historical rankings 105.25/9.90, and unchanged
-long-name fixtures. `window.matchViewMetrics()` only reads the rendered tree.
-It returns per-character Flutter glyph boxes, panel bounds, footer bounds,
-identity bounds and Flutter errors; it does not alter layout or scrolling.
+`match_view_preview.dart` uses the real RootShell and match page, synthetic data,
+local fonts and historical rankings 105.25/9.90. `window.matchViewMetrics()` only
+reads rendered panels, individual glyph boxes, text sizes, team identities,
+viewport geometry and Flutter errors. It does not change layout or scrolling.
+Fixture score/team updates retain match settings and existing player snapshots.
 
-`capture_match_view.py` uses real 320/360/390/1440 x 640 viewports, scales 1/1.6,
-8/11 players, a two-player short case, and an uneven read-only case. It uses
-normal wheel and pointer input, captures expanded/collapsed/bottom/edit states,
-and checks every name character inside its panel. Source glyph boxes are not
-visual acceptance: open the PNGs and check for missing glyphs and actual paint.
-A nonzero capture exit remains a failed check even if some frames look correct.
+`capture_match_view.py` covers 320/360/390/1440 x 640, scales 1/1.6, 8/11 players
+and short/long names (32 combinations), plus guest, uneven read-only and two
+short-content cases. It records expanded/collapsed/bottom/navigation states.
+Four long-name 11-player phone cases enter 17:6, save, and assert the same 22
+names, rankings, sides and team names/colors. Team editing changes a name with
+normal keyboard input, then Cancel must restore that same identity.
 
-Run only from a committed clean source. The shared runner records source hashes,
-its own executed snapshot, all exits and failure logs. It acquires
-`/tmp/pickteams-flutter-validation.lock` nonblocking and admits the web build only
-when MemAvailable is at least 2621440 KiB AFTER the lock. It releases the lock
-between admission attempts. Do not wait in an idle model turn for that gate.
-Use a protected checkout outside `.pickteams-limen-worktrees` for queued runs:
+`match_view_pixels.py` checks real raster ink inside every glyph box of each
+fully visible panel. Geometry checks require all characters inside their panels,
+14/12 base text sizes scaled once, equal row heights, inline panel-centered
+rankings, strict score/date centering, and footer order. Scrolling must expose
+every complete panel below the pinned header. Ink checks detect blank paint,
+not all wrong glyphs: open actual PNGs before accepting readability. No semantics
+or automatic status replaces this inspection.
+
+`test_match_view_capture.py` tests that the checks reject missing ink, truncated
+names, reduced fonts, changed identities and misplaced rankings. It runs with
+the existing Pillow interpreter; no dependency installation is required.
+
+## Source-pinned execution
+
+Commit first. Use a protected detached checkout, not a Limen worktree:
 
 ```sh
 ROOT=/home/agents/dev/pickteams
 SHA=$(git rev-parse HEAD)
-E="$ROOT/.limen/proof/match-details-final-a/$SHA"
-git worktree add --detach "$E/source" "$SHA"
-# Start this only when a queued run has an explicit owner.
-bash "$ROOT/.limen/tools/browser_proof.sh" "$E/source" "$SHA" \
-  tool/match_view_preview.dart "$E/source/app/tool/capture_match_view.py" \
+WT=/home/agents/.local/share/pickteams-validation/match-details-final-a-$SHA
+E=$ROOT/.limen/proof/match-details-final-a/$SHA
+git worktree add --detach "$WT" "$SHA"
+bash "$ROOT/.limen/tools/browser_proof.sh" "$WT" "$SHA" \
+  tool/match_view_preview.dart "$WT/app/tool/capture_match_view.py" \
   "$E/browser" profile
 ```
 
-The runner starts a loopback-only server and stops it on exit. Its capture
-browser closes in a `finally` block. No APK, public preview or release file is
-changed. Inspect `browser/run.exit`, `build.exit`, `capture.exit`, and
-`browser/frames/results.json`; the JSON explicitly marks frames as still needing
-pixel inspection even when automated checks pass.
+For a queued run, a managed service owns this command and its stable working
+directory. Record its PID, log, exit and runner snapshot in `E`. Run committed
+full analysis, touched-file format and `flutter test --concurrency=1` under
+`flock -n -E75 /tmp/pickteams-flutter-validation.lock` before browser execution.
+Install offline from the lockfile, never through another checkout's package
+symlink. Keep all earlier failed logs and frames.
 
-The strict 320px/1.6 RootShell check is intentionally not skipped. The unchanged
-RootShell toolbar has a known overflow at that width/scale (also documented in
-`match_score_breakpoint_test.dart`). A match-only change must not hide it or
-silently lower text scale. Resolve that global scope restriction before claiming
-full task acceptance.
+The browser runner measures MemAvailable AFTER acquiring the shared lock. Web
+build admission requires at least 2621440 KiB. It releases the lock between
+attempts. Do not lower that limit or spend a model turn polling a blocked queue.
+Report the service/stage/evidence and remaining checks when still gated.
+
+The runner records source hashes and its executed snapshot. Its loopback server
+stops on exit; its capture browser closes in `finally`. Read `run.exit`,
+`build.exit`, `capture.exit` and `frames/results.json`. A failed capture remains
+failed even when some PNGs look correct. No APK, release, public preview, schema
+or API change belongs to this proof.
