@@ -1,5 +1,7 @@
 ---
 opened: 2026-11-11
+needs-adam: "Uruchom zatwierdzony accept_match_draft_operator.sql z commitu a8328b3 w SQL Editor właściwego projektu i przekaż flagi gotowości bez danych dostępowych."
+needs-adam-on: 2026-11-12
 ---
 
 # F012 · A match is created only when a proposal is accepted
