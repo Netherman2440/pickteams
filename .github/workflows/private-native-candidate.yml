@@ -5,8 +5,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/private-native-candidate.yml'
-      - 'app/tool/build_native_candidate.py'
-      - 'app/tool/test_build_native_candidate.py'
+      - 'app/tool/*native_candidate.py'
 
 permissions:
   contents: read
@@ -23,6 +22,14 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+      - name: Require corrected coordinator-approved source pin
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, 'app/tool')
+          from build_native_candidate import UI_SOURCE
+          assert UI_SOURCE is not None, 'Await corrected coordinator-approved UI source pin'
+          PY
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
