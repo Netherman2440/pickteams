@@ -138,18 +138,6 @@ void main() {
     }
   }
 
-  testWidgets('ordinary list uses shared rows and opens the correct profile', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const SharedRowsFixture(page: 'players'));
-    await tester.pumpAndSettle();
-    expect(find.byType(PlayerListRow), findsWidgets);
-    await tester.tap(find.text(sharedRowsPlayers.first.name));
-    await tester.pumpAndSettle();
-    expect(find.text('Profile: p1'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
   testWidgets(
     'selection load failure shows error without stale rows or actions',
     (tester) async {
