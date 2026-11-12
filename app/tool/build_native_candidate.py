@@ -20,6 +20,10 @@ ENGINE = '89c39edfdfae2949f6806e4a315c0c08522238b7'
 # with the corrected reviewed commit before the next expensive build.
 UI_SOURCE = None
 ABIS = ('armeabi-v7a', 'arm64-v8a', 'x86_64')
+# Credential-bearing callback query OR fragment is never allowed in an export;
+# the bare compiled callback literal (no '?' or '#') stays allowed.
+CALLBACK_CREDENTIALS = re.compile(
+    rb'pl\.pickteams://auth/callback[?#][^\s\x00\"\']*(?:code|access_token|refresh_token)=[A-Za-z0-9_-]{8,}')
 MIGRATION = '''analyzer:
   exclude:
     - build/**
@@ -56,7 +60,7 @@ def audit_apk(path, config, forbidden_hashes=()):
             data = archive.read(name)
             assert digest(data) not in forbidden_hashes, 'Renamed source or private file'
             assert not any(value in data for value in encoded_defines), 'Raw encoded DartDefines'
-            assert not re.search(rb'pl\.pickteams://auth/callback\?[^\s\x00\"\']*(?:code|access_token|refresh_token)=[A-Za-z0-9_-]{8,}', data), 'Captured callback data'
+            assert not CALLBACK_CREDENTIALS.search(data), 'Captured callback data'
             aot = name in [f'lib/{abi}/libapp.so' for abi in ABIS]
             if aot:
                 assert all(v.encode() in data for v in config.values()), 'Missing AOT config'
