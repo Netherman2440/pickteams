@@ -1,29 +1,8 @@
 -- Accept a match draft in one transaction, under the caller's existing RLS.
--- No writes during preview. Request IDs make retries safe after a lost reply.
+-- No writes during preview. p_request_id is accepted and ignored for APK compatibility.
+-- Retries may create a second match when p_match_id is null; the client-side lock
+-- handles rapid double-clicks. The owner accepted this risk; use Usuń mecz for duplicates.
 -- Existing payload format and ranking snapshots remain compatible. No cleanup.
-create table public.match_draft_acceptances (
-  request_id uuid primary key,
-  user_id uuid not null references public.users(user_id),
-  squad_id uuid not null references public.squads(squad_id) on delete cascade,
-  match_id uuid not null references public.matches(match_id) on delete cascade,
-  target_match_id uuid,
-  payload jsonb not null,
-  created_at timestamptz not null default now()
-);
-alter table public.match_draft_acceptances enable row level security;
-create policy "Admins can read own draft acceptances"
-  on public.match_draft_acceptances for select to authenticated
-  using (user_id = auth.uid() and exists (
-    select 1 from public.user_squads us where us.squad_id = match_draft_acceptances.squad_id
-      and us.user_id = auth.uid() and us.role in ('owner', 'admin')));
-create policy "Admins can insert own draft acceptances"
-  on public.match_draft_acceptances for insert to authenticated
-  with check (user_id = auth.uid() and exists (
-    select 1 from public.user_squads us join public.matches m on m.squad_id = us.squad_id
-    where us.squad_id = match_draft_acceptances.squad_id
-      and m.match_id = match_draft_acceptances.match_id
-      and us.user_id = auth.uid() and us.role in ('owner', 'admin')));
-grant select, insert on public.match_draft_acceptances to authenticated;
 
 create function public.accept_match_draft(
   p_request_id uuid, p_squad_id uuid, p_match_id uuid, p_payload jsonb
@@ -31,7 +10,6 @@ create function public.accept_match_draft(
 language plpgsql security invoker set search_path = public, pg_temp
 as $$
 declare
-  accepted public.match_draft_acceptances%rowtype;
   target public.matches%rowtype;
   result_id uuid;
   draft_id_value uuid;
@@ -47,18 +25,6 @@ begin
     select 1 from public.user_squads where squad_id = p_squad_id
       and user_id = auth.uid() and role in ('owner', 'admin')
   ) then raise exception 'Only squad owners and admins can accept drafts' using errcode = '42501'; end if;
-  if p_request_id is null then raise exception 'Request ID is required'; end if;
-  -- Same key is serialized even if the first HTTP response was lost.
-  perform pg_advisory_xact_lock(hashtextextended(p_request_id::text, 0));
-  select * into accepted from public.match_draft_acceptances where request_id = p_request_id;
-  if found then
-    if accepted.squad_id <> p_squad_id or accepted.target_match_id is distinct from p_match_id
-       or accepted.payload is distinct from p_payload then
-      raise exception 'Acceptance request cannot change on retry';
-    end if;
-    return accepted.match_id;
-  end if;
-
   if jsonb_typeof(p_payload->'home') is distinct from 'array'
      or jsonb_typeof(p_payload->'away') is distinct from 'array'
      or jsonb_typeof(p_payload->'proposals') is distinct from 'array'
@@ -137,8 +103,6 @@ begin
     values (draft_id_value, proposals, p_payload->'win_rate_matrix')
     on conflict (draft_id) do update set proposals = excluded.proposals,
       win_rate_matrix = excluded.win_rate_matrix, updated_at = now();
-  insert into public.match_draft_acceptances(request_id, user_id, squad_id, match_id, target_match_id, payload)
-    values (p_request_id, auth.uid(), p_squad_id, result_id, p_match_id, p_payload);
   return result_id;
 end;
 $$;

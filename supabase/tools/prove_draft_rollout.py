@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Prove only the operator wrapper on a NEW private PostgreSQL 16 cluster.
+"""Prove the operator wrapper and RPC SQL on a NEW private PostgreSQL 16 cluster.
 
 Usage: python3 supabase/tools/prove_draft_rollout.py --pg-bin /path/to/bin \
   --proof-dir /absolute/new/directory
-No network, hosted access, RPC invocation, or production fixture is used.
+No network, hosted access, or production fixture is used. RPC calls are local SQL only.
 """
 
 import argparse
@@ -77,14 +77,14 @@ class Proof:
 
     def ready(self, name, artifact, history):
         output, _ = self.sql(name, artifact)
-        expected = "t|t|t|t|t|" + ("t" if history else "f")
+        expected = "t|t|t|t|" + ("t" if history else "f")
         assert output.strip().splitlines()[-1] == expected, output
         assert "COMMIT" in output, output
-        # No acceptance RPC is invoked. All business tables remain empty.
+        # Applying the operator artifact does not invoke the acceptance RPC.
         output, _ = self.sql(name, "SELECT (SELECT count(*) FROM public.matches) = 0 "
-                             "AND (SELECT count(*) FROM public.match_draft_acceptances) = 0;")
+                             "AND to_regclass('public.match_draft_acceptances') IS NULL;")
         assert output.strip() == "t", output
-        self.passed(f"{name}: committed, six readiness booleans, no match/ledger rows")
+        self.passed(f"{name}: committed, five readiness booleans, no matches or ledger table")
 
     def check_history(self, name, statements=False, named=False):
         source = rollout.SOURCE.read_text()
@@ -151,6 +151,10 @@ class Proof:
                      "RETURNS text LANGUAGE sql AS 'SELECT $1';")
             self.reject_unchanged("object_conflict", artifact, "Draft acceptance objects already exist")
 
+            self.clone("legacy_table_conflict")
+            self.sql("legacy_table_conflict", "CREATE TABLE public.match_draft_acceptances (request_id uuid);")
+            self.reject_unchanged("legacy_table_conflict", artifact, "Draft acceptance objects already exist")
+
             for name, columns in (("late_error", ", statements text[], name text"),
                                   ("late_error_absent", None)):
                 self.clone(name, columns)
@@ -185,6 +189,12 @@ class Proof:
                 "public.accept_match_draft(uuid, uuid, uuid, jsonb) TO anon;\nDO $verify$", 1)
             self.reject_unchanged("security_failure", weakened, "Draft acceptance metadata checks failed")
             self.passed("all wrapper checks complete; no hosted/cache/JWT assertion")
+
+            before = self.snapshot("standard")
+            output, _ = self.sql("standard", (rollout.ROOT / "supabase/tests/accept_match_draft_test.sql").read_text())
+            assert "transaction, retry, role and constraint checks passed" in output, output
+            assert self.snapshot("standard") == before, "RPC SQL test left fixture changes"
+            self.passed("local RPC SQL: atomic writes, duplicate retries, redraw, roles and validation; full dump unchanged")
         finally:
             if (self.cluster / "postmaster.pid").exists():
                 self.run("pg_ctl", "-D", self.cluster, "-m", "fast", "-w", "stop")

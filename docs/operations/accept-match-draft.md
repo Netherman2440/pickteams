@@ -1,6 +1,6 @@
 # Włączenie atomowej akceptacji draftu przez SQL Editor
 
-Ten krok dodaje brakującą funkcję `accept_match_draft` i jej tabelę potwierdzeń.
+Ten krok dodaje brakującą funkcję `accept_match_draft`, bez tabeli potwierdzeń.
 Nie wywołuje funkcji, nie tworzy meczów i nie zmienia Auth ani ustawień projektu.
 Nie jest potwierdzeniem gotowości hostowanego API ani zgodą na wymianę APK.
 Stary APK pozostaje opublikowany do przejścia wszystkich bramek wydania.
@@ -18,7 +18,7 @@ Stary APK pozostaje opublikowany do przejścia wszystkich bramek wydania.
    kontrolę uprawnień, `NOTIFY pgrst, 'reload schema'` i `COMMIT`.
 4. Oczekiwany wynik to brak błędu SQL i jeden wiersz wartości logicznych:
    `function_exists`, `authenticated_execute_allowed`, `anonymous_execute_denied`,
-   `ledger_rls_enabled`, `invoker_mode` — wszystkie `true`.
+   `invoker_mode` — wszystkie `true`.
    `migration_history_present` powinno być `true`, jeśli historia już istnieje.
    `false` oznacza brak historii; nie oznacza nieudanej migracji.
 5. Przekaż koordynatorowi tylko te wartości i informację o braku błędu.
@@ -42,7 +42,7 @@ nieznany. Najpierw koordynator sprawdza metadane i historię.
   tylko wtedy, gdy te kolumny istnieją. `statements` zawiera pełny kanoniczny SQL
   jako jeden element tablicy. Nie nadpisuje istniejących wierszy. Nietypowy
   schemat historii, brak praw albo limit czasu blokady powoduje błąd i rollback.
-- Istniejąca wersja, tabela potwierdzeń lub dowolne przeciążenie tej funkcji
+- Istniejąca wersja, pozostałość starej tabeli `match_draft_acceptances` lub dowolne przeciążenie tej funkcji
   powoduje bezpieczną odmowę. Ponowne wykonanie nie naprawia ani nie uzgadnia
   rozbieżnych obiektów. Zatrzymaj się i przekaż sprawę do przeglądu.
 - Gdy historii nie ma, skrypt jej **nie tworzy** i nie udaje zastosowania starych
@@ -51,10 +51,20 @@ nieznany. Najpierw koordynator sprawdza metadane i historię.
   przegląd nie uzgodni rzeczywistego schematu z historią. Samo dopisanie nowej
   wersji nie rozwiązuje brakującego starego baseline'u. Nawet przy istniejącej
   historii ten krok nie dowodzi zgodności wszystkich wcześniejszych migracji.
-- Po udanym `COMMIT` polecenie `ROLLBACK` nie cofnie wdrożenia. Nie usuwaj tabeli
-  ani wpisu historii jako „rollback”: tabela może już zawierać potwierdzenia.
+- Po udanym `COMMIT` polecenie `ROLLBACK` nie cofnie wdrożenia. Nie usuwaj funkcji
+  ani wpisu historii jako „rollback”.
   Cofnięcie po zatwierdzeniu wymaga osobnego, zatwierdzonego planu. Brak API po
   poprawnym SQL nie jest powodem do ponownego uruchamiania migracji.
+
+## Ponawianie akceptacji w aplikacji
+
+Funkcja zachowuje cztery parametry, ale przyjmuje i ignoruje `p_request_id`,
+aby istniejący APK działał bez przebudowy. Blokada po stronie klienta chroni
+przed szybkim podwójnym kliknięciem. Ponowienie po utracie odpowiedzi może jednak
+utworzyć drugi mecz, gdy `p_match_id` jest `null`. Właściciel zaakceptował to
+ryzyko: duplikat usuwa się istniejącą akcją **Usuń mecz**. Redraw wskazanego meczu
+nadal blokuje jego wiersz i nie powiela snapshotów rankingu. To zachowanie RPC,
+nie zgoda na ponawianie skryptu wdrożeniowego bez sprawdzenia metadanych.
 
 ## Odtwarzanie i lokalny dowód (dla recenzenta)
 
@@ -78,7 +88,10 @@ socketu Unix, stosuje `supabase/tests/fixtures/local_auth.sql` i wcześniejsze
 migracje. Katalog dowodu musi być nowy; ścieżka socketu musi mieścić się w limicie
 systemowym. Klaster jest zatrzymywany także po błędzie. Logi pozostają w podanym
 katalogu. Test sprawdza brak częściowych zmian przez porównanie pełnych dumpów,
-a nie tylko kod wyjścia. Nie wywołuje RPC i nie zawiera danych produkcyjnych.
+a nie tylko kod wyjścia. Sam artefakt nie wywołuje RPC. Osobny test SQL w tym
+samym klastrze wywołuje funkcję na danych syntetycznych i wycofuje te dane.
+Sprawdza też duplikaty po ponowieniu i redraw bez powielania snapshotów.
+Żaden test nie zawiera danych produkcyjnych ani nie wywołuje hostowanego API.
 
 To nie jest pełny Supabase, GoTrue ani PostgREST. Lokalne booleany nie dowodzą
 odświeżenia hostowanego cache, rzeczywistych tokenów JWT, wszystkich reguł RLS,

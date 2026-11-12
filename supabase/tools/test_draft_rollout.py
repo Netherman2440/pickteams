@@ -16,6 +16,16 @@ class GeneratorTest(unittest.TestCase):
             b"\n" + rollout.END_SOURCE, 1
         )[0]
         self.assertEqual(embedded, source)
+        self.assertNotIn(b"match_draft_acceptances", source)
+        self.assertNotIn(b"pg_advisory_xact_lock", source)
+        self.assertEqual(source.count(b"p_request_id"), 2)  # Header and signature only.
+        self.assertIn(b"p_request_id uuid, p_squad_id uuid, p_match_id uuid, p_payload jsonb", source)
+        self.assertNotIn(b"ledger_rls_enabled", artifact)
+        readiness = artifact.rsplit(b"-- Metadata only.", 1)[1]
+        self.assertEqual(readiness.count(b" as "), 5)
+        for flag in ("function_exists", "authenticated_execute_allowed",
+                     "anonymous_execute_denied", "invoker_mode", "migration_history_present"):
+            self.assertIn(f"as {flag}".encode(), readiness)
         self.assertIn(hashlib.sha256(source).hexdigest().encode(), artifact)
         self.assertEqual(artifact.count(b"\nBEGIN;\n"), 1)
         self.assertEqual(artifact.count(b"\nCOMMIT;\n"), 1)

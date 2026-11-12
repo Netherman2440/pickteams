@@ -22,9 +22,6 @@ READINESS = """select
   not coalesce(has_function_privilege('anon',
     to_regprocedure('public.accept_match_draft(uuid,uuid,uuid,jsonb)'), 'EXECUTE'), true)
     as anonymous_execute_denied,
-  coalesce((select relrowsecurity from pg_class
-    where oid = to_regclass('public.match_draft_acceptances')), false)
-    as ledger_rls_enabled,
   coalesce((select not prosecdef from pg_proc
     where oid = to_regprocedure('public.accept_match_draft(uuid,uuid,uuid,jsonb)')), false)
     as invoker_mode"""
@@ -105,7 +102,7 @@ $history$;
 DO $verify$
 BEGIN
   IF NOT (SELECT function_exists AND authenticated_execute_allowed
-                 AND anonymous_execute_denied AND ledger_rls_enabled AND invoker_mode
+                 AND anonymous_execute_denied AND invoker_mode
           FROM ({READINESS}) readiness) THEN
     RAISE EXCEPTION 'Draft acceptance metadata checks failed; transaction must roll back';
   END IF;
