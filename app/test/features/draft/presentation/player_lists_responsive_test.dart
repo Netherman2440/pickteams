@@ -33,7 +33,14 @@ void main() {
       final rows = _rows(page);
       expect(rows, findsNWidgets(16));
       for (final element in rows.evaluate()) {
-        final row = find.byWidget(element.widget);
+        final widget = element.widget;
+        final row = widget is MatchViewPlayerPanel
+            ? find.byWidgetPredicate(
+                (candidate) =>
+                    candidate is MatchViewPlayerPanel &&
+                    candidate.player.playerId == widget.player.playerId,
+              )
+            : find.byWidget(widget);
         if (page == 'match') {
           // Full two-line panels need scrolling; the old all-eight-at-once
           // assertion conflicts with the approved full-name layout.
