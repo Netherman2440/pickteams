@@ -9,13 +9,16 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import zipfile
 
 FRAMEWORK = 'c197ca5199e9ee5661e865596c9c07294dfab51c'
 ENGINE = '89c39edfdfae2949f6806e4a315c0c08522238b7'
-UI_SOURCE = 'e881850541a2c27a20b4042b1e3d40d0f8eafd43'
+# The previous UI pin failed browser proof. The coordinator must replace this
+# with the corrected reviewed commit before the next expensive build.
+UI_SOURCE = None
 ABIS = ('armeabi-v7a', 'arm64-v8a', 'x86_64')
 MIGRATION = '''analyzer:
   exclude:
@@ -33,10 +36,10 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def audit_apk(path, config):
+def audit_apk(path, config, forbidden_hashes=()):
     """Public values are expected in AOT, never as a raw configuration asset."""
     needles = [v.encode() for v in config.values()]
-    needles += [base64.b64encode(f'{k}={v}'.encode()) for k, v in config.items()]
+    encoded_defines = [base64.b64encode(f'{k}={v}'.encode()) for k, v in config.items()]
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
         assert len(names) == len(set(names)), 'Duplicate ZIP entries'
@@ -47,9 +50,13 @@ def audit_apk(path, config):
             lower = name.lower()
             assert not any(part in lower for part in (
                 '.env', '.keystore', '.jks', 'client.json', 'client-config',
-                '.dart', '.gradle', '.pem', '.key', 'callback-data',
+                '.dart', '.gradle', '.kt', '.java', '.pem', '.key', '.p12',
+                'callback-data', 'kernel_blob.bin',
             )), 'Forbidden archive filename'
             data = archive.read(name)
+            assert digest(data) not in forbidden_hashes, 'Renamed source or private file'
+            assert not any(value in data for value in encoded_defines), 'Raw encoded DartDefines'
+            assert not re.search(rb'pl\.pickteams://auth/callback\?[^\s\x00\"\']*(?:code|access_token|refresh_token)=[A-Za-z0-9_-]{8,}', data), 'Captured callback data'
             aot = name in [f'lib/{abi}/libapp.so' for abi in ABIS]
             if aot:
                 assert all(v.encode() in data for v in config.values()), 'Missing AOT config'
@@ -70,6 +77,7 @@ def capture(args, cwd, stdout, stderr):
 
 def main():
     os.umask(0o077)
+    assert UI_SOURCE is not None, 'Await corrected coordinator-approved UI source pin'
     assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Ephemeral CI only'
     root = Path.cwd()
     app = root / 'app'
@@ -97,7 +105,7 @@ def main():
 
     head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root).decode().strip()
     assert head == os.environ['EXPECTED_HEAD'], 'Unexpected checkout'
-    run('reviewed-runtime-equality', ['git', 'diff', '--exit-code', UI_SOURCE, 'HEAD', '--', 'app', ':!app/tool/build_native_candidate.py', ':!app/tool/test_build_native_candidate.py'], root)
+    run('reviewed-runtime-equality', ['git', 'diff', '--exit-code', UI_SOURCE, 'HEAD', '--', 'app', ':!app/tool/build_native_candidate.py', ':!app/tool/test_build_native_candidate.py', ':!app/tool/sign_native_candidate.py', ':!app/tool/audit_native_candidate.py'], root)
     initial = source()
     config = {k: os.environ.pop(k) for k in ('SUPABASE_URL', 'SUPABASE_ANON_KEY')}
     assert all(config.values()), 'Missing production public configuration'
@@ -137,7 +145,10 @@ def main():
         run('release-build', [flutter, 'build', 'apk', '--release', '--target', 'lib/main.dart', '--dart-define-from-file=' + str(client), '--build-name=1.0.3', '--build-number=2026111202', '--no-pub'])
         restore_known_migration()
         apk = app / 'build/app/outputs/flutter-apk/app-release.apk'
-        entries = audit_apk(apk, config)
+        forbidden = {value for name, value in initial.items() if Path(name).suffix in {'.dart', '.kt', '.java', '.kts', '.gradle', '.yaml', '.yml', '.json', '.env'}}
+        forbidden.add(digest((Path.home() / '.android/debug.keystore').read_bytes()))
+        forbidden.add(digest(client.read_bytes()))
+        entries = audit_apk(apk, config, forbidden)
         tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/36.0.0'
         signature = run('ephemeral-signature', [str(tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)]).decode()
         cert = next(line.split(': ', 1)[1] for line in signature.splitlines() if line.startswith('Signer #1 certificate SHA-256 digest:'))
