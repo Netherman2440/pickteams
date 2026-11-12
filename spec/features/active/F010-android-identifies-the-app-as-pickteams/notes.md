@@ -1,0 +1,7 @@
+# Mapa akceptacji
+
+- Prywatny APK 1.0.2 / 2026111201 zbudowano ze źródeł `fc616d764ae1915166557221ca4ee7a9e96a1cb8`. SHA256: `9e185e96030946d38aacd329f067bde709a0f09eea08c518d87781ea70752efc`; 70 988 919 bajtów, trzy ABI, niezmieniony pakiet `com.example.app` i certyfikat.
+- Niezależna akceptacja offline obejmuje podpis, manifest, zasoby, konfigurację, wykluczenie plików prywatnych oraz wyrównanie ZIP/ELF do 16 KiB. Pełny werdykt jest w `review-2-apk.md`; dowody pozostają pod `.limen/releases/fc616d764ae1915166557221ca4ee7a9e96a1cb8/`.
+- `aapt2 badging` pokazuje pustą etykietę aktywności bez nadpisania. Drzewo skompilowanego manifestu i zasoby potwierdzają dziedziczenie „Pickteams” z aplikacji. Poprawka sprawdzarki `3b5ec83b9ca51f7b8f22d5ece7437404f3a54f99` zachowuje odrzucanie jawnie pustych i błędnych etykiet. Zmienia wyłącznie narzędzie, testy i dokumentację; pozostałe 430 plików aplikacji są identyczne ze źródłami APK.
+- Akceptacja offline nie obejmuje fizycznej instalacji/aktualizacji, zachowania danych, wyglądu launchera i Android Settings ani logowania Google na urządzeniu. Nie znamy podpisu dowolnej wcześniejszej instalacji; nie zalecamy odinstalowania jako rozwiązania.
+- Nowy APK nie jest opublikowany. Poprzedni plik pod dotychczasowym URL pozostaje bez zmian. Publikacja wymaga osobnego potwierdzenia hostowanej migracji i gotowości API; ta bramka jest przypisana do atomowej akceptacji draftu (F012).
