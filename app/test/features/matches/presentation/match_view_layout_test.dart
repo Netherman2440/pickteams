@@ -102,6 +102,102 @@ void main() {
     );
   }
 
+  testWidgets(
+    'roster measures actual children before imposing uniform height',
+    (tester) async {
+      final constraints = <BoxConstraints>[];
+      var taps = 0;
+      final semantics = tester.ensureSemantics();
+      Widget panel(String label, double naturalHeight) => LayoutBuilder(
+        builder: (context, limits) {
+          constraints.add(limits);
+          return Semantics(
+            label: label,
+            button: true,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => taps++,
+              child: SizedBox(height: naturalHeight),
+            ),
+          );
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 304,
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: MatchViewRosterLayout(
+                        rowCount: 2,
+                        gap: 8,
+                        minimumRowHeight: 76,
+                        minimumHeight: 500,
+                        children: [
+                          panel('Tall player', 257),
+                          panel('Short player', 76),
+                          panel('Third player', 100),
+                          const SizedBox.shrink(),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // LayoutBuilder has no intrinsic-height implementation. Only real layout
+      // can supply its natural height, at exactly the final 148px column width.
+      expect(constraints.length, 6);
+      for (final limits in constraints.take(3)) {
+        expect(limits.minWidth, 148);
+        expect(limits.maxWidth, 148);
+        expect(limits.minHeight, 0);
+        expect(limits.maxHeight, double.infinity);
+      }
+      for (final limits in constraints.skip(3)) {
+        expect(limits, BoxConstraints.tight(const Size(148, 257)));
+      }
+      expect(
+        tester.getSize(find.byType(MatchViewRosterLayout)),
+        const Size(304, 554),
+      );
+      expect(find.bySemanticsLabel('Tall player'), findsOneWidget);
+      await tester.tapAt(const Offset(74, 128));
+      expect(taps, 1);
+      semantics.dispose();
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SingleChildScrollView(
+            child: MatchViewRosterLayout(
+              rowCount: 0,
+              gap: 8,
+              minimumRowHeight: 76,
+              minimumHeight: 500,
+              children: [SizedBox(key: ValueKey('empty-footer'), height: 40)],
+            ),
+          ),
+        ),
+      );
+      expect(tester.getSize(find.byType(MatchViewRosterLayout)).height, 500);
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('empty-footer'))).dy,
+        460,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   test('shared widgets retain the draft defaults', () {
     const header = LineupHeader(
       homeName: 'Home',

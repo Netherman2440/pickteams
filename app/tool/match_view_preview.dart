@@ -58,12 +58,20 @@ Map<String, Object?> _paragraph(RenderParagraph paragraph) {
           'additionalConstraints': parent.additionalConstraints.toString(),
       });
     }
+    if (parent is RenderViewport) break;
   }
   return {
     'text': text,
     'natural': natural,
     'ancestors': ancestors,
-    'style': paragraph.text.style.toString(),
+    'style': {
+      'fontFamily': paragraph.text.style?.fontFamily,
+      'fontFamilyFallback': paragraph.text.style?.fontFamilyFallback,
+      'fontWeight': paragraph.text.style?.fontWeight?.value,
+      'height': paragraph.text.style?.height,
+      'letterSpacing': paragraph.text.style?.letterSpacing,
+      'wordSpacing': paragraph.text.style?.wordSpacing,
+    },
     'locale': paragraph.locale.toString(),
     'textDirection': paragraph.textDirection.toString(),
     'textWidthBasis': paragraph.textWidthBasis.toString(),
