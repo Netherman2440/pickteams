@@ -18,7 +18,7 @@ FRAMEWORK = 'c197ca5199e9ee5661e865596c9c07294dfab51c'
 ENGINE = '89c39edfdfae2949f6806e4a315c0c08522238b7'
 # The previous UI pin failed browser proof. The coordinator must replace this
 # with the corrected reviewed commit before the next expensive build.
-UI_SOURCE = None
+UI_SOURCE = '258c28b05174ff145fec0ef122fc23722f44386f'
 ABIS = ('armeabi-v7a', 'arm64-v8a', 'x86_64')
 # Credential-bearing callback query OR fragment is never allowed in an export;
 # the bare compiled callback literal (no '?' or '#') stays allowed.
