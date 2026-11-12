@@ -1,7 +1,5 @@
 ---
 opened: 2026-11-11
-needs-adam: "Uruchom zatwierdzony accept_match_draft_operator.sql z commitu 3eba467 w SQL Editor właściwego projektu i przekaż flagi gotowości bez danych dostępowych."
-needs-adam-on: 2026-11-12
 ---
 
 # F012 · A match is created only when a proposal is accepted
@@ -35,4 +33,4 @@ Wygenerowanie i przeglądanie propozycji nie tworzy meczu. Dopiero akceptacja wy
 
 ## Notes
 
-Obecna ścieżka tworzy pusty mecz jeszcze na ekranie wyboru, a notifier zapisuje wygenerowane propozycje przy obecności matchId. Należy zbadać obie granice. Jeśli pełny zapis wymaga migracji/RPC, przygotować transakcyjną operację z zachowaniem RLS i testami; nie stosować sekwencji „utwórz, a po błędzie usuń” ani nie wdrażać bez zgody na produkcję. Zapisany wynik i event-sourced delty pozostają bez zmian. Kod bazowy już przed tym zadaniem ustawia maxPlayersPerMatch na 22 i ma test dopuszczający ponad 16 graczy. Zachowujemy ten stan, zamiast wprowadzać niezamówioną zmianę limitów; rozbieżność z opisanym w vision/docelowym MVP limitem 16 nie jest rozwiązana przez tę poprawkę.
+Obecna ścieżka tworzy pusty mecz jeszcze na ekranie wyboru, a notifier zapisuje wygenerowane propozycje przy obecności matchId. Zapis akceptacji wymaga RPC; przygotowano transakcyjną operację z zachowaniem RLS i testami, bez sekwencji „utwórz, a po błędzie usuń”. Nie stosuje się deduplikacji po stronie serwera: decyzja właściciela z 2026-11-12 przyjmuje ryzyko duplikatu meczu po zgubionej odpowiedzi (klient blokuje szybkie podwójne kliknięcia, duplikat kasuje „Usuń mecz”); sygnatura RPC i klient pozostały bez zmian. Zapisany wynik i event-sourced delty pozostają bez zmian. Kod bazowy już przed tym zadaniem ustawia maxPlayersPerMatch na 22 i ma test dopuszczający ponad 16 graczy. Zachowujemy ten stan, zamiast wprowadzać niezamówioną zmianę limitów; rozbieżność z opisanym w vision/docelowym MVP limitem 16 nie jest rozwiązana przez tę poprawkę.
