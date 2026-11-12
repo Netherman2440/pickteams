@@ -150,7 +150,9 @@ def main():
         restore_known_migration()
         apk = app / 'build/app/outputs/flutter-apk/app-release.apk'
         forbidden = {value for name, value in initial.items() if Path(name).suffix in {'.dart', '.kt', '.java', '.kts', '.gradle', '.yaml', '.yml', '.json', '.env'}}
-        forbidden.add(digest((Path.home() / '.android/debug.keystore').read_bytes()))
+        keystore = Path.home() / '.android/debug.keystore'
+        if keystore.exists():
+            forbidden.add(digest(keystore.read_bytes()))
         forbidden.add(digest(client.read_bytes()))
         entries = audit_apk(apk, config, forbidden)
         tools = Path(os.environ['ANDROID_HOME']) / 'build-tools/36.0.0'
