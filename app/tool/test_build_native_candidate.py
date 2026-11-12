@@ -1,10 +1,12 @@
 """Adversarial export checks use synthetic configuration, never production values."""
 from pathlib import Path
+import json
+import sys
 import tempfile
 import unittest
 import zipfile
 
-from build_native_candidate import ABIS, audit_apk
+from build_native_candidate import ABIS, audit_apk, capture
 
 
 class ArtifactPrivacyTest(unittest.TestCase):
@@ -24,6 +26,15 @@ class ArtifactPrivacyTest(unittest.TestCase):
             for name, data in (extra or {}).items():
                 archive.writestr(name, data)
         return path
+
+    def test_bootstrap_diagnostics_do_not_corrupt_machine_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            out, err = root / 'stdout', root / 'stderr'
+            result = capture([sys.executable, '-c', 'import sys; print("Building tool", file=sys.stderr); print(\'{"version":"pinned"}\')'], root, out, err)
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(json.loads(out.read_bytes()), {'version': 'pinned'})
+            self.assertEqual(err.read_text(), 'Building tool\n')
 
     def test_compiled_public_config_is_allowed(self):
         self.assertEqual(len(audit_apk(self.archive(), self.config)), 6)
