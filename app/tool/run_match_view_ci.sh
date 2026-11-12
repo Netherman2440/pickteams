@@ -14,6 +14,13 @@ cleanup() {
     kill "$server_pid" 2>/dev/null || true
     wait "$server_pid" 2>/dev/null || true
   fi
+  cd "$ROOT"
+  if source_check after-run; then
+    printf '0\n' > "$PROOF_DIR/source-after-run.exit"
+  else
+    printf '1\n' > "$PROOF_DIR/source-after-run.exit"
+    if (( rc == 0 )); then rc=1; fi
+  fi
   printf '%s\n' "$rc" > "$PROOF_DIR/run.exit"
   exit "$rc"
 }
@@ -37,10 +44,11 @@ source_check() {
   local phase=$1
   git rev-parse HEAD > "$PROOF_DIR/source-$phase.txt"
   git status --porcelain=v1 --untracked-files=all > "$PROOF_DIR/status-$phase.txt"
-  test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-  test ! -s "$PROOF_DIR/status-$phase.txt"
-  git diff --exit-code > "$PROOF_DIR/diff-$phase.txt"
   git ls-files -z | xargs -0 sha256sum > "$PROOF_DIR/inputs-$phase.sha256"
+  test "$(git rev-parse HEAD)" = "$SOURCE_SHA" || return 1
+  test ! -s "$PROOF_DIR/status-$phase.txt" || return 1
+  git diff --exit-code > "$PROOF_DIR/diff-$phase.txt" || return 1
+  cmp "$PROOF_DIR/inputs-before.sha256" "$PROOF_DIR/inputs-$phase.sha256"
 }
 cp .github/workflows/match-view-proof.yml "$PROOF_DIR/workflow-as-executed.yml"
 cp app/tool/run_match_view_ci.sh "$PROOF_DIR/runner-as-executed.sh"
@@ -80,7 +88,7 @@ cd "$ROOT"
 source_check before-build
 cmp "$PROOF_DIR/inputs-before.sha256" "$PROOF_DIR/inputs-before-build.sha256"
 cd app
-run capture-unit python3 -m unittest discover -s tool -p test_match_view_capture.py -v
+run capture-unit python3 -m unittest discover -s tool -p 'test_*capture.py' -v
 run fixture-format dart format --output=none --set-exit-if-changed tool/match_view_preview.dart
 run fixture-analyze flutter analyze --no-pub tool/match_view_preview.dart
 awk '/MemAvailable:/ {print; if ($2 < 2621440) exit 1}' /proc/meminfo >> "$PROOF_DIR/resource.log"
