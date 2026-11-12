@@ -121,17 +121,24 @@ def capture(url, output):
                         request.abort()
                 page.route('**/*', route)
 
-                def frame(state, ink=True):
+                def snapshot(state):
                     page.wait_for_timeout(200)
                     path = out / f'{prefix}-{state}.png'
                     image = page.screenshot(path=str(path), full_page=False)
                     assert png_size(image) == (width, 640)
                     dom = page.evaluate(METRICS)
-                    check_viewport(dom, (width, 640))
                     metrics = page.evaluate('JSON.parse(window.matchViewMetrics())')
                     item = dict(state=state, file=path.name,
                         sha256=hashlib.sha256(image).hexdigest(), metrics=metrics, dom=dom)
                     record['frames'].append(item)
+                    return item
+
+                def frame(state, ink=True):
+                    # Keep raw metrics even when the first assertion fails.
+                    item = snapshot(state)
+                    check_viewport(item['dom'], (width, 640))
+                    metrics = item['metrics']
+                    path = out / item['file']
                     if metrics['panels'] and ink:
                         metrics['clearRegion'] = clear_region(metrics)
                         pixels = subprocess.run([str(IMAGE_PYTHON),
@@ -252,6 +259,45 @@ def capture(url, output):
                     except Exception as frame_error:
                         record['frameFailure'] = str(frame_error)
                 finally:
+                    # Independent diagnostics must still run after a strict
+                    # endpoint failure. Never convert that failure to a pass.
+                    if count != 2:
+                        probe = dict(frames=[], errors=[])
+                        record['collapseProbe'] = probe
+                        try:
+                            wheel(-10000)
+                            start = page.evaluate('JSON.parse(window.matchViewMetrics())')
+                            header = start['headerGeometry']
+                            extent = header['maxExtent'] - header['minExtent']
+                            assert abs(header['scrollOffset']) < .1, header
+                            for fraction in [.25, .5, .75]:
+                                current = page.evaluate('JSON.parse(window.matchViewMetrics())')
+                                wheel(extent * fraction - current['headerGeometry']['scrollOffset'])
+                                item = snapshot(f'collapse-{int(fraction * 100)}')
+                                metrics = item['metrics']
+                                header = metrics['headerGeometry']
+                                actual = header['scrollOffset'] / extent
+                                clip = [*metrics['viewport'][:3], header['paintExtent']]
+                                clipped = []
+                                for side in ['home', 'away']:
+                                    for kind, rect in [
+                                        ('name', label(metrics, metrics['teams'][side]['name'])),
+                                        ('badge', metrics['identities'][f'lineup-{side}-badge']),
+                                    ]:
+                                        if not inside(rect, clip):
+                                            clipped.append(dict(side=side, kind=kind, rect=rect))
+                                probe['frames'].append(dict(file=item['file'], target=fraction,
+                                    actual=actual, clip=clip, clipped=clipped))
+                                try:
+                                    check_viewport(item['dom'], (width, 640))
+                                    assert abs(actual - fraction) < .02, (actual, fraction)
+                                    assert not clipped, clipped
+                                except Exception as error:
+                                    probe['errors'].append(str(error))
+                        except Exception:
+                            probe['errors'].append(traceback.format_exc())
+                        if probe['errors']:
+                            record['status'] = 'failed'
                     page.close()
                     (out / 'results.json').write_text(json.dumps(records, indent=2))
         finally:
