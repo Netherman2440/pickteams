@@ -37,13 +37,17 @@ class PlayersListWidget extends StatelessWidget {
             );
           },
           supporting: positionText != null || difference != 0
-              ? Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
+              ? Row(
                   children: [
-                    if (positionText != null) Text(positionText),
-                    if (difference != 0)
+                    Expanded(
+                      child: positionText != null
+                          ? Text(positionText)
+                          : const SizedBox.shrink(),
+                    ),
+                    if (difference != 0) ...[
+                      const SizedBox(width: 12),
                       _RankingDifference(difference: difference),
+                    ],
                   ],
                 )
               : null,
