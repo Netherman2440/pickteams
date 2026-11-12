@@ -23,8 +23,59 @@ List<double> _rect(RenderBox box, [Rect? local]) {
 
 Map<String, Object?> _paragraph(RenderParagraph paragraph) {
   final text = paragraph.text.toPlainText();
+  final painter =
+      TextPainter(
+        text: paragraph.text,
+        textAlign: paragraph.textAlign,
+        textDirection: paragraph.textDirection,
+        textScaler: paragraph.textScaler,
+        locale: paragraph.locale,
+        strutStyle: paragraph.strutStyle,
+        textWidthBasis: paragraph.textWidthBasis,
+        textHeightBehavior: paragraph.textHeightBehavior,
+      )..layout(
+        minWidth: paragraph.constraints.minWidth,
+        maxWidth: paragraph.constraints.maxWidth,
+      );
+  final natural = {
+    'width': painter.width,
+    'height': painter.height,
+    'lines': painter.computeLineMetrics().length,
+  };
+  painter.dispose();
+  final ancestors = <Object?>[];
+  for (
+    RenderObject? parent = paragraph;
+    parent != null;
+    parent = parent.parent
+  ) {
+    if (parent is RenderBox) {
+      ancestors.add({
+        'type': parent.runtimeType.toString(),
+        'constraints': parent.constraints.toString(),
+        'size': [parent.size.width, parent.size.height],
+        if (parent is RenderConstrainedBox)
+          'additionalConstraints': parent.additionalConstraints.toString(),
+      });
+    }
+    if (parent is RenderViewport) break;
+  }
   return {
     'text': text,
+    'natural': natural,
+    'ancestors': ancestors,
+    'style': {
+      'fontFamily': paragraph.text.style?.fontFamily,
+      'fontFamilyFallback': paragraph.text.style?.fontFamilyFallback,
+      'fontWeight': paragraph.text.style?.fontWeight?.value,
+      'height': paragraph.text.style?.height,
+      'letterSpacing': paragraph.text.style?.letterSpacing,
+      'wordSpacing': paragraph.text.style?.wordSpacing,
+    },
+    'locale': paragraph.locale.toString(),
+    'textDirection': paragraph.textDirection.toString(),
+    'textWidthBasis': paragraph.textWidthBasis.toString(),
+    'textHeightBehavior': paragraph.textHeightBehavior.toString(),
     'rect': _rect(paragraph),
     'maxLines': paragraph.maxLines,
     'exceeded': paragraph.didExceedMaxLines,
@@ -65,6 +116,7 @@ void main() {
     Object? teams;
     Object? footer;
     Object? viewport;
+    Object? headerGeometry;
     void visit(Element element) {
       final widget = element.widget;
       if (element is RenderObjectElement &&
@@ -85,6 +137,16 @@ void main() {
             'name': widget.awayName,
             'color': widget.awayColor.toARGB32(),
           },
+        };
+      }
+      if (widget is SliverPersistentHeader &&
+          element.renderObject is RenderSliverPersistentHeader) {
+        final render = element.renderObject! as RenderSliverPersistentHeader;
+        headerGeometry = {
+          'minExtent': widget.delegate.minExtent,
+          'maxExtent': widget.delegate.maxExtent,
+          'scrollOffset': render.constraints.scrollOffset,
+          'paintExtent': render.geometry?.paintExtent,
         };
       }
       if (widget is MatchViewPlayerPanel) {
@@ -127,6 +189,7 @@ void main() {
       'labels': labels,
       'footer': footer,
       'viewport': viewport,
+      'headerGeometry': headerGeometry,
       'errors': errors,
     }).toJS;
   }).toJS;

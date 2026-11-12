@@ -125,7 +125,11 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final collapsed = shrinkOffset >= maxExtent - minExtent;
+    // Keep the complete stacked content only while it fits. Switch to the
+    // existing inline identity before a shrinking header can cut either item.
+    final available = math.max(minExtent, maxExtent - shrinkOffset);
+    final collapsed =
+        available < expanded - 16 || shrinkOffset >= maxExtent - minExtent;
     Widget identity(String side, String name, Color color) {
       final badge = Container(
         key: ValueKey('lineup-$side-badge'),
@@ -148,15 +152,9 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
                   Flexible(child: label),
                 ],
               )
-            : ClipRect(
-                child: OverflowBox(
-                  maxHeight: maxExtent,
-                  minHeight: maxExtent,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [badge, const SizedBox(height: 8), label],
-                  ),
-                ),
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [badge, const SizedBox(height: 8), label],
               ),
       );
     }
@@ -165,12 +163,15 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Row(
-          children: [
-            identity('home', header.homeName, header.homeColor),
-            const SizedBox(width: 8),
-            identity('away', header.awayName, header.awayColor),
-          ],
+        child: SizedBox(
+          height: available,
+          child: Row(
+            children: [
+              identity('home', header.homeName, header.homeColor),
+              const SizedBox(width: 8),
+              identity('away', header.awayName, header.awayColor),
+            ],
+          ),
         ),
       ),
     );
