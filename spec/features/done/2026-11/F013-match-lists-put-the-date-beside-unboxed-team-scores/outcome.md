@@ -1,0 +1,3 @@
+# Wynik
+
+Lista meczów pokazuje DD.MM po lewej, dwie drużyny z kolorami oraz pełne wyniki bez ramek, jednakowo na telefonie i desktopie. Zmiana weszła liniowo w commicie `2ad8b3460ddd7c079d5d998e9738fa1e57bf4597`, po potwierdzeniu identyczności siedmiu plików z zaakceptowanym kandydatem. Zwykły układ Row zastępuje wadliwe szerokości tabeli: wyniki dwu- i pięciocyfrowe pozostają w jednej linii bez zmniejszania tekstu. Niezależny review obejrzał 32 kadry i pomiary wszystkich dziewięciu kart w 12 kombinacjach listy, szerokości i skali tekstu; po rebase przeszło 28 testów i pełna analiza. Dane testowe i cel nawigacji były atrapami; fizyczny Android i publikacja całego APK wymagają osobnej walidacji wydania.
