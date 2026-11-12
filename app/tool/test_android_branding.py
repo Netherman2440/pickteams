@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from check_android_branding import check_apk, check_badging, check_source
 
@@ -14,6 +14,29 @@ application-label:'Pickteams'
 application-label-pl:'Pickteams'
 launchable-activity: name='com.example.app.MainActivity' label='Pickteams' icon='res/icon.png'
 """
+
+# Relevant records captured from aapt2 36.0.0 on the fc616d7 universal APK.
+# Unrelated attributes/components and localized application-label variants omitted.
+REAL_BADGING = """package: name='com.example.app' versionCode='2026111201' versionName='1.0.2'
+application-label:'Pickteams'
+application-label-pl:'Pickteams'
+launchable-activity: name='com.example.app.MainActivity'  label='' icon=''
+"""
+TREE = '''N: android=http://schemas.android.com/apk/res/android
+  E: manifest (line=2)
+    A: package="com.example.app" (Raw: "com.example.app")
+    E: application (line=33)
+      A: android:label(0x01010001)=@0x7f0d001c
+      E: activity (line=39)
+        A: android:name(0x01010003)="com.example.app.MainActivity" (Raw: "com.example.app.MainActivity")
+        E: intent-filter (line=74)
+          E: action (line=75)
+            A: android:name(0x01010003)="android.intent.action.MAIN" (Raw: "android.intent.action.MAIN")
+          E: category (line=77)
+            A: android:name(0x01010003)="android.intent.category.LAUNCHER" (Raw: "android.intent.category.LAUNCHER")
+'''
+ACTIVITY = '      E: activity (line=39)\n'
+FILTER = '        E: intent-filter (line=74)\n'
 
 
 class AndroidBrandingTest(unittest.TestCase):
@@ -98,11 +121,80 @@ class AndroidBrandingTest(unittest.TestCase):
 
     @patch("check_android_branding.subprocess.run")
     def test_apk_tool_invocation(self, run):
-        run.return_value.stdout = BADGING
+        run.side_effect = [subprocess.CompletedProcess([], 0, REAL_BADGING),
+                           subprocess.CompletedProcess([], 0, TREE)]
         check_apk(Path("final combined.apk"), "/sdk/build-tools/aapt2")
-        run.assert_called_once_with(
-            ["/sdk/build-tools/aapt2", "dump", "badging", "final combined.apk"],
-            check=True, text=True, capture_output=True)
+        self.assertEqual(run.call_args_list, [
+            call(["/sdk/build-tools/aapt2", "dump", "badging", "final combined.apk"],
+                 check=True, text=True, capture_output=True),
+            call(["/sdk/build-tools/aapt2", "dump", "xmltree", "final combined.apk",
+                  "--file", "AndroidManifest.xml"],
+                 check=True, text=True, capture_output=True),
+        ])
+
+    def test_compiled_inheritance_requires_tree(self):
+        with self.assertRaises(ValueError):
+            check_badging(REAL_BADGING)
+        check_badging(REAL_BADGING, TREE)
+        for value in ('"Pickteams"', '@0x7f0d001c'):
+            check_badging(REAL_BADGING, TREE.replace(FILTER,
+                          '        A: android:label(0x01010001)=' + value + '\n' + FILTER))
+
+    def test_compiled_tree_negative_controls(self):
+        mutations = [
+            '', TREE.replace('com.example.app', 'com.example.other'),
+            TREE.replace('android.intent.category.LAUNCHER', 'android.intent.category.DEFAULT'),
+            TREE.replace(ACTIVITY, '      E: service (line=39)\n'),
+            TREE.replace('      A: android:label(0x01010001)=@0x7f0d001c\n', ''),
+            TREE.replace('      A: android:label(0x01010001)=@0x7f0d001c',
+                         '      A: android:label(0x01010001)=""'),
+            TREE + TREE,
+            TREE.replace(FILTER, '          E: intent-filter (line=74)\n'),
+            TREE + 'bad record\n',
+            TREE.replace('(Raw: "com.example.app")', '(Raw: "com.example.other")'),
+            TREE.replace(FILTER, '        A: android:name(0x01010003)="Duplicate"\n' + FILTER),
+            TREE + TREE[TREE.index(ACTIVITY):],
+        ]
+        for value in ('""', '"app"', '@0x7f0dffff', '(type 0x00)0x0', '?0x7f0d001c'):
+            mutations.append(TREE.replace(FILTER,
+                             '        A: android:label(0x01010001)=' + value + '\n' + FILTER))
+            mutations.append(TREE.replace(FILTER, FILTER +
+                             '          A: android:label(0x01010001)=' + value + '\n'))
+        for tree in mutations:
+            with self.subTest(tree=tree), self.assertRaises(ValueError):
+                check_badging(REAL_BADGING, tree)
+        for badging in (REAL_BADGING.replace("label=''", "label='app'"),
+                        REAL_BADGING.replace("application-label-pl:'Pickteams'", "application-label-pl:'app'"),
+                        REAL_BADGING + REAL_BADGING.splitlines()[-1] + '\n'):
+            with self.subTest(badging=badging), self.assertRaises(ValueError):
+                check_badging(badging, TREE)
+
+    def test_alias_inherits_from_named_target(self):
+        target = ('      E: activity (line=34)\n'
+                  '        A: android:name(0x01010003)=".Target"\n')
+        alias = TREE.replace(ACTIVITY, target + '      E: activity-alias (line=39)\n'
+                             '        A: android:targetActivity(0x01010202)=".Target"\n')
+        check_badging(REAL_BADGING, alias)
+        for value in ('"Pickteams"', '@0x7f0d001c'):
+            check_badging(REAL_BADGING, alias.replace(target, target +
+                          '        A: android:label(0x01010001)=' + value + '\n'))
+        mutations = [alias.replace(target, ''), alias.replace('=".Target"', '=".MainActivity"'),
+                     alias.replace(target, target.replace('E: activity ', 'E: activity-alias '))]
+        for value in ('""', '"Wrong"', '@0x7f0dffff'):
+            mutations.append(alias.replace(target, target +
+                             '        A: android:label(0x01010001)=' + value + '\n'))
+            mutations.append(alias.replace(FILTER,
+                             '        A: android:label(0x01010001)=' + value + '\n' + FILTER))
+        for tree in mutations:
+            with self.subTest(tree=tree), self.assertRaises(ValueError):
+                check_badging(REAL_BADGING, tree)
+
+    @patch("check_android_branding.subprocess.run")
+    def test_xmltree_tool_failure_is_not_a_pass(self, run):
+        run.side_effect = [subprocess.CompletedProcess([], 0, REAL_BADGING),
+                           subprocess.CalledProcessError(1, "aapt2")]
+        with self.assertRaises(subprocess.CalledProcessError):
+            check_apk(Path("invalid.apk"), "aapt2")
 
     @patch("check_android_branding.subprocess.run")
     def test_apk_tool_failure_is_not_a_pass(self, run):

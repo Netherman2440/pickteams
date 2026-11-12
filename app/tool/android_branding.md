@@ -15,7 +15,8 @@ python3 app/tool/check_android_oauth.py
 
 The source check rejects the old label, changed resource values, label overrides
 in manifests and resource variants, and a changed application ID. The unit tests
-use temporary copies and synthetic badging output. They do not prove an APK.
+use temporary copies, captured aapt2 metadata excerpts and mutated negative
+controls. They do not prove an APK.
 The OAuth contract remains separate and unchanged.
 
 ## Final combined APK proof
@@ -31,10 +32,32 @@ python3 app/tool/check_android_branding.py \
 
 For another SDK location, pass its `aapt2` executable with `--aapt`. For a copied
 release artifact, pass its exact path with `--apk`. The checker runs
-`aapt2 dump badging` without building or changing the APK. It requires package
-`com.example.app`, default and localized application labels `Pickteams`, and
-launcher activity labels `Pickteams`. Missing labels and tool failures fail the
-check. Archive the command output with the APK hash in the release evidence.
+`aapt2 dump badging` and `aapt2 dump xmltree APK --file AndroidManifest.xml`
+without building or changing the APK. It requires package `com.example.app` and
+all default and localized application labels to resolve to `Pickteams`.
+
+An empty badging launcher label alone still fails. With compiled manifest
+evidence, the checker matches the named launcher to a MAIN/LAUNCHER component
+and checks its label. An absent activity label inherits the application label;
+an absent alias label inherits its named target activity's label, then the
+application label. Aliases must target a preceding activity; alias chains and
+cycles are not supported and fail closed. Explicit blank/wrong labels, unknown
+label references, missing/duplicate components, inconsistent identities and tool
+failures fail. Explicit labels must be literal `Pickteams` or the same reference
+as the already resolved application label. Other references fail closed even if
+they might resolve to `Pickteams`; this checker is not a general resource resolver.
+Intent-filter label overrides receive the same checks. `check_badging(output)`
+without tree evidence retains its strict behavior.
+
+Android's contract is in
+[`ComponentInfo.loadUnsafeLabel`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/content/pm/ComponentInfo.java):
+component literal/resource, then application literal/resource, then component name.
+[`PackageParser.parseActivityAlias`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/android/content/pm/PackageParser.java)
+copies the target's label before parsing alias overrides. See also the
+[activity-alias contract](https://developer.android.com/guide/topics/manifest/activity-alias-element).
+Thus aapt2's empty launchable-activity field is not itself a blank Android label.
+Archive both command outputs with the APK hash and checker commit in the release
+evidence. Keep the checker source pin separate from the APK build source pin.
 
 Compiled-label acceptance remains pending until this command runs on the final
 combined APK. Device acceptance is separate: update the existing installation
