@@ -33,7 +33,7 @@ python3 app/tool/check_android_branding.py \
 For another SDK location, pass its `aapt2` executable with `--aapt`. For a copied
 release artifact, pass its exact path with `--apk`. The checker runs
 `aapt2 dump badging` and `aapt2 dump xmltree APK --file AndroidManifest.xml`
-without building or changing the APK. It requires package `com.example.app` and
+without building or changing the APK. It requires package `pl.pickteams.app` and
 all default and localized application labels to resolve to `Pickteams`.
 
 An empty badging launcher label alone still fails. With compiled manifest
