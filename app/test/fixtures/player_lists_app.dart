@@ -81,6 +81,7 @@ class PlayerListsFixture extends StatefulWidget {
     this.textScale,
     this.systemPadding,
     this.players,
+    this.guest = false,
   });
   final String page;
   final SquadRole role;
@@ -89,6 +90,7 @@ class PlayerListsFixture extends StatefulWidget {
   final double? textScale;
   final EdgeInsets? systemPadding;
   final List<Player>? players;
+  final bool guest;
   @override
   State<PlayerListsFixture> createState() => _PlayerListsFixtureState();
 }
@@ -182,7 +184,7 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
   @override
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
-      authStateProvider.overrideWith(_FixtureAuth.new),
+      authStateProvider.overrideWith(() => _FixtureAuth(widget.guest)),
       squadDetailProvider.overrideWith(
         (ref, id) async => Squad(
           squadId: id,
@@ -226,13 +228,16 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
 }
 
 class _FixtureAuth extends AuthNotifier {
+  _FixtureAuth(this.guest);
+  final bool guest;
+
   @override
   AsyncValue<AuthEntity?> build() => AsyncData(
     AuthEntity(
       accessToken: '',
       refreshToken: '',
       userId: 'fixture',
-      isAnonymous: false,
+      isAnonymous: guest,
       email: 'fixture@example.invalid',
     ),
   );
@@ -356,7 +361,7 @@ class FixtureMatch extends MatchDetailsNotifier {
       AsyncData(initial ?? fixtureMatch());
   @override
   Future<void> updateScore(String squadId, int homeScore, int awayScore) async {
-    state = AsyncData(fixtureMatch(homeScore: homeScore, awayScore: awayScore));
+    _replace(homeScore: homeScore, awayScore: awayScore);
   }
 
   @override
@@ -364,8 +369,23 @@ class FixtureMatch extends MatchDetailsNotifier {
     List<String> homePlayerIds,
     List<String> awayPlayerIds,
   ) async {
-    state = AsyncData(
-      fixtureMatch(homeIds: homePlayerIds, awayIds: awayPlayerIds),
+    final match = state.requireValue;
+    final players = {
+      for (final player in [
+        ...?match.homeTeam?.players,
+        ...?match.awayTeam?.players,
+      ])
+        player.playerId: player,
+    };
+    _replace(
+      homeTeam: _team(
+        match.homeTeam!,
+        players: [for (final id in homePlayerIds) players[id]!],
+      ),
+      awayTeam: _team(
+        match.awayTeam!,
+        players: [for (final id in awayPlayerIds) players[id]!],
+      ),
     );
   }
 
@@ -377,7 +397,51 @@ class FixtureMatch extends MatchDetailsNotifier {
     String? homeColor,
     String? awayName,
     String? awayColor,
-  }) async {}
+  }) async {
+    final match = state.requireValue;
+    _replace(
+      homeTeam: _team(match.homeTeam!, name: homeName, color: homeColor),
+      awayTeam: _team(match.awayTeam!, name: awayName, color: awayColor),
+    );
+  }
+
+  TeamDto _team(
+    TeamDto team, {
+    String? name,
+    String? color,
+    List<PlayerDto>? players,
+  }) => TeamDto(
+    teamId: team.teamId,
+    matchId: team.matchId,
+    name: name ?? team.name,
+    color: color ?? team.color,
+    players: players ?? team.players,
+  );
+
+  void _replace({
+    int? homeScore,
+    int? awayScore,
+    TeamDto? homeTeam,
+    TeamDto? awayTeam,
+  }) {
+    final match = state.requireValue;
+    state = AsyncData(
+      MatchDetailsDto(
+        matchId: match.matchId,
+        squadId: match.squadId,
+        tournamentId: match.tournamentId,
+        scoreType: match.scoreType,
+        scoreMeta: match.scoreMeta,
+        createdAt: match.createdAt,
+        homeWinProbability: match.homeWinProbability,
+        homeScore: homeScore ?? match.homeScore,
+        awayScore: awayScore ?? match.awayScore,
+        homeTeam: homeTeam ?? match.homeTeam,
+        awayTeam: awayTeam ?? match.awayTeam,
+      ),
+    );
+  }
+
   @override
   Future<MatchDetailsDto> rematch() async {
     if (writes != null) writes!.rematches++;

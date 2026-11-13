@@ -1,0 +1,57 @@
+name: Private native candidate
+run-name: Native candidate at ${{ github.event.pull_request.head.sha }}
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/private-native-candidate.yml'
+      - 'app/tool/*native_candidate.py'
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Require corrected coordinator-approved source pin
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, 'app/tool')
+          from build_native_candidate import UI_SOURCE
+          assert UI_SOURCE is not None, 'Await corrected coordinator-approved UI source pin'
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '13114758'
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358'
+      - name: Test artifact privacy rejection
+        run: python3 -m unittest discover -s app/tool -p test_build_native_candidate.py
+      - name: Build and audit artifact allowlist
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: python3 app/tool/build_native_candidate.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-candidate-${{ github.event.pull_request.head.sha }}
+          path: |
+            ${{ runner.temp }}/native-export/candidate.apk
+            ${{ runner.temp }}/native-export/metadata.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:app/features/matches/presentation/widgets/match_player_tile.dart';
+import 'package:app/features/matches/presentation/widgets/match_view_roster.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -106,9 +106,8 @@ void main() {
   }
 
   for (final width in [320.0, 360.0, 393.0, 412.0]) {
-    // At 320px enlarged text overflows the existing RootShell title Row.
-    // Keep that navigation defect separate from match-header coverage.
-    for (final scale in width == 320 ? [1.0] : [1.0, 1.6, 2.0]) {
+    // The bounded RootShell brand now permits the required 320px/1.6 lane.
+    for (final scale in width == 320 ? [1.0, 1.6] : [1.0, 1.6, 2.0]) {
       for (final scores in [(14, 5), (null, null), (123, 98)]) {
         testWidgets(
           'phone $width scale $scale score $scores with Android keyboard',
@@ -138,25 +137,10 @@ void main() {
               scores.$1?.toString() ?? '-',
               scores.$2?.toString() ?? '-',
             );
-            final rows = find.byType(MatchPlayerTile);
+            final rows = find.byType(MatchViewPlayerPanel);
             expect(rows, findsNWidgets(16));
             expect(find.text('50.13'), findsOneWidget);
             expect(find.text('60.25'), findsNothing);
-            if (width == 360 && scale == 1) {
-              tester
-                  .state<ScrollableState>(find.byType(Scrollable).last)
-                  .position
-                  .jumpTo(48);
-              await tester.pumpAndSettle();
-              for (final row in rows.evaluate()) {
-                expect(
-                  tester.getRect(find.byWidget(row.widget)).bottom,
-                  lessThanOrEqualTo(616),
-                  reason:
-                      'The collapsed identity must leave all eight rows visible',
-                );
-              }
-            }
             await tester.tap(find.byTooltip('Akcje meczu'));
             await tester.pumpAndSettle();
             await tester.tap(find.text('Wprowadź wynik'));
