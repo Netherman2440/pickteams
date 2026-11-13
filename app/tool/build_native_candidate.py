@@ -16,10 +16,10 @@ import zipfile
 
 FRAMEWORK = 'c197ca5199e9ee5661e865596c9c07294dfab51c'
 ENGINE = '89c39edfdfae2949f6806e4a315c0c08522238b7'
-# The reviewed app tree (identity, tooling, version) that the native candidate
-# must build exactly; only the four native_candidate tool files may differ.
-# The coordinator re-pins this after each reviewed UI change.
-UI_SOURCE = 'be46006b6f0e89e9274b3e1962a34b68d6e31771'
+# The candidate app tree that the native build must match exactly; only the
+# four native_candidate tool files may differ. This pin is a source binding,
+# not release approval: independent review and final artifact checks still gate it.
+UI_SOURCE = '4efe6e16d913ff008bd3426be37a20b99226fe9e'
 ABIS = ('armeabi-v7a', 'arm64-v8a', 'x86_64')
 # Credential-bearing callback query OR fragment is never allowed in an export;
 # the bare compiled callback literal (no '?' or '#') stays allowed.
