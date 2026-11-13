@@ -10,6 +10,7 @@ import 'package:app/features/matches/application/dto/match_details_dto.dart';
 import 'package:app/features/matches/application/dto/player_dto.dart';
 import 'package:app/features/matches/presentation/controllers/match_details_notifier.dart';
 import 'package:app/features/matches/presentation/widgets/match_player_tile.dart';
+import 'package:app/features/matches/presentation/widgets/match_view_roster.dart';
 import 'package:app/features/squads/domain/entities/user_squad_role.dart';
 import 'package:app/features/squads/presentation/state/squad_detail_notifier.dart';
 import 'package:app/features/matches/presentation/controllers/squad_matches_notifier.dart';
@@ -632,6 +633,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
     MatchDetailsDto match, {
     required bool compact,
   }) {
+    if (!_isEditing) return _buildView(context, match, compact: compact);
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
     final bottomInset = _isTeamEditing && _isDraggingPlayer ? 84.0 : 0.0;
 
@@ -642,15 +644,8 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
         child: CustomScrollView(
           key: ValueKey(_isEditing),
           slivers: [
-            if (!_isEditing)
-              LineupHeader(
-                homeName: _displayTeamName(match.homeTeam?.name, 'Gospodarze'),
-                awayName: _displayTeamName(match.awayTeam?.name, 'Goście'),
-                homeColor: _parseColor(match.homeTeam?.color),
-                awayColor: _parseColor(match.awayTeam?.color),
-              ),
             LineupBody(
-              collapseExtent: _isEditing ? 0 : 48,
+              collapseExtent: 0,
               padding: EdgeInsets.fromLTRB(8, 4, 8, 8 + bottomInset),
               child: Column(
                 children: [
@@ -732,26 +727,60 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                       ),
                     ),
                   ],
-                  if (!_isEditing) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (final home in [true, false])
-                          Expanded(
-                            child: Text(
-                              'Ranking: ${_effectiveTeamRating((home ? match.homeTeam : match.awayTeam)?.players ?? [], (home ? match.awayTeam : match.homeTeam)?.players.length ?? 0).toStringAsFixed(1)}',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                  if (!_isEditing && match.homeWinProbability != null) ...[
-                    const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildView(
+    BuildContext context,
+    MatchDetailsDto match, {
+    required bool compact,
+  }) {
+    final home = match.homeTeam?.players ?? const <PlayerDto>[];
+    final away = match.awayTeam?.players ?? const <PlayerDto>[];
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: CustomScrollView(
+          key: const ValueKey(false),
+          slivers: [
+            LineupHeader(
+              stackedIdentity: true,
+              homeName: _displayTeamName(match.homeTeam?.name, 'Gospodarze'),
+              awayName: _displayTeamName(match.awayTeam?.name, 'Goście'),
+              homeColor: _parseColor(match.homeTeam?.color),
+              awayColor: _parseColor(match.awayTeam?.color),
+              // Team totals live in the expanded header under each team name;
+              // the roster footer keeps only the probability.
+              homeRanking:
+                  'Ranking: ${_effectiveTeamRating(home, away.length).toStringAsFixed(1)}',
+              awayRanking:
+                  'Ranking: ${_effectiveTeamRating(away, home.length).toStringAsFixed(1)}',
+            ),
+            MatchViewRoster(
+              home: home,
+              away: away,
+              gap: compact ? 8 : 16,
+              onPlayerTap: (player) => context.pushNamed(
+                AppRoute.playerDetails.name,
+                pathParameters: {
+                  'squadId': widget.squadId,
+                  'playerId': player.playerId,
+                },
+              ),
+              footer: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  if (match.homeWinProbability != null)
                     ProbabilitySlider(
-                      title: 'Szansa na wygraną',
+                      compact: true,
                       homeColor: _parseColor(match.homeTeam?.color),
                       awayColor: _parseColor(match.awayTeam?.color),
                       homeProbability: match.homeWinProbability!,
@@ -759,7 +788,6 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                           'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
                           'graczami w tym składzie.',
                     ),
-                  ],
                 ],
               ),
             ),

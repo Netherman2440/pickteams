@@ -4,7 +4,7 @@ Feature delta base: `603d08d26b234c408eed719f869d3da792d28dd5`. Keep the stacked
 
 ## Seams
 
-- `lib/core/widgets/lineup_header.dart`: one pinned sliver for both team identities; existing color badges shrink from 48 to 16 pixels. Name measurement reserves space for large text and wrapping.
+- `lib/core/widgets/lineup_header.dart`: one pinned sliver for both team identities; existing color badges shrink from 48 to 16 pixels. Name measurement reserves space for large text and wrapping. The stacked match variant also carries each team's `Ranking: …` total under its name while expanded; collapsed it reduces to the color badges alone, and the draft results variant keeps its inline badge-plus-name identity at every extent.
 - `MatchDetailsPage.build`: read-only score/date occupy the full local toolbar width, independent of leading/actions. Editing keeps direct Save/Cancel and removes collapse; a separate scroll key opens editors at the start without changing controllers.
 - `MatchDetailsPage._buildContent`: one scroll view, two compact shared-row columns, totals and probability after both rosters. Team editing retains its existing drop targets.
 - `DraftResultsPage` data presentation: proposal navigation scrolls away, team identity stays pinned, shared compact rows precede the unchanged wrapping totals/probability. Lifecycle, acceptance, pointer lock and back handling are unchanged.

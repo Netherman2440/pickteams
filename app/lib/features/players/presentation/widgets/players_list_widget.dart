@@ -25,6 +25,9 @@ class PlayersListWidget extends StatelessWidget {
         final player = players[index];
         final difference = player.ranking - player.baseRanking;
         final positionText = playerPositionPolishLabel(player.position);
+        final differenceWidget = difference == 0
+            ? null
+            : _RankingDifference(difference: difference);
 
         return PlayerListRow(
           name: player.name,
@@ -36,14 +39,17 @@ class PlayersListWidget extends StatelessWidget {
               pathParameters: {'squadId': squadId, 'playerId': player.playerId},
             );
           },
-          supporting: positionText != null || difference != 0
-              ? Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
+          // Without a position the ranking and its delta stack into one
+          // right-hand block and the name centers vertically against it.
+          rankingSupport: positionText == null ? differenceWidget : null,
+          supporting: positionText != null
+              ? Row(
                   children: [
-                    if (positionText != null) Text(positionText),
-                    if (difference != 0)
-                      _RankingDifference(difference: difference),
+                    Expanded(child: Text(positionText)),
+                    if (differenceWidget != null) ...[
+                      const SizedBox(width: 12),
+                      differenceWidget,
+                    ],
                   ],
                 )
               : null,

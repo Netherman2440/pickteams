@@ -65,7 +65,10 @@ def check_viewport(metrics, size):
     body_width = metrics['body']['scroll'][0]
     if body_width > width:
         right = max((t['rect']['right'] for t in metrics['overflowText']), default=width)
-        assert math.ceil(right) == body_width, 'Unexplained body overflow'
+        # CSSOM scrollWidth is rounded to an integer, while Range bounds keep
+        # subpixels (e.g. 400.015625 becomes 400, not 401). All contributing
+        # text must still have the invisible semantics ancestor checked above.
+        assert math.floor(right + .5) == body_width, 'Unexplained body overflow'
 
 
 def semantic_nodes(page):
@@ -152,9 +155,18 @@ def capture(url, output):
                     if identity:
                         names = ['Niebiescy', 'Czerwoni'] if screen == 'match' else ['Gospodarze', 'Goście']
                         colors = [[30, 136, 229], [229, 57, 53]] if screen == 'match' else [[129, 182, 76], [164, 200, 138]]
-                        identities = {side: dict(name=name, color=color,
-                            label=page.get_by_text(name, exact=True).bounding_box())
-                            for side, name, color in zip(['home', 'away'], names, colors)}
+                        # The stacked match header hides its team names once it
+                        # collapses; only the color badges stay pinned. The
+                        # draft results header keeps its inline names at every
+                        # extent. Edit flows return to a fresh expanded view.
+                        hidden = screen == 'match' and state in ('collapsed', 'bottom')
+                        identities = {}
+                        for side, name, color in zip(['home', 'away'], names, colors):
+                            locator = page.get_by_text(name, exact=True)
+                            assert locator.count() == (0 if hidden else 1), (screen, state, name, locator.count())
+                            identities[side] = dict(name=name, color=color,
+                                                   label=None if hidden else locator.bounding_box(),
+                                                   midpoint=width / 2)
                         result = subprocess.run([str(IMAGE_PYTHON), str(Path(__file__).with_name('lineup_pixels.py')), str(path)],
                                                 input=json.dumps(identities), text=True, capture_output=True, check=True)
                         item['identities'] = identities

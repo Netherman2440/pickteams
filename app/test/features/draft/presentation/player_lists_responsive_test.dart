@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:app/core/widgets/player_list_row.dart';
 import 'package:app/features/draft/presentation/widgets/draft_draggable_player_tile.dart';
-import 'package:app/features/matches/presentation/widgets/match_player_tile.dart';
+import 'package:app/features/matches/presentation/widgets/match_view_roster.dart';
 import 'package:app/features/matches/presentation/pages/match_details_page.dart';
 import 'package:app/features/squads/domain/entities/user_squad_role.dart';
 import '../../../fixtures/player_lists_app.dart';
@@ -21,19 +21,52 @@ void main() {
     }
   });
   for (final page in ['match', 'results']) {
-    testWidgets('$page shows both eight-player rosters with Android insets', (
+    testWidgets('$page keeps both rosters reachable with Android insets', (
       tester,
     ) async {
       await _pump(tester, page);
+      final rows = _rows(page);
+      if (page == 'match') {
+        // The expanded stacked header keeps each team name inside its
+        // roster column and shows the team totals under the names.
+        expect(
+          tester.getRect(find.text('Niebiescy')).right,
+          lessThanOrEqualTo(tester.getRect(rows.first).right),
+        );
+        expect(
+          tester.getRect(find.text('Czerwoni')).left,
+          greaterThanOrEqualTo(tester.getRect(rows.last).left),
+        );
+        expect(find.text('Ranking: 387.0'), findsOneWidget);
+        expect(find.text('Ranking: 355.0'), findsOneWidget);
+        expect(
+          find.text('50.13'),
+          findsOneWidget,
+        ); // historical snapshot, not today's 60.25
+        expect(find.text('60.25'), findsNothing);
+      }
       tester
           .state<ScrollableState>(find.byType(Scrollable).last)
           .position
           .jumpTo(page == 'match' ? 48 : 96);
       await tester.pumpAndSettle();
-      final rows = _rows(page);
       expect(rows, findsNWidgets(16));
       for (final element in rows.evaluate()) {
-        final rect = tester.getRect(find.byWidget(element.widget));
+        final widget = element.widget;
+        final row = widget is MatchViewPlayerPanel
+            ? find.byWidgetPredicate(
+                (candidate) =>
+                    candidate is MatchViewPlayerPanel &&
+                    candidate.player.playerId == widget.player.playerId,
+              )
+            : find.byWidget(widget);
+        if (page == 'match') {
+          // Full two-line panels need scrolling; the old all-eight-at-once
+          // assertion conflicts with the approved full-name layout.
+          await Scrollable.ensureVisible(tester.element(row), alignment: 1);
+          await tester.pumpAndSettle();
+        }
+        final rect = tester.getRect(row);
         expect(rect.left, greaterThanOrEqualTo(0));
         expect(rect.right, lessThanOrEqualTo(360));
         expect(
@@ -43,24 +76,21 @@ void main() {
         expect(
           rect.bottom,
           lessThanOrEqualTo(616),
-          reason: 'Every row must fit above the system inset',
+          reason: 'Every complete row must be reachable above the system inset',
         );
       }
       expect(find.byTooltip('Otwórz nawigację'), findsOneWidget);
       if (page == 'match') {
+        // The collapsed match header keeps only its color badges; team
+        // names and totals hide with it.
+        expect(find.text('Niebiescy'), findsNothing);
+        expect(find.text('Czerwoni'), findsNothing);
+        expect(find.text('Ranking: 387.0'), findsNothing);
+        expect(find.text('Ranking: 355.0'), findsNothing);
         expect(
-          tester.getRect(find.text('Niebiescy')).right,
-          lessThanOrEqualTo(tester.getRect(rows.first).right),
-        );
-        expect(
-          tester.getRect(find.text('Czerwoni')).left,
-          greaterThanOrEqualTo(tester.getRect(rows.last).left),
-        );
-        expect(
-          find.text('50.13'),
+          find.byKey(const ValueKey('lineup-home-badge')).hitTestable(),
           findsOneWidget,
-        ); // historical snapshot, not today's 60.25
-        expect(find.text('60.25'), findsNothing);
+        );
       } else {
         expect(find.text('Zakceptuj propozycję').hitTestable(), findsOneWidget);
       }
@@ -98,7 +128,14 @@ void main() {
           );
           expect(panel, findsOneWidget);
           expect(tester.getSize(panel).width, lessThanOrEqualTo(bound));
-          for (final element in find.byType(PlayerListRow).evaluate()) {
+          for (final element
+              in find
+                  .byWidgetPredicate(
+                    (widget) =>
+                        widget is PlayerListRow ||
+                        widget is MatchViewPlayerPanel,
+                  )
+                  .evaluate()) {
             final row = find.byWidget(element.widget);
             final rect = tester.getRect(row);
             expect(rect.left, greaterThanOrEqualTo(0));
@@ -238,7 +275,7 @@ void main() {
 }
 
 Finder _rows(String page) => page == 'match'
-    ? find.byType(MatchPlayerTile)
+    ? find.byType(MatchViewPlayerPanel)
     : find.byType(DraftDraggablePlayerTile);
 
 Future<void> _pump(
@@ -264,7 +301,10 @@ void _expectUnclipped(WidgetTester tester) {
   for (final element
       in find
           .descendant(
-            of: find.byType(PlayerListRow),
+            of: find.byWidgetPredicate(
+              (widget) =>
+                  widget is PlayerListRow || widget is MatchViewPlayerPanel,
+            ),
             matching: find.byType(RichText),
           )
           .evaluate()) {
