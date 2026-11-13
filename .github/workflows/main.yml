@@ -30,6 +30,11 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Pinned to the exact framework (c197ca5199e9ee5661e865596c9c07294dfab51c)
+          # used by the native and browser proof lanes: the floating stable channel
+          # ships Dart 3.14, whose flutter_test pins (matcher/test_api) no longer
+          # resolve against the lockfile (riverpod_generator 3.0.3).
+          flutter-version: '3.47.9'
 
       - name: Install dependencies
         run: flutter pub get
@@ -67,6 +72,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Same pinned framework as the analyze job and the native lane.
+          flutter-version: '3.47.9'
 
       - name: Install dependencies
         run: flutter pub get
