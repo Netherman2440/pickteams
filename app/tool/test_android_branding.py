@@ -9,27 +9,27 @@ from unittest.mock import call, patch
 from check_android_branding import check_apk, check_badging, check_source
 
 APP = Path(__file__).resolve().parents[1]
-BADGING = """package: name='com.example.app' versionCode='1' versionName='1.0'
+BADGING = """package: name='pl.pickteams.app' versionCode='1' versionName='1.0'
 application-label:'Pickteams'
 application-label-pl:'Pickteams'
-launchable-activity: name='com.example.app.MainActivity' label='Pickteams' icon='res/icon.png'
+launchable-activity: name='pl.pickteams.app.MainActivity' label='Pickteams' icon='res/icon.png'
 """
 
 # Relevant records captured from build-tools 36.0.0 on the fc616d7 APK.
 # Unrelated attributes/components and localized application-label variants omitted.
 # TREE is legacy aapt; AAPT2_TREE is the actual aapt2 format.
-REAL_BADGING = """package: name='com.example.app' versionCode='2026111201' versionName='1.0.2'
+REAL_BADGING = """package: name='pl.pickteams.app' versionCode='2026111201' versionName='1.0.2'
 application-label:'Pickteams'
 application-label-pl:'Pickteams'
-launchable-activity: name='com.example.app.MainActivity'  label='' icon=''
+launchable-activity: name='pl.pickteams.app.MainActivity'  label='' icon=''
 """
 TREE = '''N: android=http://schemas.android.com/apk/res/android
   E: manifest (line=2)
-    A: package="com.example.app" (Raw: "com.example.app")
+    A: package="pl.pickteams.app" (Raw: "pl.pickteams.app")
     E: application (line=33)
       A: android:label(0x01010001)=@0x7f0d001c
       E: activity (line=39)
-        A: android:name(0x01010003)="com.example.app.MainActivity" (Raw: "com.example.app.MainActivity")
+        A: android:name(0x01010003)="pl.pickteams.app.MainActivity" (Raw: "pl.pickteams.app.MainActivity")
         E: intent-filter (line=74)
           E: action (line=75)
             A: android:name(0x01010003)="android.intent.action.MAIN" (Raw: "android.intent.action.MAIN")
@@ -38,11 +38,11 @@ TREE = '''N: android=http://schemas.android.com/apk/res/android
 '''
 AAPT2_TREE = '''N: android=http://schemas.android.com/apk/res/android (line=2)
   E: manifest (line=2)
-    A: package="com.example.app" (Raw: "com.example.app")
+    A: package="pl.pickteams.app" (Raw: "pl.pickteams.app")
       E: application (line=33)
         A: http://schemas.android.com/apk/res/android:label(0x01010001)=@0x7f0d001c
           E: activity (line=39)
-            A: http://schemas.android.com/apk/res/android:name(0x01010003)="com.example.app.MainActivity" (Raw: "com.example.app.MainActivity")
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)="pl.pickteams.app.MainActivity" (Raw: "pl.pickteams.app.MainActivity")
               E: intent-filter (line=74)
                   E: action (line=75)
                     A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.MAIN" (Raw: "android.intent.action.MAIN")
@@ -126,8 +126,8 @@ class AndroidBrandingTest(unittest.TestCase):
                 resource.unlink()
 
     def test_rejects_changed_application_id(self):
-        self.replace(self.src.parent / "build.gradle.kts", 'applicationId = "com.example.app"',
-                     'applicationId = "com.example.other"')
+        self.replace(self.src.parent / "build.gradle.kts", 'applicationId = "pl.pickteams.app"',
+                     'applicationId = "pl.pickteams.other"')
         with self.assertRaisesRegex(ValueError, "applicationId"):
             check_source(self.app)
 
@@ -136,7 +136,7 @@ class AndroidBrandingTest(unittest.TestCase):
 
     def test_compiled_badging_negative_controls(self):
         mutations = [
-            BADGING.replace("com.example.app", "com.example.other"),
+            BADGING.replace("pl.pickteams.app", "pl.pickteams.other"),
             BADGING.replace("application-label:'Pickteams'", "application-label:'app'"),
             BADGING.replace("application-label-pl:'Pickteams'", "application-label-pl:'app'"),
             BADGING.replace("label='Pickteams'", "label='app'"),
@@ -175,7 +175,7 @@ class AndroidBrandingTest(unittest.TestCase):
 
     def test_compiled_tree_negative_controls(self):
         mutations = [
-            '', TREE.replace('com.example.app', 'com.example.other'),
+            '', TREE.replace('pl.pickteams.app', 'pl.pickteams.other'),
             TREE.replace('android.intent.category.LAUNCHER', 'android.intent.category.DEFAULT'),
             TREE.replace(ACTIVITY, '      E: service (line=39)\n'),
             TREE.replace('      A: android:label(0x01010001)=@0x7f0d001c\n', ''),
@@ -184,7 +184,7 @@ class AndroidBrandingTest(unittest.TestCase):
             TREE + TREE,
             TREE.replace(FILTER, '          E: intent-filter (line=74)\n'),
             TREE + 'bad record\n',
-            TREE.replace('(Raw: "com.example.app")', '(Raw: "com.example.other")'),
+            TREE.replace('(Raw: "pl.pickteams.app")', '(Raw: "pl.pickteams.other")'),
             TREE.replace(FILTER, '        A: android:name(0x01010003)="Duplicate"\n' + FILTER),
             TREE + TREE[TREE.index(ACTIVITY):],
         ]

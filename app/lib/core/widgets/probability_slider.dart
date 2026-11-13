@@ -9,6 +9,7 @@ class ProbabilitySlider extends StatelessWidget {
     this.title = 'Szansa na wygraną',
     this.infoText,
     this.animationDuration = const Duration(milliseconds: 350),
+    this.compact = false,
   });
 
   final Color homeColor;
@@ -17,6 +18,7 @@ class ProbabilitySlider extends StatelessWidget {
   final String title;
   final String? infoText;
   final Duration animationDuration;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,45 @@ class ProbabilitySlider extends StatelessWidget {
     final homePercent = (clamped * 100).round();
     final awayPercent = 100 - homePercent;
 
+    if (compact) {
+      return Semantics(
+        label: '$title: $homePercent% / $awayPercent%',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text('$homePercent%', style: theme.textTheme.bodySmall),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+                if (infoText != null)
+                  IconButton(
+                    icon: const Icon(Icons.info_outline, size: 18),
+                    tooltip: 'Jak to obliczamy?',
+                    onPressed: () => _showInfo(context, infoText!, title),
+                  ),
+                Text('$awayPercent%', style: theme.textTheme.bodySmall),
+              ],
+            ),
+            SizedBox(
+              height: 12,
+              child: _AnimatedBar(
+                homeColor: homeColor,
+                awayColor: awayColor,
+                homeProbability: clamped,
+                animationDuration: animationDuration,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),

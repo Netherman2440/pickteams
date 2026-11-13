@@ -65,7 +65,10 @@ def check_viewport(metrics, size):
     body_width = metrics['body']['scroll'][0]
     if body_width > width:
         right = max((t['rect']['right'] for t in metrics['overflowText']), default=width)
-        assert math.ceil(right) == body_width, 'Unexplained body overflow'
+        # CSSOM scrollWidth is rounded to an integer, while Range bounds keep
+        # subpixels (e.g. 400.015625 becomes 400, not 401). All contributing
+        # text must still have the invisible semantics ancestor checked above.
+        assert math.floor(right + .5) == body_width, 'Unexplained body overflow'
 
 
 def semantic_nodes(page):

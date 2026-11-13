@@ -296,17 +296,25 @@ class _RootShellState extends ConsumerState<RootShell> {
           },
         ),
         const SizedBox(width: 8),
-        Text.rich(
-          TextSpan(
-            style: titleStyle,
-            children: [
-              const TextSpan(text: 'pick'),
+        Flexible(
+          child: Tooltip(
+            message: 'pickteams.pl',
+            child: Text.rich(
               TextSpan(
-                text: 'teams',
-                style: TextStyle(color: theme.colorScheme.primary),
+                style: titleStyle,
+                children: [
+                  const TextSpan(text: 'pick'),
+                  TextSpan(
+                    text: 'teams',
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
+                  const TextSpan(text: '.pl'),
+                ],
               ),
-              const TextSpan(text: '.pl'),
-            ],
+              semanticsLabel: 'pickteams.pl',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
       ],
