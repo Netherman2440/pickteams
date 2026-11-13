@@ -756,6 +756,12 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
               awayName: _displayTeamName(match.awayTeam?.name, 'Goście'),
               homeColor: _parseColor(match.homeTeam?.color),
               awayColor: _parseColor(match.awayTeam?.color),
+              // Team totals live in the expanded header under each team name;
+              // the roster footer keeps only the probability.
+              homeRanking:
+                  'Ranking: ${_effectiveTeamRating(home, away.length).toStringAsFixed(1)}',
+              awayRanking:
+                  'Ranking: ${_effectiveTeamRating(away, home.length).toStringAsFixed(1)}',
             ),
             MatchViewRoster(
               home: home,
@@ -772,18 +778,6 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      for (final isHome in [true, false])
-                        Expanded(
-                          child: Text(
-                            'Ranking: ${_effectiveTeamRating(isHome ? home : away, (isHome ? away : home).length).toStringAsFixed(1)}',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                    ],
-                  ),
                   if (match.homeWinProbability != null)
                     ProbabilitySlider(
                       compact: true,

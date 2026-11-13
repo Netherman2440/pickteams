@@ -16,10 +16,15 @@ normal keyboard input, then Cancel must restore that same identity.
 `match_view_pixels.py` checks real raster ink inside every glyph box of each
 fully visible panel. Geometry checks require all characters inside their panels,
 14/12 base text sizes scaled once, equal row heights, inline panel-centered
-rankings, strict score/date centering, and footer order. Scrolling must expose
-every complete panel below the pinned header. Ink checks detect blank paint,
-not all wrong glyphs: open actual PNGs before accepting readability. No semantics
-or automatic status replaces this inspection.
+rankings, strict score/date centering, and footer order. Team totals live in
+the expanded header under each team name (badge, name, then a centered
+`Ranking: …` per column); the collapsed header keeps only the pinned color
+badges, and every roster frame re-asserts that collapsed state. The clear
+region excludes the whole painted header, so panels below it count as visible
+only when genuinely clear of it. Scrolling must expose every complete panel
+below the pinned header. Ink checks detect blank paint, not all wrong glyphs:
+open actual PNGs before accepting readability. No semantics or automatic
+status replaces this inspection.
 
 `test_match_view_capture.py` tests that the checks reject missing ink, truncated
 names, reduced fonts, changed identities and misplaced rankings. It runs with

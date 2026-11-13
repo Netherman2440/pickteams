@@ -5,7 +5,7 @@ import unittest
 from PIL import Image, ImageDraw
 
 from capture_lineups import check_badges, check_viewport, png_size, roster_snapshot
-from lineup_pixels import badge_geometry
+from lineup_pixels import badge_by_color, badge_geometry
 
 
 class CaptureContractTest(unittest.TestCase):
@@ -58,6 +58,32 @@ class CaptureContractTest(unittest.TestCase):
                 check_badges({'home': badge}, 16 if size == 48 else 48, 180)
             with self.assertRaises(AssertionError):
                 check_badges({'away': badge}, size, 180)
+
+    def test_collapsed_badges_are_found_by_color_without_a_label(self):
+        image = Image.new('RGB', (360, 640), (43, 42, 38))
+        draw = ImageDraw.Draw(image)
+
+        def badge(cx, color):
+            draw.rectangle((cx - 8, 42, cx + 7, 57), fill=(150, 150, 150))
+            draw.rectangle((cx - 7, 43, cx + 6, 56), fill=color)
+
+        badge(92, (30, 136, 229))
+        badge(268, (229, 57, 53))
+        pixels = image.convert('RGB')
+        home = badge_by_color(pixels, [30, 136, 229], 180, 'home')
+        away = badge_by_color(pixels, [229, 57, 53], 180, 'away')
+        self.assertEqual((home['x'], home['y'], home['width'], home['height']),
+                         (84, 42, 16, 16))
+        self.assertEqual((away['x'], away['y'], away['width'], away['height']),
+                         (260, 42, 16, 16))
+        check_badges({'home': home, 'away': away}, 16, 180)
+        with self.assertRaises(AssertionError):
+            check_badges({'home': home, 'away': away}, 48, 180)
+        # A missing badge color and a badge in the wrong half both fail.
+        with self.assertRaises(AssertionError):
+            badge_by_color(pixels, [1, 2, 3], 180, 'home')
+        with self.assertRaises(AssertionError):
+            badge_by_color(pixels, [30, 136, 229], 180, 'away')
 
     def test_roster_snapshot_detects_side_changes_and_keeps_rating(self):
         nodes = [dict(role='button', text='Player One 50.13', rect=dict(x=8)),

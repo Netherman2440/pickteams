@@ -4,8 +4,28 @@ import unittest
 from pathlib import Path
 
 from PIL import Image, ImageDraw
-from capture_match_view import check_panels, identity
+from capture_match_view import check_header, check_panels, identity
 from match_view_pixels import inspect
+
+
+def header_metrics(**overrides):
+    metrics = dict(
+        viewport=[0, 80, 210, 560],
+        headerGeometry=dict(minExtent=36, maxExtent=111, scrollOffset=0, paintExtent=111),
+        identities={
+            'lineup-home-badge': [10, 90, 48, 48],
+            'lineup-away-badge': [112, 90, 48, 48],
+        },
+        labels=[
+            dict(text='Home', rect=[10, 146, 48, 18]),
+            dict(text='Away', rect=[112, 146, 48, 18]),
+            dict(text='Ranking: 174.6', rect=[10, 168, 48, 16]),
+            dict(text='Ranking: 79.2', rect=[112, 168, 48, 16]),
+        ],
+        teams={'home': {'name': 'Home', 'color': 1}, 'away': {'name': 'Away', 'color': 2}},
+    )
+    metrics.update(overrides)
+    return metrics
 
 
 def metrics():
@@ -20,6 +40,49 @@ def metrics():
                 panels=[dict(id=str(x), name='Ab', ranking='9.90', rect=[x, 100, 100, 60],
                     texts=[text('Ab', [x + 2, 120, 20, 20], 14),
                            text('9.90', [x + 40, 122, 30, 16], 12)]) for x in [0, 110]])
+
+
+class MatchViewHeaderTest(unittest.TestCase):
+    def test_expanded_header_requires_two_totals_under_their_names(self):
+        check_header(header_metrics())
+        mutations = [
+            lambda m: m['labels'].pop(2),
+            lambda m: [m['labels'].pop(2) for _ in range(2)],
+            lambda m: m['labels'].__setitem__(2, dict(text='Ranking: 174.6', rect=[10, 140, 48, 16])),
+            lambda m: m['labels'][2]['rect'].__setitem__(0, 15),
+            lambda m: m['headerGeometry'].update(paintExtent=100),
+            lambda m: m['identities']['lineup-home-badge'].__setitem__(2, 16),
+            lambda m: m['labels'].append(dict(text='Home', rect=[10, 146, 48, 18])),
+        ]
+        for mutation in mutations:
+            bad = header_metrics()
+            mutation(bad)
+            with self.assertRaises(AssertionError):
+                check_header(bad)
+
+    def test_collapsed_header_rejects_names_totals_and_large_badges(self):
+        collapsed = header_metrics(
+            headerGeometry=dict(minExtent=36, maxExtent=111, scrollOffset=75, paintExtent=36),
+            identities={
+                'lineup-home-badge': [53, 100, 16, 16],
+                'lineup-away-badge': [141, 100, 16, 16],
+            },
+            labels=[],
+        )
+        check_header(collapsed, collapsed=True)
+        for mutation in [
+            lambda m: m['labels'].append(dict(text='Home', rect=[10, 100, 48, 18])),
+            lambda m: m['labels'].append(dict(text='Ranking: 174.6', rect=[10, 100, 48, 16])),
+            lambda m: m['identities']['lineup-home-badge'].__setitem__(2, 48),
+        ]:
+            bad = header_metrics(
+                headerGeometry=collapsed['headerGeometry'],
+                identities=collapsed['identities'],
+                labels=[],
+            )
+            mutation(bad)
+            with self.assertRaises(AssertionError):
+                check_header(bad, collapsed=True)
 
 
 class MatchViewProofTest(unittest.TestCase):

@@ -20,26 +20,137 @@ void main() {
   });
 
   for (final stacked in [false, true]) {
+    for (final scale in [1.0, 1.6]) {
+      testWidgets(
+        'shared identity opt-in=$stacked at ${scale}x keeps long team names visible',
+        (tester) async {
+          tester.view.physicalSize = const Size(320, 640);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          const name = 'Drużyna zawodników z bardzo długą pełną nazwą klubu';
+          await tester.pumpWidget(
+            MaterialApp(
+              home: MediaQuery(
+                data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+                child: Scaffold(
+                  body: CustomScrollView(
+                    slivers: [
+                      LineupHeader(
+                        homeName: name,
+                        awayName: 'Goście',
+                        homeColor: Colors.blue,
+                        awayColor: Colors.red,
+                        stackedIdentity: stacked,
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 2000)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final badge = find.byKey(const ValueKey('lineup-home-badge'));
+          final label = find.text(name);
+          expect(tester.getSize(badge).width, 48);
+          if (stacked) {
+            expect(
+              tester.getRect(badge).bottom,
+              lessThan(tester.getRect(label).top),
+            );
+          } else {
+            expect(
+              tester.getCenter(badge).dy,
+              closeTo(tester.getCenter(label).dy, .01),
+            );
+          }
+          final paragraph = tester.renderObject<RenderParagraph>(label);
+          expect(paragraph.didExceedMaxLines, isFalse);
+          if (stacked) {
+            final header = tester.widget<SliverPersistentHeader>(
+              find.byType(SliverPersistentHeader),
+            );
+            final extent =
+                header.delegate.maxExtent - header.delegate.minExtent;
+            for (final fraction in [.25, .5, .75]) {
+              tester
+                  .state<ScrollableState>(find.byType(Scrollable))
+                  .position
+                  .jumpTo(extent * fraction);
+              await tester.pumpAndSettle();
+              final render = tester.renderObject<RenderSliverPersistentHeader>(
+                find.byType(SliverPersistentHeader),
+              );
+              final clip = Rect.fromLTWH(
+                0,
+                0,
+                320,
+                render.geometry!.paintExtent,
+              );
+              // A shrinking stacked header shows either the complete identity
+              // or only the badges; it never renders cut-off content.
+              expect(clip.contains(tester.getRect(badge).topLeft), isTrue);
+              expect(
+                tester.getRect(badge).bottom,
+                lessThanOrEqualTo(clip.bottom),
+              );
+              final visible = find.text(name);
+              if (visible.evaluate().isNotEmpty) {
+                expect(clip.contains(tester.getRect(visible).topLeft), isTrue);
+                expect(
+                  tester.getRect(visible).bottom,
+                  lessThanOrEqualTo(clip.bottom),
+                );
+              }
+              expect(tester.takeException(), isNull);
+            }
+          }
+          tester
+              .state<ScrollableState>(find.byType(Scrollable))
+              .position
+              .jumpTo(1000);
+          await tester.pumpAndSettle();
+          expect(tester.getSize(badge).width, 16);
+          if (stacked) {
+            // Collapsed stacked identity: only the pinned badges remain.
+            expect(find.text(name), findsNothing);
+            expect(find.text('Goście'), findsNothing);
+          } else {
+            expect(
+              tester.getCenter(badge).dy,
+              closeTo(tester.getCenter(label).dy, .01),
+            );
+          }
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
+  for (final scale in [1.0, 1.6]) {
     testWidgets(
-      'shared identity opt-in=$stacked keeps long team names visible',
+      'stacked totals sit under the names while expanded at ${scale}x',
       (tester) async {
         tester.view.physicalSize = const Size(320, 640);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
-        const name = 'Drużyna zawodników z bardzo długą pełną nazwą klubu';
+        const homeTotal = 'Ranking: 174.6';
+        const awayTotal = 'Ranking: 79.2';
         await tester.pumpWidget(
           MaterialApp(
             home: MediaQuery(
-              data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
               child: Scaffold(
                 body: CustomScrollView(
                   slivers: [
                     LineupHeader(
-                      homeName: name,
-                      awayName: 'Goście',
+                      homeName: 'Niebiescy',
+                      awayName: 'Czerwoni',
                       homeColor: Colors.blue,
                       awayColor: Colors.red,
-                      stackedIdentity: stacked,
+                      stackedIdentity: true,
+                      homeRanking: homeTotal,
+                      awayRanking: awayTotal,
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 2000)),
                   ],
@@ -49,54 +160,42 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final badge = find.byKey(const ValueKey('lineup-home-badge'));
-        final label = find.text(name);
-        expect(tester.getSize(badge).width, 48);
-        if (stacked) {
-          expect(
-            tester.getRect(badge).bottom,
-            lessThan(tester.getRect(label).top),
-          );
-        } else {
-          expect(
-            tester.getCenter(badge).dy,
-            closeTo(tester.getCenter(label).dy, .01),
-          );
-        }
-        final paragraph = tester.renderObject<RenderParagraph>(label);
-        expect(paragraph.didExceedMaxLines, isFalse);
-        if (stacked) {
-          final header = tester.widget<SliverPersistentHeader>(
-            find.byType(SliverPersistentHeader),
-          );
-          final extent = header.delegate.maxExtent - header.delegate.minExtent;
-          for (final fraction in [.25, .5, .75]) {
-            tester
-                .state<ScrollableState>(find.byType(Scrollable))
-                .position
-                .jumpTo(extent * fraction);
-            await tester.pumpAndSettle();
-            final render = tester.renderObject<RenderSliverPersistentHeader>(
-              find.byType(SliverPersistentHeader),
-            );
-            final clip = Rect.fromLTWH(0, 0, 320, render.geometry!.paintExtent);
-            for (final identity in [badge, label]) {
-              final rect = tester.getRect(identity);
-              expect(clip.contains(rect.topLeft), isTrue);
-              expect(rect.bottom, lessThanOrEqualTo(clip.bottom));
-            }
-          }
-        }
+        final homeBadge = find.byKey(const ValueKey('lineup-home-badge'));
+        final homeName = find.text('Niebiescy');
+        final awayName = find.text('Czerwoni');
+        final home = find.text(homeTotal);
+        final away = find.text(awayTotal);
+        expect(tester.getSize(homeBadge).width, 48);
+        expect(
+          tester.getRect(home).top,
+          greaterThan(tester.getRect(homeName).bottom),
+        );
+        expect(
+          tester.getCenter(home).dx,
+          closeTo(tester.getCenter(homeName).dx, .1),
+        );
+        expect(
+          tester.getCenter(away).dx,
+          closeTo(tester.getCenter(awayName).dx, .1),
+        );
+        // Totals never overlap the roster space below the header.
+        final render = tester.renderObject<RenderSliverPersistentHeader>(
+          find.byType(SliverPersistentHeader),
+        );
+        expect(
+          tester.getRect(home).bottom,
+          lessThanOrEqualTo(render.geometry!.paintExtent),
+        );
         tester
             .state<ScrollableState>(find.byType(Scrollable))
             .position
             .jumpTo(1000);
         await tester.pumpAndSettle();
-        expect(tester.getSize(badge).width, 16);
-        expect(
-          tester.getCenter(badge).dy,
-          closeTo(tester.getCenter(label).dy, .01),
-        );
+        // Collapsed: badges stay pinned, names and totals hide.
+        expect(tester.getSize(homeBadge).width, 16);
+        expect(find.text('Niebiescy'), findsNothing);
+        expect(find.text(homeTotal), findsNothing);
+        expect(find.text(awayTotal), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );
@@ -295,6 +394,30 @@ void main() {
               tester.getCenter(badge).dx,
               closeTo(tester.getCenter(name).dx, .1),
             );
+            // Team totals moved into the expanded header, one per column,
+            // centered under their team names.
+            final totals = switch (count) {
+              2 => const ['Ranking: 115.2', 'Ranking: 19.8'],
+              8 => const ['Ranking: 174.6', 'Ranking: 79.2'],
+              11 => const ['Ranking: 204.3', 'Ranking: 108.9'],
+              _ => const <String>[],
+            };
+            for (final total in totals) {
+              final totalFinder = find.text(total);
+              expect(totalFinder, findsOneWidget);
+            }
+            expect(
+              tester.getRect(find.text(totals.first)).top,
+              greaterThan(tester.getRect(name).bottom),
+            );
+            expect(
+              tester.getCenter(find.text(totals.first)).dx,
+              closeTo(tester.getCenter(name).dx, .1),
+            );
+            expect(
+              tester.getCenter(find.text(totals.last)).dx,
+              closeTo(tester.getCenter(find.text('Czerwoni')).dx, .1),
+            );
             final panels = find.byType(MatchViewPlayerPanel);
             expect(panels, findsNWidgets(count * 2));
             final height = tester.getSize(panels.first).height;
@@ -385,11 +508,13 @@ void main() {
             } else {
               scroll.position.jumpTo(scroll.position.maxScrollExtent);
               await tester.pumpAndSettle();
+              // Collapsed header: pinned color badges only.
               expect(tester.getSize(badge).width, 16);
-              expect(
-                tester.getCenter(badge).dy,
-                closeTo(tester.getCenter(name).dy, .1),
-              );
+              expect(find.text('Niebiescy'), findsNothing);
+              expect(find.text('Czerwoni'), findsNothing);
+              for (final total in totals) {
+                expect(find.text(total), findsNothing);
+              }
               expect(footer.hitTestable(), findsOneWidget);
               expect(
                 tester.getRect(panels.last).bottom,
