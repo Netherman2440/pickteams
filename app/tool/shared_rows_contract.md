@@ -3,13 +3,15 @@
 `lib/core/widgets/player_list_row.dart` owns the name/rating rendering.
 `PlayerListRow` requires `String name` and `double ranking`. Optional parameters:
 `PlayerRowDensity? density`, `bool compact = false`, `Widget? leading`,
-`Widget? trailing`, `Widget? supporting`, and `VoidCallback? onTap`.
+`Widget? trailing`, `Widget? supporting`, `Widget? rankingSupport`, and
+`VoidCallback? onTap`.
 
 - `density` overrides the compatibility `compact` flag. Without either, density is comfortable.
 - `compact`: minimum 32 px height; 4 px horizontal and 3 px vertical padding.
 - `comfortable`: minimum 48 px height; 4 px horizontal and 8 px vertical padding.
 - Both use a 14 px name (18 px line height) and a 12 px ranking (16 px line height), respecting text scaling. Ranking remains `toStringAsFixed(2)`.
 - Name expands and wraps without a line cap. Rating stays inline, never a compulsory second line. Long names, text scaling, large actions, and optional metadata increase height. A 32 px minimum is not a fixed roster height.
+- `rankingSupport` renders directly under the ranking as one right-hand block; the full name then centers vertically against that block instead of sharing its baseline. It is exclusive with `supporting`. The ordinary players list uses it for the ranking delta when the player has no position; with a position the existing name/position arrangement and `supporting` line stay.
 - `leading` and `trailing` are intrinsic-width slots. Callers must bound their actions. `supporting` is optional metadata below the inline row, not another rating renderer.
 
 `DraftDraggablePlayerTile` and `MatchPlayerTile` preserve all old constructor parameters and add `density` and `leading`. Draft `simple` now controls optional position/ranking-change metadata only. Drag payloads, feedback, platform choice, callbacks and match snapshot ranking remain unchanged. Selection explicitly uses comfortable rows. F015 can keep `compact: true` or use `density: PlayerRowDensity.compact` for rosters.

@@ -14,6 +14,7 @@ class PlayerListRow extends StatelessWidget {
     this.leading,
     this.trailing,
     this.supporting,
+    this.rankingSupport,
     this.onTap,
   });
 
@@ -28,6 +29,11 @@ class PlayerListRow extends StatelessWidget {
 
   /// Optional metadata; the name and rating always keep their inline layout.
   final Widget? supporting;
+
+  /// Optional widget rendered directly under the ranking. With it, the name
+  /// centers vertically against the combined ranking block instead of sharing
+  /// the inline row baseline with the ranking. Exclusive with [supporting].
+  final Widget? rankingSupport;
   final VoidCallback? onTap;
 
   @override
@@ -76,18 +82,48 @@ class PlayerListRow extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  if (leading != null) ...[leading!, const SizedBox(width: 8)],
-                  Expanded(child: nameText),
-                  const SizedBox(width: 8),
-                  rankingText,
-                  if (trailing != null) ...[
-                    const SizedBox(width: 4),
-                    trailing!,
+              if (rankingSupport != null)
+                // The ranking and its support stack into one right-hand block;
+                // the row centers the full name vertically against it.
+                Row(
+                  children: [
+                    if (leading != null) ...[
+                      leading!,
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(child: nameText),
+                    const SizedBox(width: 8),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        rankingText,
+                        const SizedBox(height: 2),
+                        rankingSupport!,
+                      ],
+                    ),
+                    if (trailing != null) ...[
+                      const SizedBox(width: 4),
+                      trailing!,
+                    ],
                   ],
-                ],
-              ),
+                )
+              else
+                Row(
+                  children: [
+                    if (leading != null) ...[
+                      leading!,
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(child: nameText),
+                    const SizedBox(width: 8),
+                    rankingText,
+                    if (trailing != null) ...[
+                      const SizedBox(width: 4),
+                      trailing!,
+                    ],
+                  ],
+                ),
               if (supporting != null) ...[
                 const SizedBox(height: 4),
                 supporting!,
