@@ -2,11 +2,16 @@
 """Locally sign a CI artifact, then audit it without building or installing.
 
 Use the existing image-tools Python (Pillow). This command acquires the shared
-nonblocking flock itself. It never exports the unchanged local debug key.
-Signing is allowed only after the downloaded artifact ZIP is bound to a
-successful GitHub run of the exact expected source, and the metadata source
-map equals the tracked inputs of the local checkout. The signed file is
-promoted to its final name only after every payload and offline check passes.
+nonblocking flock itself. Production signing uses the protected local config
+(base/signing.properties, base/signing-certificate.der and the
+PICKTEAMS_SIGNING_STORE_PASSWORD / PICKTEAMS_SIGNING_KEY_PASSWORD
+environment variables, read only by apksigner) and fails closed when any of
+them is missing; the legacy debug identity is rejected. Password values never
+appear in argv, evidence or logs. Signing is allowed only after the
+downloaded artifact ZIP is bound to a successful GitHub run of the exact
+expected source, and the metadata source map equals the tracked inputs of the
+local checkout. The signed file is promoted to its final name only after
+every payload and offline check passes.
 """
 import argparse
 from contextlib import contextmanager
@@ -20,7 +25,7 @@ import subprocess
 import sys
 import zipfile
 
-from audit_native_candidate import CERTIFICATE, audit, digest
+from audit_native_candidate import LEGACY_DEBUG_CERTIFICATE, audit, digest, signing_config
 from build_native_candidate import UI_SOURCE
 
 SIGNATURE_ENTRY = re.compile(r'^META-INF/(?:MANIFEST\.MF|[^/]+\.(?:SF|RSA|DSA|EC))$', re.I)
@@ -141,6 +146,10 @@ def atomic_candidate(final_path):
     # Keep an .apk suffix: apkanalyzer sniffs the file type from the extension.
     temp = final_path.parent / ('.' + final_path.stem + '-' + str(os.getpid()) + '.apk')
     temp.unlink(missing_ok=True)
+    # apksigner v4 signing writes its sidecar next to the output as <out>.idsig,
+    # i.e. '.pickteams-release-<pid>.apk.idsig'; clean that exact path.
+    idsig = Path(str(temp) + '.idsig')
+    idsig.unlink(missing_ok=True)
     try:
         yield temp
         assert temp.is_file(), 'Signing produced no output'
@@ -148,7 +157,7 @@ def atomic_candidate(final_path):
         os.replace(temp, final_path)
     finally:
         temp.unlink(missing_ok=True)
-        (final_path.parent / (temp.stem + '.idsig')).unlink(missing_ok=True)
+        idsig.unlink(missing_ok=True)
 
 
 def main():
@@ -183,6 +192,12 @@ def main():
     bt, analyzer = base/'sdk/build-tools/36.0.0', base/'sdk/cmdline-tools/19.0/bin/apkanalyzer'
     os.environ.update(JAVA_HOME=(base/'jdk-path.txt').read_text().strip(), ANDROID_HOME=str(base/'sdk'), ANDROID_SDK_ROOT=str(base/'sdk'), PYTHONDONTWRITEBYTECODE='1', JAVA_TOOL_OPTIONS='-Xmx512m')
     os.environ['PATH'] = os.environ['JAVA_HOME']+'/bin:'+os.environ['PATH']
+    # Production signing contract: protected signing.properties names the
+    # keystore and alias, passwords arrive only as apksigner env: references,
+    # and signing-certificate.der pins the production certificate. Anything
+    # missing fails closed; the legacy debug identity is rejected.
+    signing = signing_config(base)
+    assert not signing['keystore'].resolve().is_relative_to(source.resolve()), 'Signing keystore must live outside the repository'
 
     def run(name, command):
         command = list(map(str, command))
@@ -215,7 +230,7 @@ def main():
             target.chmod(0o600)
 
     public_files = {p for p in args.public_root.resolve().rglob('*') if p.is_file()}
-    protected = public_files | {base/name for name in ('pickteams-release.apk', 'client-config.json', 'gradle/gradle.properties', 'build-version.txt', 'jdk-path.txt', 'signing-certificate.der')} | {Path.home()/'.android/debug.keystore'}
+    protected = public_files | {base/name for name in ('pickteams-release.apk', 'client-config.json', 'gradle/gradle.properties', 'build-version.txt', 'jdk-path.txt', 'signing-certificate.der', 'signing.properties')} | {Path.home()/'.android/debug.keystore', signing['keystore']}
     baseline = preserved(protected)
     before = evidence/'preservation-before.json'
     if before.exists():
@@ -232,7 +247,7 @@ def main():
     assert not run('status-before', ['git', 'status', '--porcelain'])
     assert metadata['reviewed_ui_source'] == UI_SOURCE
     assert metadata['entrypoint'] == 'lib/main.dart'
-    assert (metadata['build_name'], metadata['build_number']) == ('1.0.3', 2026111202)
+    assert (metadata['build_name'], metadata['build_number']) == ('1.0.4', 2026111301)
     # 2. The metadata source map must equal the checkout's tracked inputs exactly.
     verify_tracked_inputs(metadata['runtime_input_sha256'], tracked_inputs(source))
     config = json.loads((base/'client-config.json').read_text())
@@ -240,11 +255,13 @@ def main():
     assert digest(remote) == metadata['apk_sha256'] and remote.stat().st_size == metadata['apk_size']
     remote_signature = run('remote-signature', [bt/'apksigner', 'verify', '--verbose', '--print-certs', remote])
     assert 'Signer #1 certificate SHA-256 digest: '+metadata['ephemeral_certificate_sha256'] in remote_signature
-    assert metadata['ephemeral_certificate_sha256'] != CERTIFICATE
+    assert metadata['ephemeral_certificate_sha256'] != LEGACY_DEBUG_CERTIFICATE
     run('remote-zipalign', [bt/'zipalign', '-c', '-P', '16', '4', remote])
     # 3. Sign to a protected temporary output; run every check before promotion.
     with atomic_candidate(apk) as signed:
-        run('local-signing', [bt/'apksigner', 'sign', '--ks', Path.home()/'.android/debug.keystore', '--ks-key-alias', 'androiddebugkey', '--ks-pass', 'pass:android', '--key-pass', 'pass:android', '--out', signed, remote])
+        # apksigner reads the passwords from the environment itself; argv and
+        # evidence hold only env: references, never password values.
+        run('local-signing', [bt/'apksigner', 'sign', '--ks', signing['keystore'], '--ks-key-alias', signing['alias'], '--ks-pass', 'env:'+signing['store_password_env'], '--key-pass', 'env:'+signing['key_password_env'], '--out', signed, remote])
         signed.chmod(0o600)
         assert signed.stat().st_mode & 0o777 == 0o600, 'Temporary signing output is not private'
         original, audited = payload(remote), payload(signed)
@@ -262,16 +279,16 @@ def main():
         run('zipalign', [bt/'zipalign', '-c', '-P', '16', '-v', '4', signed])
         run('permissions', [bt/'aapt2', 'dump', 'permissions', signed])
         section = resources.split('config anydpi-v26:', 1)[1]
-        match = re.search(r'com.example.app:mipmap/ic_launcher:.*?\n\s+\(string8\) "([^"]+)"', section)
+        match = re.search(r'pl\.pickteams\.app:mipmap/ic_launcher:.*?\n\s+\(string8\) "([^"]+)"', section)
         assert match, 'Adaptive resource not found'
         run('adaptive', [analyzer, 'resources', 'xml', '--file', match[1], signed])
-        checks = audit(signed, source, base, evidence)
+        checks = audit(signed, source, base, evidence, verified_inputs=(artifact_zip,))
         after = preserved(protected)
         assert after == baseline, 'Protected files changed during signing/audit'
         assert public_files == {p for p in args.public_root.resolve().rglob('*') if p.is_file()}
         (evidence/'preservation-after.json').write_text(json.dumps(after, indent=2)+'\n')
         assert not run('status-after', ['git', 'status', '--porcelain'])
-        final = {'apk': str(apk), 'sha256': digest(signed), 'bytes': signed.stat().st_size, 'certificate_sha256': CERTIFICATE, 'source_sha': args.source_sha, 'version': '1.0.3', 'version_code': 2026111202, 'abis': metadata['abis'], 'remote_apk_sha256': digest(remote), 'ephemeral_certificate_sha256': metadata['ephemeral_certificate_sha256'], 'run_id': metadata['run_id'], 'run_attempt': metadata['run_attempt'], 'artifact_id': provenance['artifact']['id'], 'artifact_digest': provenance['artifact']['digest'], 'checks': checks, 'publication': 'Forbidden until coordinator accepts browser and independent native review'}
+        final = {'apk': str(apk), 'sha256': digest(signed), 'bytes': signed.stat().st_size, 'certificate_sha256': signing['certificate_sha256'], 'source_sha': args.source_sha, 'version': '1.0.4', 'version_code': 2026111301, 'abis': metadata['abis'], 'remote_apk_sha256': digest(remote), 'ephemeral_certificate_sha256': metadata['ephemeral_certificate_sha256'], 'run_id': metadata['run_id'], 'run_attempt': metadata['run_attempt'], 'artifact_id': provenance['artifact']['id'], 'artifact_digest': provenance['artifact']['digest'], 'checks': checks, 'publication': 'Forbidden until coordinator accepts browser and independent native review'}
         (evidence/'local-signing.json').write_text(json.dumps(final, indent=2)+'\n')
     assert apk.stat().st_mode & 0o777 == 0o600, 'Final candidate is not private'
     print('Final signed APK offline acceptance passed; independent review and publication gates remain.')
