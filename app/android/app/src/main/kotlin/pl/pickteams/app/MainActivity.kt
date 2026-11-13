@@ -1,4 +1,4 @@
-package com.example.app
+package pl.pickteams.app
 
 import io.flutter.embedding.android.FlutterActivity
 

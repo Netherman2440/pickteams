@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 LABEL = "Pickteams"
-PACKAGE = "com.example.app"
+PACKAGE = "pl.pickteams.app"
 
 
 def require(condition, message):
@@ -41,8 +41,8 @@ def check_source(app):
                 require(element.tag == "string" and element.text == LABEL,
                         f"Unexpected app_name override in {resource}")
     gradle = (app / "android/app/build.gradle.kts").read_text()
-    require(re.search(r'applicationId\s*=\s*"com\.example\.app"', gradle),
-            "Android applicationId must remain com.example.app")
+    require(re.search(r'applicationId\s*=\s*"pl\.pickteams\.app"', gradle),
+            "Android applicationId must remain pl.pickteams.app")
 
 
 def parse_xmltree(output):
@@ -155,7 +155,7 @@ def check_launcher_tree(output, launchers):
 def check_badging(output, manifest_tree=None):
     package = re.search(r"^package: name='([^']+)'", output, re.MULTILINE)
     require(package is not None and package[1] == PACKAGE,
-            "APK package must be com.example.app")
+            "APK package must be pl.pickteams.app")
     labels = re.findall(r"^application-label(?:-[^:]+)?:'([^']*)'$",
                         output, re.MULTILINE)
     require(f"application-label:'{LABEL}'" in output.splitlines()
@@ -188,10 +188,10 @@ def main():
     args = parser.parse_args()
     try:
         check_source(args.app)
-        print("PASS: Android source label is Pickteams; applicationId is com.example.app")
+        print("PASS: Android source label is Pickteams; applicationId is pl.pickteams.app")
         if args.apk:
             check_apk(args.apk, args.aapt)
-            print("PASS: APK application and launcher labels are Pickteams; package is com.example.app")
+            print("PASS: APK application and launcher labels are Pickteams; package is pl.pickteams.app")
         else:
             print("PENDING: compiled APK label and package (use --apk and --aapt)")
         print("PENDING: device launcher and Android app-info display")

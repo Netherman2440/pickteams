@@ -30,7 +30,7 @@ for intent in activity.findall("intent-filter"):
         assert {c.get(android + "name") for c in intent.findall("category")} == {
             "android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"}
 assert len(matching) == 1
-assert 'applicationId = "com.example.app"' in (app / "android/app/build.gradle.kts").read_text()
+assert 'applicationId = "pl.pickteams.app"' in (app / "android/app/build.gradle.kts").read_text()
 for path in auth.rglob("*.dart"):
     source = path.read_text()
     assert "getSessionFromUrl(" not in source, path
@@ -39,5 +39,5 @@ for path in auth.rglob("*.dart"):
 assert "Uri.base" not in (auth / "presentation/pages/auth_callback_page.dart").read_text()
 assert callback in (app / "tool/android_google_oauth.md").read_text()
 print(f"PASS: {callback} matches Android intent; release Internet enabled; Flutter link routing disabled")
-print("PASS: applicationId unchanged; auth has no duplicate link listener or code exchange")
+print("PASS: applicationId matches the audited identity; auth has no duplicate link listener or code exchange")
 print("Static checks only: APK, Android dispatch, dashboard allowlist and Google provider are unproven")

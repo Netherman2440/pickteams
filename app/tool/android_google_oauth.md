@@ -4,7 +4,7 @@
 
 The exact native redirect is `pl.pickteams://auth/callback`. In the Supabase project dashboard, Authentication → URL Configuration → Redirect URLs must include **`pl.pickteams://auth/callback`**. Keep the existing web redirects, Site URL, and Google provider settings. This is a Supabase redirect allowlist entry, not a replacement for Google's authorized Supabase HTTPS callback. No dashboard settings were changed by this work.
 
-The Android application ID remains `com.example.app`. The main manifest grants Internet access for release builds and accepts VIEW / DEFAULT / BROWSABLE for scheme `pl.pickteams`, host `auth`, exact path `/callback`. Flutter default deep-link routing is disabled because `app_links` inside Supabase Flutter owns these links. Launcher assets are not part of this change.
+The Android application ID is `pl.pickteams.app` (chosen for the 1.0.4 release and Play; an installed `com.example.app` build cannot update in place — uninstall it and install fresh, which starts with separate local app storage). The main manifest grants Internet access for release builds and accepts VIEW / DEFAULT / BROWSABLE for scheme `pl.pickteams`, host `auth`, exact path `/callback`. Flutter default deep-link routing is disabled because `app_links` inside Supabase Flutter owns these links. Launcher assets are not part of this change.
 
 ## Session ownership
 
@@ -50,7 +50,7 @@ An operator must verify the allowlist above before this procedure. Do not place 
 To check Android intent resolution without credentials after installing a build:
 
 ```sh
-adb shell am start -W -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d 'pl.pickteams://auth/callback' com.example.app
+adb shell am start -W -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d 'pl.pickteams://auth/callback' pl.pickteams.app
 ```
 
 This only proves dispatch to the app, not successful OAuth. No server, production write, or credential is needed for the local tests.
