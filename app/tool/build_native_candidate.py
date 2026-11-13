@@ -132,7 +132,7 @@ def main():
         gradle = temp / 'native-gradle'
         gradle.mkdir()
         os.environ['GRADLE_USER_HOME'] = str(gradle)
-        (gradle / 'gradle.properties').write_text('org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=768m -XX:+HeapDumpOnOutOfMemoryError\norg.gradle.workers.max=1\norg.gradle.parallel=false\n')
+        (gradle / 'gradle.properties').write_text('org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=768m -XX:+HeapDumpOnOutOfMemoryError\norg.gradle.workers.max=1\norg.gradle.parallel=false\n# Bounded ephemeral CI path: disposable debug signing, gated by the local\n# signing/audit pipeline; this property never applies outside this runner.\npickteamsEphemeralDebugSigning=true\n')
         analysis = app / 'analysis_options.yaml'
         original = analysis.read_bytes()
 
@@ -145,8 +145,10 @@ def main():
 
         run('pub-get', [flutter, 'pub', 'get', '--enforce-lockfile'])
         restore_known_migration()
-        # The source release signingConfig is debug; Android creates a disposable key.
-        run('release-build', [flutter, 'build', 'apk', '--release', '--target', 'lib/main.dart', '--dart-define-from-file=' + str(client), '--build-name=1.0.3', '--build-number=2026111202', '--no-pub'])
+        # The release signingConfig is the explicitly opted-in ephemeral debug
+        # key (pickteamsEphemeralDebugSigning above); Android creates a disposable
+        # keystore on this fresh runner. Production signing happens locally.
+        run('release-build', [flutter, 'build', 'apk', '--release', '--target', 'lib/main.dart', '--dart-define-from-file=' + str(client), '--build-name=1.0.4', '--build-number=2026111301', '--no-pub'])
         restore_known_migration()
         apk = app / 'build/app/outputs/flutter-apk/app-release.apk'
         forbidden = {value for name, value in initial.items() if Path(name).suffix in {'.dart', '.kt', '.java', '.kts', '.gradle', '.yaml', '.yml', '.json', '.env'}}
@@ -164,7 +166,7 @@ def main():
         metadata = {
             'source_sha': head, 'reviewed_ui_source': UI_SOURCE,
             'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
-            'entrypoint': 'lib/main.dart', 'build_name': '1.0.3', 'build_number': 2026111202,
+            'entrypoint': 'lib/main.dart', 'build_name': '1.0.4', 'build_number': 2026111301,
             'abis': list(ABIS), 'flutter': version, 'java': java,
             'android': {'sdk': 36, 'build_tools': '36.0.0', 'ndk': '28.2.13676358', 'cli': 19},
             'cache': 'Fresh ephemeral Flutter clone and GRADLE_USER_HOME; no restored build cache',

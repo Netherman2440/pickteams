@@ -3,6 +3,8 @@ from pathlib import Path
 import base64
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,6 +14,8 @@ import zipfile
 
 import build_native_candidate
 
+from audit_native_candidate import LEGACY_DEBUG_CERTIFICATE, evidence_privacy, signing_config
+from audit_native_candidate import digest as audit_file_digest
 from build_native_candidate import ABIS, audit_apk, capture, digest
 from sign_native_candidate import (
     ARTIFACT_PREFIX,
@@ -297,6 +301,162 @@ class TrackedInputsTest(unittest.TestCase):
             verify_tracked_inputs(tracked, tracked_inputs(root))
 
 
+class EvidencePrivacyTest(unittest.TestCase):
+    """Evidence is scanned by content; only the bound artifact input is exempt."""
+    config = {'SUPABASE_URL': 'https://synthetic.invalid', 'SUPABASE_ANON_KEY': 'synthetic-client-value'}
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.evidence = Path(directory.name)
+
+    def test_clean_evidence_passes(self):
+        (self.evidence / 'commands.jsonl').write_text('{}\n')
+        (self.evidence / 'signature.stdout').write_bytes(b'Verified using v2 scheme')
+        manifest = evidence_privacy(self.evidence, self.config)
+        self.assertEqual([entry['verified_input'] for entry in manifest], [False, False])
+
+    def test_client_value_in_evidence_is_rejected(self):
+        (self.evidence / 'commands.stdout').write_text(self.config['SUPABASE_ANON_KEY'])
+        with self.assertRaisesRegex(AssertionError, 'Client value in evidence file'):
+            evidence_privacy(self.evidence, self.config)
+
+    def test_unverified_zip_is_scanned_not_excluded_by_extension(self):
+        # The df2cb7c gap: a .zip in evidence that is not the bound artifact
+        # input must be scanned and rejected, never exempt by suffix.
+        with zipfile.ZipFile(self.evidence / 'stray-capture.zip', 'w') as archive:
+            archive.writestr('capture.txt', self.config['SUPABASE_ANON_KEY'])
+        with self.assertRaisesRegex(AssertionError, 'Client value in evidence file'):
+            evidence_privacy(self.evidence, self.config)
+
+    def test_bound_artifact_zip_is_the_only_exempt_input(self):
+        artifact = self.evidence / 'bound-artifact.zip'
+        with zipfile.ZipFile(artifact, 'w') as archive:
+            archive.writestr('candidate.apk', self.config['SUPABASE_ANON_KEY'])
+        manifest = evidence_privacy(self.evidence, self.config, verified_inputs=(artifact,))
+        self.assertEqual(manifest, [{'file': 'bound-artifact.zip', 'verified_input': True}])
+        # A second copy of the same bytes is not the bound input and is rejected.
+        shutil.copyfile(artifact, self.evidence / 'copy.zip')
+        with self.assertRaisesRegex(AssertionError, 'Client value in evidence file'):
+            evidence_privacy(self.evidence, self.config, verified_inputs=(artifact,))
+
+    def test_bound_artifact_outside_evidence_exempts_nothing(self):
+        outside = self.evidence.parent / 'elsewhere.zip'
+        with zipfile.ZipFile(outside, 'w') as archive:
+            archive.writestr('candidate.apk', self.config['SUPABASE_ANON_KEY'])
+        with zipfile.ZipFile(self.evidence / 'evidence.zip', 'w') as archive:
+            archive.writestr('note.txt', self.config['SUPABASE_ANON_KEY'])
+        with self.assertRaisesRegex(AssertionError, 'Client value in evidence file'):
+            evidence_privacy(self.evidence, self.config, verified_inputs=(outside,))
+
+    def test_empty_evidence_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, 'No evidence files'):
+            evidence_privacy(self.evidence, self.config)
+
+
+class SigningConfigTest(unittest.TestCase):
+    """Production signing fails closed; password values never load into Python."""
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.base = Path(directory.name)
+        self.keystore = Path(directory.name) / 'pickteams-app-signing.jks'
+        self.keystore.write_bytes(b'synthetic keystore bytes')
+        self.keystore.chmod(0o600)
+        (self.base / 'signing-certificate.der').write_bytes(b'synthetic production certificate')
+        (self.base / 'signing-certificate.der').chmod(0o600)
+        self.write_config('keystore = ' + str(self.keystore) + '\nalias = pickteams\n')
+        environment = {'PICKTEAMS_SIGNING_STORE_PASSWORD': 'synthetic-store-pass',
+                       'PICKTEAMS_SIGNING_KEY_PASSWORD': 'synthetic-key-pass'}
+        for name in environment:
+            os.environ[name] = environment[name]
+            self.addCleanup(os.environ.pop, name, None)
+
+    def write_config(self, text):
+        path = self.base / 'signing.properties'
+        path.write_text(text)
+        path.chmod(0o600)
+
+    def test_valid_config_is_loaded_without_password_values(self):
+        config = signing_config(self.base)
+        self.assertEqual(config['keystore'], self.keystore)
+        self.assertEqual(config['alias'], 'pickteams')
+        self.assertEqual(config['store_password_env'], 'PICKTEAMS_SIGNING_STORE_PASSWORD')
+        self.assertEqual(config['key_password_env'], 'PICKTEAMS_SIGNING_KEY_PASSWORD')
+        self.assertEqual(config['certificate_sha256'], audit_file_digest(self.base / 'signing-certificate.der'))
+        serialized = str(config)
+        self.assertNotIn('synthetic-store-pass', serialized)
+        self.assertNotIn('synthetic-key-pass', serialized)
+
+    def test_missing_config_fails_closed(self):
+        (self.base / 'signing.properties').unlink()
+        with self.assertRaisesRegex(AssertionError, 'Missing protected signing config'):
+            signing_config(self.base)
+
+    def test_missing_keystore_fails_closed(self):
+        self.keystore.unlink()
+        with self.assertRaisesRegex(AssertionError, 'Missing signing keystore'):
+            signing_config(self.base)
+
+    def test_relative_keystore_fails_closed(self):
+        self.write_config('keystore = pickteams.jks\nalias = pickteams\n')
+        with self.assertRaisesRegex(AssertionError, 'absolute'):
+            signing_config(self.base)
+
+    def test_missing_alias_fails_closed(self):
+        self.write_config('keystore = ' + str(self.keystore) + '\n')
+        with self.assertRaisesRegex(AssertionError, 'requires alias'):
+            signing_config(self.base)
+
+    def test_unexpected_key_fails_closed(self):
+        self.write_config('keystore = ' + str(self.keystore) + '\nalias = pickteams\nstore_password = synthetic\n')
+        with self.assertRaisesRegex(AssertionError, 'Unexpected signing.properties keys'):
+            signing_config(self.base)
+
+    def test_malformed_line_fails_closed(self):
+        self.write_config('keystore ' + str(self.keystore) + '\nalias = pickteams\n')
+        with self.assertRaisesRegex(AssertionError, 'Malformed'):
+            signing_config(self.base)
+
+    def test_duplicate_key_fails_closed(self):
+        self.write_config('keystore = ' + str(self.keystore) + '\nkeystore = ' + str(self.keystore) + '\nalias = pickteams\n')
+        with self.assertRaisesRegex(AssertionError, 'Duplicate'):
+            signing_config(self.base)
+
+    def test_missing_store_password_env_fails_closed(self):
+        os.environ.pop('PICKTEAMS_SIGNING_STORE_PASSWORD')
+        with self.assertRaisesRegex(AssertionError, 'PICKTEAMS_SIGNING_STORE_PASSWORD'):
+            signing_config(self.base)
+
+    def test_missing_key_password_env_fails_closed(self):
+        os.environ.pop('PICKTEAMS_SIGNING_KEY_PASSWORD')
+        with self.assertRaisesRegex(AssertionError, 'PICKTEAMS_SIGNING_KEY_PASSWORD'):
+            signing_config(self.base)
+
+    def test_group_readable_keystore_fails_closed(self):
+        self.keystore.chmod(0o640)
+        with self.assertRaisesRegex(AssertionError, 'not be group/world accessible'):
+            signing_config(self.base)
+
+    def test_group_readable_config_fails_closed(self):
+        (self.base / 'signing.properties').chmod(0o644)
+        with self.assertRaisesRegex(AssertionError, 'not be group/world accessible'):
+            signing_config(self.base)
+
+    def test_missing_certificate_fails_closed(self):
+        (self.base / 'signing-certificate.der').unlink()
+        with self.assertRaisesRegex(AssertionError, 'Missing protected signing certificate'):
+            signing_config(self.base)
+
+    def test_legacy_debug_certificate_fails_closed(self):
+        certificate = self.base / 'signing-certificate.der'
+        certificate.write_bytes(b'synthetic production certificate')
+        with patch('audit_native_candidate.LEGACY_DEBUG_CERTIFICATE', audit_file_digest(certificate)):
+            with self.assertRaisesRegex(AssertionError, 'legacy debug certificate'):
+                signing_config(self.base)
+
+
 class AtomicCandidateTest(unittest.TestCase):
     def test_failure_leaves_no_artifact(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -307,6 +467,28 @@ class AtomicCandidateTest(unittest.TestCase):
                     raise RuntimeError('offline audit failed')
             self.assertFalse(final.exists())
             self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_idsig_sidecar_is_cleaned_at_its_real_path(self):
+        # apksigner v4 writes <output>.apk.idsig; the temp output keeps the .apk
+        # suffix, so the sidecar is .pickteams-release-<pid>.apk.idsig. Both the
+        # success and the failure path must remove exactly that file.
+        for fail in (False, True):
+            with tempfile.TemporaryDirectory() as directory, self.subTest(fail=fail):
+                final = Path(directory) / 'pickteams-release.apk'
+                try:
+                    with atomic_candidate(final) as temp:
+                        Path(str(temp) + '.idsig').write_bytes(b'v4 signature block')
+                        temp.write_bytes(b'signed')
+                        if fail:
+                            raise RuntimeError('offline audit failed')
+                except RuntimeError:
+                    pass
+                if fail:
+                    self.assertFalse(final.exists())
+                    self.assertEqual(list(Path(directory).iterdir()), [])
+                else:
+                    self.assertEqual(final.read_bytes(), b'signed')
+                    self.assertEqual(list(Path(directory).iterdir()), [final])
 
     def test_promotion_happens_only_after_checks(self):
         with tempfile.TemporaryDirectory() as directory:
