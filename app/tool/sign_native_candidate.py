@@ -138,7 +138,8 @@ def atomic_candidate(final_path):
     Any failure deletes the owned temporary file and leaves no artifact that
     looks accepted.
     """
-    temp = final_path.parent / ('.' + final_path.name + '.tmp-' + str(os.getpid()))
+    # Keep an .apk suffix: apkanalyzer sniffs the file type from the extension.
+    temp = final_path.parent / ('.' + final_path.stem + '-' + str(os.getpid()) + '.apk')
     temp.unlink(missing_ok=True)
     try:
         yield temp
@@ -147,6 +148,7 @@ def atomic_candidate(final_path):
         os.replace(temp, final_path)
     finally:
         temp.unlink(missing_ok=True)
+        (final_path.parent / (temp.stem + '.idsig')).unlink(missing_ok=True)
 
 
 def main():
