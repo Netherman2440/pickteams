@@ -11,6 +11,8 @@ class LineupHeader extends StatelessWidget {
     required this.homeColor,
     required this.awayColor,
     this.stackedIdentity = false,
+    this.homeRanking,
+    this.awayRanking,
   });
 
   final String homeName;
@@ -18,6 +20,12 @@ class LineupHeader extends StatelessWidget {
   final Color homeColor;
   final Color awayColor;
   final bool stackedIdentity;
+
+  /// Team-total ranking labels shown under the team names in the expanded
+  /// stacked header. Collapsing hides them together with the names, leaving
+  /// only the pinned color badges. Unused by the default inline variant.
+  final String? homeRanking;
+  final String? awayRanking;
 
   @override
   Widget build(BuildContext context) => SliverLayoutBuilder(
@@ -65,10 +73,12 @@ class LineupHeader extends StatelessWidget {
 }
 
 Widget _stackedHeader(BuildContext context, double width, LineupHeader header) {
-  final style = Theme.of(context).textTheme.titleSmall!;
-  double measure(String name, double available) {
+  final theme = Theme.of(context);
+  final style = theme.textTheme.titleSmall!;
+  final rankingStyle = theme.textTheme.bodySmall!;
+  double measure(String name, double available, TextStyle measureStyle) {
     final painter = TextPainter(
-      text: TextSpan(text: name, style: style),
+      text: TextSpan(text: name, style: measureStyle),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       locale: Localizations.maybeLocaleOf(context),
@@ -82,21 +92,29 @@ Widget _stackedHeader(BuildContext context, double width, LineupHeader header) {
   }
 
   final columnWidth = (width - 24) / 2;
-  final inlineHeight = math.max(
-    measure(header.homeName, columnWidth - 24),
-    measure(header.awayName, columnWidth - 24),
+  final hasTotals = header.homeRanking != null || header.awayRanking != null;
+  final nameHeight = math.max(
+    measure(header.homeName, columnWidth, style),
+    measure(header.awayName, columnWidth, style),
   );
-  final stackedHeight = math.max(
-    measure(header.homeName, columnWidth),
-    measure(header.awayName, columnWidth),
-  );
+  final totalHeight = hasTotals
+      ? math.max(
+          measure(header.homeRanking ?? '', columnWidth, rankingStyle),
+          measure(header.awayRanking ?? '', columnWidth, rankingStyle),
+        )
+      : 0.0;
+  // Badge, gap, name and optional totals measured at their final column
+  // width; the 16 px collapsed badge always fits the pinned minimum.
+  final contentHeight =
+      48 + 8 + nameHeight + (hasTotals ? 4 + totalHeight : 0.0);
   return SliverPersistentHeader(
     pinned: true,
     delegate: _StackedIdentityDelegate(
       header: header,
       style: style,
-      minimum: math.max(36, inlineHeight + 8),
-      expanded: 48 + 8 + stackedHeight + 16,
+      rankingStyle: rankingStyle,
+      minimum: 36,
+      expanded: contentHeight + 16,
     ),
   );
 }
@@ -105,12 +123,14 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
   _StackedIdentityDelegate({
     required this.header,
     required this.style,
+    required this.rankingStyle,
     required this.minimum,
     required this.expanded,
   });
 
   final LineupHeader header;
   final TextStyle style;
+  final TextStyle rankingStyle;
   final double minimum;
   final double expanded;
 
@@ -125,12 +145,13 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    // Keep the complete stacked content only while it fits. Switch to the
-    // existing inline identity before a shrinking header can cut either item.
+    // Keep the complete stacked identity only while it fits. A header that
+    // cannot show badge, name and totals without cutting reduces to the color
+    // badges; the pinned strip never renders intermediate or clipped content.
     final available = math.max(minExtent, maxExtent - shrinkOffset);
     final collapsed =
         available < expanded - 16 || shrinkOffset >= maxExtent - minExtent;
-    Widget identity(String side, String name, Color color) {
+    Widget identity(String side, String name, Color color, String? total) {
       final badge = Container(
         key: ValueKey('lineup-$side-badge'),
         width: collapsed ? 16 : 48,
@@ -141,21 +162,22 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
           border: Border.all(color: Theme.of(context).colorScheme.outline),
         ),
       );
-      final label = Text(name, style: style, textAlign: TextAlign.center);
+      if (collapsed) {
+        return Expanded(child: Center(child: badge));
+      }
       return Expanded(
-        child: collapsed
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  badge,
-                  const SizedBox(width: 8),
-                  Flexible(child: label),
-                ],
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [badge, const SizedBox(height: 8), label],
-              ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            badge,
+            const SizedBox(height: 8),
+            Text(name, style: style, textAlign: TextAlign.center),
+            if (total != null) ...[
+              const SizedBox(height: 4),
+              Text(total, style: rankingStyle, textAlign: TextAlign.center),
+            ],
+          ],
+        ),
       );
     }
 
@@ -167,9 +189,19 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
           height: available,
           child: Row(
             children: [
-              identity('home', header.homeName, header.homeColor),
+              identity(
+                'home',
+                header.homeName,
+                header.homeColor,
+                header.homeRanking,
+              ),
               const SizedBox(width: 8),
-              identity('away', header.awayName, header.awayColor),
+              identity(
+                'away',
+                header.awayName,
+                header.awayColor,
+                header.awayRanking,
+              ),
             ],
           ),
         ),
@@ -181,6 +213,7 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(covariant _StackedIdentityDelegate oldDelegate) =>
       header != oldDelegate.header ||
       style != oldDelegate.style ||
+      rankingStyle != oldDelegate.rankingStyle ||
       minimum != oldDelegate.minimum ||
       expanded != oldDelegate.expanded;
 }

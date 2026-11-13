@@ -60,6 +60,49 @@ def label(metrics, text):
     return matches[0]
 
 
+def label_rects(metrics, text):
+    return [p['rect'] for p in metrics['labels'] if p['text'] == text]
+
+
+def header_totals(metrics):
+    return [p for p in metrics['labels'] if p['text'].startswith('Ranking:')]
+
+
+def check_header(metrics, collapsed=False):
+    """Team totals live in the expanded stacked header, never in the footer.
+
+    Expanded: each column shows badge, name, then its 'Ranking: ' total,
+    centered on the badge. Collapsed: only the pinned color badges remain.
+    """
+    viewport = metrics['viewport']
+    teams = metrics['teams']
+    assert teams, 'No teams'
+    badges = {side: metrics['identities'][f'lineup-{side}-badge']
+              for side in ['home', 'away']}
+    names = {side: label_rects(metrics, teams[side]['name'])
+             for side in ['home', 'away']}
+    header_total = header_totals(metrics)
+    if collapsed:
+        assert not header_total, f'Totals must hide when collapsed: {header_total}'
+        for side in ['home', 'away']:
+            assert not names[side], f'Team name must hide when collapsed: {side}'
+            assert badges[side][2:] == [16, 16], badges[side]
+        return
+    assert len(header_total) == 2, header_total
+    geometry = metrics['headerGeometry']
+    header_bottom = viewport[1] + geometry['paintExtent']
+    ordered = sorted(header_total, key=lambda total: total['rect'][0])
+    for side, total in zip(['home', 'away'], ordered):
+        badge = badges[side]
+        assert badge[2:] == [48, 48], badge
+        assert len(names[side]) == 1, (side, names[side])
+        name = names[side][0]
+        assert total['rect'][1] >= name[1] + name[3] - .1, 'Total above its name'
+        assert abs(total['rect'][0] + total['rect'][2] / 2
+                   - (badge[0] + badge[2] / 2)) < .1, 'Total not centered in its column'
+        assert total['rect'][1] + total['rect'][3] <= header_bottom + .1, 'Total outside the header'
+
+
 def check_score(metrics, home, away):
     viewport = metrics['viewport']
     center = viewport[0] + viewport[2] / 2
@@ -78,10 +121,17 @@ def check_score(metrics, home, away):
 def clear_region(metrics):
     viewport = metrics['viewport']
     header_bottom = viewport[1]
+    if metrics.get('headerGeometry'):
+        # Everything the pinned header paints is excluded, including the
+        # totals that now live inside it and hide once it collapses.
+        header_bottom = max(
+            header_bottom,
+            viewport[1] + metrics['headerGeometry']['paintExtent'],
+        )
     if metrics['teams']:
         for team in metrics['teams'].values():
-            r = label(metrics, team['name'])
-            header_bottom = max(header_bottom, r[1] + r[3] + 8)
+            for rect in label_rects(metrics, team['name']):
+                header_bottom = max(header_bottom, rect[1] + rect[3] + 8)
     return [viewport[0], header_bottom, viewport[2], viewport[1] + viewport[3] - header_bottom]
 
 
@@ -183,6 +233,7 @@ def capture(url, output, case_filter=None):
                     page.wait_for_timeout(600)
                     top = frame('expanded')
                     check_panels(top, scale)
+                    check_header(top)
                     check_score(top, '-' if reader else '14', '-' if reader else '5')
                     original = identity(top)
                     assert len(original['players']) == count + (away if away is not None else count)
@@ -205,15 +256,12 @@ def capture(url, output, case_filter=None):
                     else:
                         wheel(100)
                         collapsed = frame('collapsed')
-                        assert collapsed['identities']['lineup-home-badge'][2:] == [16, 16]
-                        for side in ['home', 'away']:
-                            badge = collapsed['identities'][f'lineup-{side}-badge']
-                            name = label(collapsed, collapsed['teams'][side]['name'])
-                            assert abs(badge[1] + 8 - name[1] - name[3] / 2) < .1
+                        check_header(collapsed, collapsed=True)
                         seen = {p['id'] for p in top['panels'] if inside(p['rect'], clear_region(top))}
                         for step in range(60):
                             metrics = frame(f'roster-{step}')
                             check_panels(metrics, scale)
+                            check_header(metrics, collapsed=True)
                             clear = clear_region(metrics)
                             seen.update(p['id'] for p in metrics['panels'] if inside(p['rect'], clear))
                             if inside(metrics['footer'], metrics['viewport']):
@@ -222,6 +270,7 @@ def capture(url, output, case_filter=None):
                         assert seen == {p['id'] for p in top['panels']}, {'unreached': {p['id'] for p in top['panels']} - seen}
                         wheel(10000)
                         bottom = frame('bottom')
+                        check_header(bottom, collapsed=True)
                         assert inside(bottom['footer'], bottom['viewport'])
                     if count == 11 and long and not reader and width in [320, 360]:
                         open_menu()
@@ -237,6 +286,9 @@ def capture(url, output, case_filter=None):
                         check_score(saved, '17', '6')
                         assert identity(saved) == original, 'Score save changed fixture identity'
                         check_panels(saved, scale)
+                        # Saving swaps back to the view scrollable, which starts
+                        # expanded: the totals must be back under the names.
+                        check_header(saved)
                         open_menu()
                         click(page.get_by_role('menuitem', name='Edytuj składy', exact=True))
                         frame('teams-edit')
@@ -253,6 +305,7 @@ def capture(url, output, case_filter=None):
                         cancelled = frame('teams-cancelled')
                         assert identity(cancelled) == original, 'Cancel changed fixture identity'
                         check_score(cancelled, '17', '6')
+                        check_header(cancelled)
                         record['editChecks'] = '17:6 saved with same 22 full names/rankings/sides and team names/colors; changed team name cancelled'
                     final = page.evaluate('JSON.parse(window.matchViewMetrics())')
                     assert not final['errors'], final['errors']
@@ -287,10 +340,14 @@ def capture(url, output, case_filter=None):
                                 clip = [*metrics['viewport'][:3], header['paintExtent']]
                                 clipped = []
                                 for side in ['home', 'away']:
-                                    for kind, rect in [
-                                        ('name', label(metrics, metrics['teams'][side]['name'])),
-                                        ('badge', metrics['identities'][f'lineup-{side}-badge']),
-                                    ]:
+                                    # The header shows either the complete
+                                    # identity or only badges; both must fit.
+                                    items = [('badge', metrics['identities'][f'lineup-{side}-badge'])]
+                                    items += [('name', rect)
+                                              for rect in label_rects(metrics, metrics['teams'][side]['name'])]
+                                    items += [('total', total['rect'])
+                                              for total in header_totals(metrics)]
+                                    for kind, rect in items:
                                         if not inside(rect, clip):
                                             clipped.append(dict(side=side, kind=kind, rect=rect))
                                 probe['frames'].append(dict(file=item['file'], target=fraction,

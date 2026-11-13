@@ -25,12 +25,31 @@ void main() {
       tester,
     ) async {
       await _pump(tester, page);
+      final rows = _rows(page);
+      if (page == 'match') {
+        // The expanded stacked header keeps each team name inside its
+        // roster column and shows the team totals under the names.
+        expect(
+          tester.getRect(find.text('Niebiescy')).right,
+          lessThanOrEqualTo(tester.getRect(rows.first).right),
+        );
+        expect(
+          tester.getRect(find.text('Czerwoni')).left,
+          greaterThanOrEqualTo(tester.getRect(rows.last).left),
+        );
+        expect(find.text('Ranking: 387.0'), findsOneWidget);
+        expect(find.text('Ranking: 355.0'), findsOneWidget);
+        expect(
+          find.text('50.13'),
+          findsOneWidget,
+        ); // historical snapshot, not today's 60.25
+        expect(find.text('60.25'), findsNothing);
+      }
       tester
           .state<ScrollableState>(find.byType(Scrollable).last)
           .position
           .jumpTo(page == 'match' ? 48 : 96);
       await tester.pumpAndSettle();
-      final rows = _rows(page);
       expect(rows, findsNWidgets(16));
       for (final element in rows.evaluate()) {
         final widget = element.widget;
@@ -62,19 +81,16 @@ void main() {
       }
       expect(find.byTooltip('Otwórz nawigację'), findsOneWidget);
       if (page == 'match') {
+        // The collapsed match header keeps only its color badges; team
+        // names and totals hide with it.
+        expect(find.text('Niebiescy'), findsNothing);
+        expect(find.text('Czerwoni'), findsNothing);
+        expect(find.text('Ranking: 387.0'), findsNothing);
+        expect(find.text('Ranking: 355.0'), findsNothing);
         expect(
-          tester.getRect(find.text('Niebiescy')).right,
-          lessThanOrEqualTo(tester.getRect(rows.first).right),
-        );
-        expect(
-          tester.getRect(find.text('Czerwoni')).left,
-          greaterThanOrEqualTo(tester.getRect(rows.last).left),
-        );
-        expect(
-          find.text('50.13'),
+          find.byKey(const ValueKey('lineup-home-badge')).hitTestable(),
           findsOneWidget,
-        ); // historical snapshot, not today's 60.25
-        expect(find.text('60.25'), findsNothing);
+        );
       } else {
         expect(find.text('Zakceptuj propozycję').hitTestable(), findsOneWidget);
       }
