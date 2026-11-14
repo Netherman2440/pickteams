@@ -37,9 +37,11 @@ class ProbabilitySlider extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  'Gospodarze\n$homePercent%',
-                  style: theme.textTheme.bodySmall,
+                Expanded(
+                  child: Text(
+                    'Gospodarze\n$homePercent%',
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -55,10 +57,12 @@ class ProbabilitySlider extends StatelessWidget {
                     tooltip: 'Jak to obliczamy?',
                     onPressed: () => _showInfo(context, infoText!, title),
                   ),
-                Text(
-                  'Goście\n$awayPercent%',
-                  style: theme.textTheme.bodySmall,
-                  textAlign: TextAlign.end,
+                Expanded(
+                  child: Text(
+                    'Goście\n$awayPercent%',
+                    style: theme.textTheme.bodySmall,
+                    textAlign: TextAlign.end,
+                  ),
                 ),
               ],
             ),
@@ -95,8 +99,11 @@ class ProbabilitySlider extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Gospodarze $homePercent%'),
-                Text('Goście $awayPercent%'),
+                Expanded(child: Text('Gospodarze $homePercent%')),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Goście $awayPercent%', textAlign: TextAlign.end),
+                ),
               ],
             ),
             const SizedBox(height: 8),

@@ -59,7 +59,9 @@ Future<TestGesture> move(
   await tester.ensureVisible(source);
   await tester.pumpAndSettle();
   final gesture = await tester.startGesture(
-    tester.getCenter(source),
+    tester.getCenter(
+      find.descendant(of: source, matching: find.byIcon(Icons.drag_indicator)),
+    ),
     kind: kind,
   );
   if (kind == PointerDeviceKind.touch) {
@@ -123,6 +125,29 @@ void visibleBadge(WidgetTester tester, String side) {
 
 void main() {
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+
+  testWidgets('probability labels wrap at 320px and 3x', (tester) async {
+    viewport(tester, 320);
+    for (final compact in [false, true]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(3)),
+            child: Scaffold(
+              body: ProbabilitySlider(
+                homeColor: Colors.white,
+                awayColor: Colors.black,
+                homeProbability: .5,
+                compact: compact,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
 
   for (final width in [360.0, 430.0]) {
     for (final kind in [PointerDeviceKind.touch, PointerDeviceKind.mouse]) {
@@ -267,7 +292,10 @@ void main() {
         );
         final oldOffset = scroll.position.pixels;
         await tester.drag(
-          tile('p0', draft: draft),
+          find.descendant(
+            of: tile('p0', draft: draft),
+            matching: find.byIcon(Icons.drag_indicator),
+          ),
           const Offset(0, -130),
           kind: PointerDeviceKind.touch,
         );

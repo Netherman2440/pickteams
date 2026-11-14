@@ -112,9 +112,8 @@ void main() {
           await tester.pumpAndSettle();
           expect(tester.getSize(badge).width, 16);
           if (stacked) {
-            // Collapsed stacked identity: only the pinned badges remain.
-            expect(find.text(name), findsNothing);
-            expect(find.text('Goście'), findsNothing);
+            expect(find.text(name).hitTestable(), findsOneWidget);
+            expect(find.text('Goście').hitTestable(), findsOneWidget);
           } else {
             expect(
               tester.getCenter(badge).dy,
@@ -191,11 +190,11 @@ void main() {
             .position
             .jumpTo(1000);
         await tester.pumpAndSettle();
-        // Collapsed: badges stay pinned, names and totals hide.
+        // Compact identity keeps the name and ranking with its badge.
         expect(tester.getSize(homeBadge).width, 16);
-        expect(find.text('Niebiescy'), findsNothing);
-        expect(find.text(homeTotal), findsNothing);
-        expect(find.text(awayTotal), findsNothing);
+        expect(find.text('Niebiescy').hitTestable(), findsOneWidget);
+        expect(find.text(homeTotal).hitTestable(), findsOneWidget);
+        expect(find.text(awayTotal).hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -508,12 +507,11 @@ void main() {
             } else {
               scroll.position.jumpTo(scroll.position.maxScrollExtent);
               await tester.pumpAndSettle();
-              // Collapsed header: pinned color badges only.
               expect(tester.getSize(badge).width, 16);
-              expect(find.text('Niebiescy'), findsNothing);
-              expect(find.text('Czerwoni'), findsNothing);
+              expect(find.text('Niebiescy').hitTestable(), findsOneWidget);
+              expect(find.text('Czerwoni').hitTestable(), findsOneWidget);
               for (final total in totals) {
-                expect(find.text(total), findsNothing);
+                expect(find.text(total).hitTestable(), findsOneWidget);
               }
               expect(footer.hitTestable(), findsOneWidget);
               expect(

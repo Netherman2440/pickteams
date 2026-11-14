@@ -45,6 +45,7 @@ class MatchPlayerTile extends StatelessWidget {
           (dragData == null
               ? null
               : const Tooltip(
+                  triggerMode: TooltipTriggerMode.manual,
                   message: 'Przytrzymaj i przeciągnij',
                   child: Icon(Icons.drag_indicator, size: 16),
                 )),

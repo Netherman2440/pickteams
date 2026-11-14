@@ -313,6 +313,11 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                         awayName: 'Goście',
                         homeColor: _teamColor(data.homeColor),
                         awayColor: _teamColor(data.awayColor),
+                        stackedIdentity: true,
+                        homeRanking:
+                            'Ranking: ${_uiTeamScore(players: data.home, opponentCount: data.away.length, playWithSubstitute: _playWithSubstitute).toStringAsFixed(1)}',
+                        awayRanking:
+                            'Ranking: ${_uiTeamScore(players: data.away, opponentCount: data.home.length, playWithSubstitute: _playWithSubstitute).toStringAsFixed(1)}',
                       ),
                       LineupBody(
                         collapseExtent: 96,
@@ -350,11 +355,12 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                                 textAlign: TextAlign.center,
                               ),
                             ),
-                            _TotalsRow(
-                              homePlayers: data.home,
-                              awayPlayers: data.away,
-                              playWithSubstitute: _playWithSubstitute,
-                              homeWinProbability: data.homeWinProbability,
+                            ProbabilitySlider(
+                              title: 'Szansa wygranej propozycji',
+                              homeProbability: data.homeWinProbability,
+                              infoText:
+                                  'Obliczono na podstawie współczynników wygranych bezpośrednich '
+                                  'pojedynków między wybranymi graczami.',
                               homeColor: _teamColor(data.homeColor),
                               awayColor: _teamColor(data.awayColor),
                             ),
@@ -547,63 +553,6 @@ class _ProposalNavigator extends StatelessWidget {
   }
 }
 
-class _TotalsRow extends StatelessWidget {
-  const _TotalsRow({
-    required this.homePlayers,
-    required this.awayPlayers,
-    required this.playWithSubstitute,
-    required this.homeWinProbability,
-    required this.homeColor,
-    required this.awayColor,
-  });
-
-  final List<Player> homePlayers;
-  final List<Player> awayPlayers;
-  final bool playWithSubstitute;
-  final double homeWinProbability;
-  final Color homeColor;
-  final Color awayColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveHome = _uiTeamScore(
-      players: homePlayers,
-      opponentCount: awayPlayers.length,
-      playWithSubstitute: playWithSubstitute,
-    );
-
-    final effectiveAway = _uiTeamScore(
-      players: awayPlayers,
-      opponentCount: homePlayers.length,
-      playWithSubstitute: playWithSubstitute,
-    );
-
-    return Column(
-      children: [
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _TotalChip(label: 'Ranking gospodarzy', value: effectiveHome),
-            _TotalChip(label: 'Ranking gości', value: effectiveAway),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ProbabilitySlider(
-          title: 'Szansa wygranej propozycji',
-          homeColor: homeColor,
-          awayColor: awayColor,
-          homeProbability: homeWinProbability,
-          infoText:
-              'Obliczono na podstawie współczynników wygranych bezpośrednich '
-              'pojedynków między wybranymi graczami.',
-        ),
-      ],
-    );
-  }
-}
-
 double _uiTeamScore({
   required List<Player> players,
   required int opponentCount,
@@ -620,32 +569,6 @@ double _uiTeamScore({
     opponentTeamSize: opponentCount,
     playWithSubstitute: playWithSubstitute,
   );
-}
-
-class _TotalChip extends StatelessWidget {
-  const _TotalChip({required this.label, required this.value});
-
-  final String label;
-  final double value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: theme.chipTheme.backgroundColor,
-        shape: theme.chipTheme.shape ?? const StadiumBorder(),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Text(
-          '$label: ${value.toStringAsFixed(1)}',
-          softWrap: true,
-          style: theme.textTheme.labelLarge?.merge(theme.chipTheme.labelStyle),
-        ),
-      ),
-    );
-  }
 }
 
 class _RosterPanel extends StatelessWidget {
