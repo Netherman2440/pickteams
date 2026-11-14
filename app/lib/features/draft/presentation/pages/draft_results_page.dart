@@ -237,19 +237,21 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _back();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            tooltip: 'Wstecz',
-            onPressed: _accepting ? null : _back,
-            icon: const Icon(Icons.arrow_back),
+      child: ScaffoldMessenger(
+        child: Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              tooltip: 'Wstecz',
+              onPressed: _accepting ? null : _back,
+              icon: const Icon(Icons.arrow_back),
+            ),
+            title: const Text('Propozycja'),
+            toolbarHeight: 48,
+            titleTextStyle: Theme.of(context).textTheme.titleMedium,
           ),
-          title: const Text('Propozycja'),
-          toolbarHeight: 48,
-          titleTextStyle: Theme.of(context).textTheme.titleMedium,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
               child: _CreateMatchButton(
                 squadId: widget.squadId,
                 matchId: widget.matchId,
@@ -259,120 +261,126 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                 }),
               ),
             ),
-          ],
-        ),
-        body: state.when(
-          loading: () => _DraftLoadingBody(
-            selectedPlayerCount:
-                _loadingPlayerCount ?? widget.selectedPlayerIds.length,
-            showCombinationCount: _loadingMode == _DraftLoadingMode.generating,
           ),
-          error: (error, _) => _ErrorBody(
-            error: error,
-            squadId: widget.squadId,
-            matchId: _loadMatchId,
-            selectedPlayerIds: widget.selectedPlayerIds,
-            playWithSubstitute: _playWithSubstitute,
-            draftRules: widget.draftRules,
-          ),
-          data: (data) {
-            if (data.proposals.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Brak propozycji. Wróć i wybierz graczy.'),
-              );
-            }
+          body: state.when(
+            loading: () => _DraftLoadingBody(
+              selectedPlayerCount:
+                  _loadingPlayerCount ?? widget.selectedPlayerIds.length,
+              showCombinationCount:
+                  _loadingMode == _DraftLoadingMode.generating,
+            ),
+            error: (error, _) => _ErrorBody(
+              error: error,
+              squadId: widget.squadId,
+              matchId: _loadMatchId,
+              selectedPlayerIds: widget.selectedPlayerIds,
+              playWithSubstitute: _playWithSubstitute,
+              draftRules: widget.draftRules,
+            ),
+            data: (data) {
+              if (data.proposals.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Brak propozycji. Wróć i wybierz graczy.'),
+                );
+              }
 
-            return AbsorbPointer(
-              absorbing: _acceptanceStarted,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 900),
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: _ProposalNavigator(
-                          index: data.selectedIndex,
-                          total: data.proposals.length,
-                          onPrev: data.selectedIndex == 0
-                              ? null
-                              : () => ref
-                                    .read(draftSessionNotifierProvider.notifier)
-                                    .selectProposal(data.selectedIndex - 1),
-                          onNext:
-                              data.selectedIndex == data.proposals.length - 1
-                              ? null
-                              : () => ref
-                                    .read(draftSessionNotifierProvider.notifier)
-                                    .selectProposal(data.selectedIndex + 1),
+              return AbsorbPointer(
+                absorbing: _acceptanceStarted,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 900),
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: _ProposalNavigator(
+                            index: data.selectedIndex,
+                            total: data.proposals.length,
+                            onPrev: data.selectedIndex == 0
+                                ? null
+                                : () => ref
+                                      .read(
+                                        draftSessionNotifierProvider.notifier,
+                                      )
+                                      .selectProposal(data.selectedIndex - 1),
+                            onNext:
+                                data.selectedIndex == data.proposals.length - 1
+                                ? null
+                                : () => ref
+                                      .read(
+                                        draftSessionNotifierProvider.notifier,
+                                      )
+                                      .selectProposal(data.selectedIndex + 1),
+                          ),
                         ),
-                      ),
-                      LineupHeader(
-                        homeName: 'Gospodarze',
-                        awayName: 'Goście',
-                        homeColor: _teamColor(data.homeColor),
-                        awayColor: _teamColor(data.awayColor),
-                        stackedIdentity: true,
-                        homeRanking:
-                            'Ranking: ${_uiTeamScore(players: data.home, opponentCount: data.away.length, playWithSubstitute: _playWithSubstitute).toStringAsFixed(1)}',
-                        awayRanking:
-                            'Ranking: ${_uiTeamScore(players: data.away, opponentCount: data.home.length, playWithSubstitute: _playWithSubstitute).toStringAsFixed(1)}',
-                      ),
-                      LineupBody(
-                        collapseExtent: 96,
-                        child: Column(
-                          children: [
-                            IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  for (final home in [true, false]) ...[
-                                    if (!home) const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _RosterPanel(
-                                        players: home ? data.home : data.away,
-                                        compact: true,
-                                        onAcceptPlayerId: (id) => ref
-                                            .read(
-                                              draftSessionNotifierProvider
-                                                  .notifier,
-                                            )
-                                            .movePlayer(
-                                              playerId: id,
-                                              toHome: home,
-                                            ),
+                        LineupHeader(
+                          homeName: 'Gospodarze',
+                          awayName: 'Goście',
+                          homeColor: _teamColor(data.homeColor),
+                          awayColor: _teamColor(data.awayColor),
+                          stackedIdentity: true,
+                          homeRanking:
+                              'Ranking: ${_uiTeamScore(players: data.home, opponentCount: data.away.length, playWithSubstitute: _playWithSubstitute).toStringAsFixed(1)}',
+                          awayRanking:
+                              'Ranking: ${_uiTeamScore(players: data.away, opponentCount: data.home.length, playWithSubstitute: _playWithSubstitute).toStringAsFixed(1)}',
+                        ),
+                        LineupBody(
+                          collapseExtent: 96,
+                          child: Column(
+                            children: [
+                              IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    for (final home in [true, false]) ...[
+                                      if (!home) const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _RosterPanel(
+                                          players: home ? data.home : data.away,
+                                          compact: true,
+                                          onAcceptPlayerId: (id) => ref
+                                              .read(
+                                                draftSessionNotifierProvider
+                                                    .notifier,
+                                              )
+                                              .movePlayer(
+                                                playerId: id,
+                                                toHome: home,
+                                              ),
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Text(
-                                'Przytrzymaj gracza i przeciągnij do drugiej drużyny.',
-                                textAlign: TextAlign.center,
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Text(
+                                  'Przytrzymaj gracza i przeciągnij do drugiej drużyny.',
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                            ),
-                            ProbabilitySlider(
-                              title: 'Szansa wygranej propozycji',
-                              homeProbability: data.homeWinProbability,
-                              infoText:
-                                  'Obliczono na podstawie współczynników wygranych bezpośrednich '
-                                  'pojedynków między wybranymi graczami.',
-                              homeColor: _teamColor(data.homeColor),
-                              awayColor: _teamColor(data.awayColor),
-                            ),
-                          ],
+                              ProbabilitySlider(
+                                title: 'Szansa wygranej propozycji',
+                                homeProbability: data.homeWinProbability,
+                                infoText:
+                                    'Obliczono na podstawie współczynników wygranych bezpośrednich '
+                                    'pojedynków między wybranymi graczami.',
+                                homeColor: _teamColor(data.homeColor),
+                                awayColor: _teamColor(data.awayColor),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -503,6 +511,7 @@ class _CreateMatchButtonState extends ConsumerState<_CreateMatchButton> {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
+                    behavior: SnackBarBehavior.floating,
                     content: Text(
                       'Nie udało się zapisać propozycji. Ponów akceptację tej propozycji: $error',
                     ),
@@ -546,7 +555,12 @@ class _ProposalNavigator extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(onPressed: onPrev, icon: const Icon(Icons.chevron_left)),
-        Text('Propozycja ${index + 1} z $total'),
+        Flexible(
+          child: Text(
+            'Propozycja ${index + 1} z $total',
+            textAlign: TextAlign.center,
+          ),
+        ),
         IconButton(onPressed: onNext, icon: const Icon(Icons.chevron_right)),
       ],
     );
@@ -595,6 +609,7 @@ class _RosterPanel extends StatelessWidget {
           if (players.isEmpty) const Text('Brak graczy.'),
           for (final p in sortedPlayers)
             DraftDraggablePlayerTile(
+              key: ValueKey(p.playerId),
               player: p,
               trailing: const SizedBox.shrink(),
               dragData: p.playerId,

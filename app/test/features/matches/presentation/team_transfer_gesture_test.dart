@@ -1,5 +1,8 @@
 import 'dart:ui';
 
+import 'package:app/core/utils/team_ranking.dart';
+import 'package:app/core/widgets/lineup_header.dart';
+import 'package:app/features/matches/presentation/widgets/match_view_roster.dart';
 import 'package:app/core/widgets/player_list_row.dart';
 import 'package:app/core/widgets/player_transfer_drag.dart';
 import 'package:app/core/widgets/probability_slider.dart';
@@ -9,6 +12,7 @@ import 'package:app/features/matches/presentation/widgets/match_player_tile.dart
 import 'package:app/features/players/domain/entities/player.dart';
 import 'package:app/features/squads/domain/entities/user_squad_role.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -92,10 +96,39 @@ Future<TestGesture> move(
   return gesture;
 }
 
+void exactTotals(WidgetTester tester) {
+  for (final side in [0, 1]) {
+    final selected = tester
+        .widgetList<PlayerListRow>(
+          find.descendant(
+            of: target(side),
+            matching: find.byType(PlayerListRow),
+          ),
+        )
+        .toList();
+    final opponent = names(tester, 1 - side).length;
+    final total = effectiveTeamRanking(
+      totalRanking: selected.fold(0.0, (sum, row) => sum + row.ranking),
+      teamSize: selected.length,
+      opponentTeamSize: opponent,
+      playWithSubstitute: selected.length != opponent,
+    );
+    expect(find.text('Ranking: ${total.toStringAsFixed(1)}'), findsWidgets);
+    expect(
+      find.descendant(
+        of: target(side),
+        matching: find.textContaining('Ranking:'),
+      ),
+      findsNothing,
+    );
+  }
+}
+
 void identities(WidgetTester tester, Iterable<Player> roster) {
   final all = [...names(tester, 0), ...names(tester, 1)];
   expect(all.length, roster.length);
   expect(all.toSet(), roster.map((p) => p.name).toSet());
+  exactTotals(tester);
 }
 
 Color badge(WidgetTester tester, String side) =>
@@ -124,7 +157,119 @@ void visibleBadge(WidgetTester tester, String side) {
 }
 
 void main() {
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  setUpAll(() async {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    for (final family in ['OpenSans', 'Nunito']) {
+      await (FontLoader(
+        '${family}_regular',
+      )..addFont(rootBundle.load('assets/fonts/$family-Regular.ttf'))).load();
+    }
+  });
+
+  for (final width in [320.0, 360.0, 430.0, 1440.0]) {
+    for (final scale in [1.0, 1.6, if (width == 320) 3.0]) {
+      for (final mode in ['results', 'match', 'edit']) {
+        testWidgets('ranking outside roster $mode $width ${scale}x', (
+          tester,
+        ) async {
+          viewport(tester, width, height: 1000);
+          await tester.pumpWidget(
+            PlayerListsFixture(
+              page: mode == 'results' ? mode : 'match',
+              players: fixturePlayers.take(15).toList(),
+              textScale: scale,
+              match: fixtureMatch(
+                homeIds: fixturePlayers.take(7).map((p) => p.playerId).toList(),
+                awayIds: fixturePlayers
+                    .skip(7)
+                    .take(8)
+                    .map((p) => p.playerId)
+                    .toList(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          if (mode == 'edit') await edit(tester);
+          final ranks = find.textContaining('Ranking:');
+          expect(ranks, findsNWidgets(2));
+          if (mode == 'edit') {
+            exactTotals(tester);
+            for (final side in [0, 1]) {
+              final rank = find.byKey(
+                ValueKey('edit-${side == 0 ? 'home' : 'away'}-ranking'),
+              );
+              expect(
+                tester.getRect(rank).bottom,
+                lessThanOrEqualTo(tester.getRect(target(side)).top),
+              );
+              expect(
+                find.descendant(of: target(side), matching: ranks),
+                findsNothing,
+              );
+            }
+          } else {
+            final header = find.byType(SliverPersistentHeader);
+            expect(
+              find.descendant(of: header, matching: ranks),
+              findsNWidgets(2),
+            );
+            final roster = mode == 'results'
+                ? find.byType(PlayerListRow)
+                : find.byType(MatchViewPlayerPanel);
+            final bottom = tester.getRect(ranks.first).bottom;
+            for (final row in roster.evaluate()) {
+              expect(
+                tester.getRect(find.byWidget(row.widget)).top,
+                greaterThanOrEqualTo(bottom),
+              );
+            }
+            final identity = tester.widget<LineupHeader>(
+              find.byType(LineupHeader),
+            );
+            for (final name in [identity.homeName, identity.awayName]) {
+              expect(
+                tester.getRect(find.text(name)).bottom,
+                lessThanOrEqualTo(bottom),
+              );
+            }
+            final scroll = tester.state<ScrollableState>(
+              find
+                  .descendant(
+                    of: find.byType(CustomScrollView).last,
+                    matching: find.byType(Scrollable),
+                  )
+                  .first,
+            );
+            scroll.position.jumpTo(scroll.position.maxScrollExtent);
+            await tester.pumpAndSettle();
+            expect(ranks.hitTestable(), findsNWidgets(2));
+            expect(find.text(identity.homeName).hitTestable(), findsOneWidget);
+            expect(find.text(identity.awayName).hitTestable(), findsOneWidget);
+          }
+          expect(tester.takeException(), isNull);
+        });
+      }
+    }
+  }
+
+  testWidgets('handle tooltip still responds to mouse hover', (tester) async {
+    viewport(tester, 430);
+    await tester.pumpWidget(const PlayerListsFixture(page: 'results'));
+    await tester.pumpAndSettle();
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(
+      tester.getCenter(
+        find.descendant(
+          of: tile('p0', draft: true),
+          matching: find.byIcon(Icons.drag_indicator),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Przytrzymaj i przeciągnij'), findsOneWidget);
+    await mouse.removePointer();
+  });
 
   testWidgets('probability labels wrap at 320px and 3x', (tester) async {
     viewport(tester, 320);
@@ -170,6 +315,7 @@ void main() {
             await tester.pumpWidget(fixture());
             await tester.pumpAndSettle();
             await edit(tester);
+            exactTotals(tester);
             final initialTotals = tester
                 .widgetList<Text>(find.textContaining('Ranking:'))
                 .map((w) => w.data)
@@ -182,6 +328,7 @@ void main() {
             expect(names(tester, 0), hasLength(6));
             expect(names(tester, 1), hasLength(9));
             identities(tester, players);
+            exactTotals(tester);
             expect(
               tester
                   .widgetList<Text>(find.textContaining('Ranking:'))
@@ -191,6 +338,7 @@ void main() {
             );
             await move(tester, 'p7', 0, kind);
             identities(tester, players);
+            exactTotals(tester);
             for (final row in tester.widgetList<PlayerListRow>(
               find.byType(PlayerListRow),
             )) {
@@ -202,10 +350,24 @@ void main() {
               );
               expect(text.maxLines, isNull);
             }
+            final expectedTotals = save
+                ? tester
+                      .widgetList<Text>(find.textContaining('Ranking:'))
+                      .map((w) => w.data)
+                      .toList()
+                : initialTotals;
             await tester.tap(find.byTooltip(save ? 'Zapisz' : 'Anuluj'));
             await tester.pumpAndSettle();
+            expect(
+              tester
+                  .widgetList<Text>(find.textContaining('Ranking:'))
+                  .map((w) => w.data)
+                  .toList(),
+              expectedTotals,
+            );
             expect(writes.teamSaves, save ? 1 : 0);
             expect(writes.metaSaves, 0);
+            expect(find.textContaining('Ranking:'), findsNWidgets(2));
             await tester.pumpWidget(const SizedBox());
             await tester.pumpWidget(fixture());
             await tester.pumpAndSettle();
@@ -213,6 +375,7 @@ void main() {
             expect(names(tester, 0).contains(players[0].name), !save);
             expect(names(tester, 0).contains(players[7].name), save);
             identities(tester, players);
+            exactTotals(tester);
             expect(
               writes.storedMatch?.homeTeam?.color ?? match.homeTeam!.color,
               '#1E88E5',

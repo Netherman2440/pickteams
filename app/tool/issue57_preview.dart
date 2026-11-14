@@ -19,6 +19,7 @@ void main() {
   runApp(
     PlayerListsFixture(
       page: query['page'] ?? 'match',
+      textScale: double.tryParse(query['scale'] ?? '') ?? 1,
       brightness: query['theme'] == 'light'
           ? Brightness.light
           : Brightness.dark,
