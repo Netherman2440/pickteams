@@ -31,13 +31,16 @@ class ProbabilitySlider extends StatelessWidget {
 
     if (compact) {
       return Semantics(
-        label: '$title: $homePercent% / $awayPercent%',
+        label: '$title: Gospodarze $homePercent%, Goście $awayPercent%',
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
-                Text('$homePercent%', style: theme.textTheme.bodySmall),
+                Text(
+                  'Gospodarze\n$homePercent%',
+                  style: theme.textTheme.bodySmall,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -52,7 +55,11 @@ class ProbabilitySlider extends StatelessWidget {
                     tooltip: 'Jak to obliczamy?',
                     onPressed: () => _showInfo(context, infoText!, title),
                   ),
-                Text('$awayPercent%', style: theme.textTheme.bodySmall),
+                Text(
+                  'Goście\n$awayPercent%',
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.end,
+                ),
               ],
             ),
             SizedBox(
@@ -87,7 +94,10 @@ class ProbabilitySlider extends StatelessWidget {
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text('$homePercent%'), Text('$awayPercent%')],
+              children: [
+                Text('Gospodarze $homePercent%'),
+                Text('Goście $awayPercent%'),
+              ],
             ),
             const SizedBox(height: 8),
             _AnimatedBar(
@@ -138,8 +148,12 @@ class _AnimatedBar extends StatelessWidget {
       builder: (context, constraints) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
+          child: Container(
             height: 12,
+            foregroundDecoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Stack(
               children: [
                 Container(color: awayColor),

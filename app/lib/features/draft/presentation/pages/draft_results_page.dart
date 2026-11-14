@@ -8,6 +8,7 @@ import 'package:app/core/error/failure.dart';
 import 'package:app/core/utils/team_ranking.dart';
 import 'package:app/core/widgets/probability_slider.dart';
 import 'package:app/core/widgets/lineup_header.dart';
+import 'package:app/core/widgets/team_transfer_target.dart';
 import 'package:app/features/draft/domain/entities/draft_rule.dart';
 import 'package:app/features/draft/domain/services/draft_algorithm_policy.dart';
 import 'package:app/features/draft/application/get_match_draft_use_case.dart';
@@ -310,42 +311,52 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                       LineupHeader(
                         homeName: 'Gospodarze',
                         awayName: 'Goście',
-                        homeColor: Theme.of(context).colorScheme.primary,
-                        awayColor: Theme.of(context).colorScheme.secondary,
+                        homeColor: _teamColor(data.homeColor),
+                        awayColor: _teamColor(data.awayColor),
                       ),
                       LineupBody(
                         collapseExtent: 96,
                         child: Column(
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (final home in [true, false]) ...[
-                                  if (!home) const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _RosterPanel(
-                                      players: home ? data.home : data.away,
-                                      compact: true,
-                                      onAcceptPlayerId: (id) => ref
-                                          .read(
-                                            draftSessionNotifierProvider
-                                                .notifier,
-                                          )
-                                          .movePlayer(
-                                            playerId: id,
-                                            toHome: home,
-                                          ),
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  for (final home in [true, false]) ...[
+                                    if (!home) const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _RosterPanel(
+                                        players: home ? data.home : data.away,
+                                        compact: true,
+                                        onAcceptPlayerId: (id) => ref
+                                            .read(
+                                              draftSessionNotifierProvider
+                                                  .notifier,
+                                            )
+                                            .movePlayer(
+                                              playerId: id,
+                                              toHome: home,
+                                            ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
-                            const SizedBox(height: 8),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                'Przytrzymaj gracza i przeciągnij do drugiej drużyny.',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                             _TotalsRow(
                               homePlayers: data.home,
                               awayPlayers: data.away,
                               playWithSubstitute: _playWithSubstitute,
                               homeWinProbability: data.homeWinProbability,
+                              homeColor: _teamColor(data.homeColor),
+                              awayColor: _teamColor(data.awayColor),
                             ),
                           ],
                         ),
@@ -542,12 +553,16 @@ class _TotalsRow extends StatelessWidget {
     required this.awayPlayers,
     required this.playWithSubstitute,
     required this.homeWinProbability,
+    required this.homeColor,
+    required this.awayColor,
   });
 
   final List<Player> homePlayers;
   final List<Player> awayPlayers;
   final bool playWithSubstitute;
   final double homeWinProbability;
+  final Color homeColor;
+  final Color awayColor;
 
   @override
   Widget build(BuildContext context) {
@@ -563,7 +578,6 @@ class _TotalsRow extends StatelessWidget {
       playWithSubstitute: playWithSubstitute,
     );
 
-    final theme = Theme.of(context);
     return Column(
       children: [
         Wrap(
@@ -578,8 +592,8 @@ class _TotalsRow extends StatelessWidget {
         const SizedBox(height: 12),
         ProbabilitySlider(
           title: 'Szansa wygranej propozycji',
-          homeColor: theme.colorScheme.primary,
-          awayColor: theme.colorScheme.secondary,
+          homeColor: homeColor,
+          awayColor: awayColor,
           homeProbability: homeWinProbability,
           infoText:
               'Obliczono na podstawie współczynników wygranych bezpośrednich '
@@ -647,48 +661,25 @@ class _RosterPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DragTarget<Object>(
-      onWillAcceptWithDetails: (details) {
-        final playerId = _extractPlayerId(details.data);
-        if (playerId == null) {
-          return false;
-        }
-
-        return !players.any((p) => p.playerId == playerId);
-      },
-      onAcceptWithDetails: (details) {
-        final playerId = _extractPlayerId(details.data);
-        if (playerId == null) {
-          return;
-        }
-
-        onAcceptPlayerId(playerId);
-      },
-      builder: (context, candidateData, rejectedData) {
-        final isHighlighted = candidateData.isNotEmpty;
-
-        final sortedPlayers = [...players]
-          ..sort((a, b) => b.ranking.compareTo(a.ranking));
-        return ColoredBox(
-          color: isHighlighted
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: .12)
-              : Colors.transparent,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (players.isEmpty) const Text('Brak graczy.'),
-              for (final p in sortedPlayers)
-                DraftDraggablePlayerTile(
-                  player: p,
-                  trailing: const SizedBox.shrink(),
-                  dragData: p.playerId,
-                  compact: compact,
-                  simple: true,
-                ),
-            ],
-          ),
-        );
-      },
+    final sortedPlayers = [...players]
+      ..sort((a, b) => b.ranking.compareTo(a.ranking));
+    return TeamTransferTarget(
+      playerIds: players.map((p) => p.playerId),
+      onAccept: onAcceptPlayerId,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (players.isEmpty) const Text('Brak graczy.'),
+          for (final p in sortedPlayers)
+            DraftDraggablePlayerTile(
+              player: p,
+              trailing: const SizedBox.shrink(),
+              dragData: p.playerId,
+              compact: compact,
+              simple: true,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -822,9 +813,6 @@ String _formatBigInt(BigInt value) {
   return buffer.toString();
 }
 
-String? _extractPlayerId(Object data) {
-  if (data is String && data.isNotEmpty) {
-    return data;
-  }
-  return null;
-}
+Color _teamColor(String hex) => Color(
+  int.tryParse('FF${hex.replaceFirst('#', '')}', radix: 16) ?? 0xFF808080,
+);

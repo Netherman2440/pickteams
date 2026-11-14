@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:app/core/widgets/player_transfer_drag.dart';
 import 'package:flutter/material.dart';
 import 'package:app/core/widgets/player_list_row.dart';
 import 'package:app/features/matches/application/dto/player_dto.dart';
@@ -40,7 +40,14 @@ class MatchPlayerTile extends StatelessWidget {
       ranking: displayRanking,
       compact: compact,
       density: density,
-      leading: leading,
+      leading:
+          leading ??
+          (dragData == null
+              ? null
+              : const Tooltip(
+                  message: 'Przytrzymaj i przeciągnij',
+                  child: Icon(Icons.drag_indicator, size: 16),
+                )),
       trailing: trailing,
       onTap: onTap,
     );
@@ -58,44 +65,13 @@ class MatchPlayerTile extends StatelessWidget {
       ),
     );
 
-    final childWhenDragging = Opacity(opacity: 0.4, child: tile);
-
-    if (_shouldUseImmediateDrag) {
-      return Draggable<Object>(
-        data: data,
-        feedback: feedback,
-        onDragStarted: onDragStarted,
-        onDragEnd: (_) => onDragEnd?.call(),
-        childWhenDragging: childWhenDragging,
-        child: tile,
-      );
-    }
-
-    return LongPressDraggable<Object>(
+    return PlayerTransferDrag(
       data: data,
       feedback: feedback,
       onDragStarted: onDragStarted,
-      onDragEnd: (_) => onDragEnd?.call(),
-      childWhenDragging: childWhenDragging,
+      onDragEnd: onDragEnd,
       child: tile,
     );
-  }
-}
-
-bool get _shouldUseImmediateDrag {
-  if (kIsWeb) {
-    return true;
-  }
-
-  switch (defaultTargetPlatform) {
-    case TargetPlatform.windows:
-    case TargetPlatform.macOS:
-    case TargetPlatform.linux:
-      return true;
-    case TargetPlatform.android:
-    case TargetPlatform.iOS:
-    case TargetPlatform.fuchsia:
-      return false;
   }
 }
 

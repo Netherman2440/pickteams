@@ -9,6 +9,8 @@ class DraftSessionState {
   final List<Player> away;
   final Map<String, Map<String, double>> winRateMatrix;
   final double homeWinProbability;
+  final String homeColor;
+  final String awayColor;
 
   const DraftSessionState({
     required this.proposals,
@@ -18,6 +20,8 @@ class DraftSessionState {
     required this.away,
     required this.winRateMatrix,
     required this.homeWinProbability,
+    this.homeColor = '#FFFFFF',
+    this.awayColor = '#000000',
   });
 
   DraftSessionState copyWith({
@@ -28,6 +32,8 @@ class DraftSessionState {
     List<Player>? away,
     Map<String, Map<String, double>>? winRateMatrix,
     double? homeWinProbability,
+    String? homeColor,
+    String? awayColor,
   }) {
     return DraftSessionState(
       proposals: proposals ?? this.proposals,
@@ -37,6 +43,8 @@ class DraftSessionState {
       away: away ?? this.away,
       winRateMatrix: winRateMatrix ?? this.winRateMatrix,
       homeWinProbability: homeWinProbability ?? this.homeWinProbability,
+      homeColor: homeColor ?? this.homeColor,
+      awayColor: awayColor ?? this.awayColor,
     );
   }
 }
