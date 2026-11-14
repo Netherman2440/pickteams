@@ -153,7 +153,8 @@ def reach_handle(page, cdp, width, name):
 def transfer(page, cdp, record, name, side, *, cancel=False, mouse=False, hover=None):
     box = reach_handle(page, cdp, record['width'], name)
     start = (box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
-    end = (record['width'] * (.25 if side == 'home' else .75), start[1])
+    # Hold the lifted feedback inside the roster, clear of the team rankings.
+    end = (record['width'] * (.25 if side == 'home' else .75), max(start[1], 430))
     record['handleStarts'].append({'name': name, 'rect': box, 'point': start, 'mouse': mouse})
     if mouse:
         page.mouse.move(*start)
@@ -232,14 +233,16 @@ with sync_playwright() as pw:
             if scale == 3:
                 prefix = 'Szansa na wygraną:' if screen == 'match' else 'Szansa wygranej propozycji'
                 label = page.locator(f'[role="group"][aria-label^="{prefix}"]')
-                limit = 792 if screen == 'match' else page.get_by_role('button', name='Zakceptuj propozycję', exact=True).bounding_box()['y']
+                # Reach the actual scroll end. Accessibility group bounds do
+                # not prove that the last painted line is above the action bar.
                 for _ in range(40):
-                    box = label.first.bounding_box() if label.count() else None
-                    if box and 100 < box['y'] and box['y'] + box['height'] <= limit:
-                        break
+                    before_box = label.first.bounding_box() if label.count() else None
                     swipe(page, cdp, (width / 2, 640), (width / 2, 200))
+                    box = label.first.bounding_box() if label.count() else None
+                    if before_box and box and abs(before_box['y'] - box['y']) < .1:
+                        break
                 else:
-                    raise AssertionError(('3x probability labels not reachable', box, limit, label.count()))
+                    raise AssertionError(('3x probability footer not reachable', box, label.count()))
                 accessible = label.get_attribute('aria-label')
                 assert re.search(r'Gospodarze\s+52%', accessible), accessible
                 assert re.search(r'Goście\s+48%', accessible), accessible
