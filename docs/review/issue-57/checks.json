@@ -1,0 +1,361 @@
+[
+  {
+    "case": "match-360-light",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "checks": [
+      "white and black palette choices available through real touch controls",
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake save and reopen retain exact sides",
+      "mouse drag works in a touch-capable browser",
+      "cancel editing restores saved sides"
+    ],
+    "frames": [
+      {
+        "file": "match-360-light-palette.png",
+        "sha256": "79ed554a4f0ae545321e0a1909a759471e412361380389ea61f9f7c43347afcb"
+      },
+      {
+        "file": "match-360-light-before.png",
+        "sha256": "23099b2096d53d55f455b4e0b01a152d4d4b4c75ccf431a171d781b1cdfda2e9"
+      },
+      {
+        "file": "match-360-light-highlight.png",
+        "sha256": "0e5f50a5fefaea4ea18d979abb245f9353b7c197915b81071515ef9cd799edae"
+      },
+      {
+        "file": "match-360-light-moved.png",
+        "sha256": "2821e10fd1abe40a314148cef7bb9f77bdcc90613b64ca8ccd2dc80aca63e930"
+      },
+      {
+        "file": "match-360-light-saved.png",
+        "sha256": "738ec17c7c9be796a58e8783bbe046c97199cdc28901a23db43f7610278dfd86"
+      },
+      {
+        "file": "match-360-light-cancel-restored.png",
+        "sha256": "a3fa03edeab59f5a8a0b4f660398e3e063a90a69119920afc48fb6d4019fa20f"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "match-360-dark",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "checks": [
+      "white and black palette choices available through real touch controls",
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake save and reopen retain exact sides",
+      "mouse drag works in a touch-capable browser",
+      "cancel editing restores saved sides"
+    ],
+    "frames": [
+      {
+        "file": "match-360-dark-palette.png",
+        "sha256": "c88c426e9d8f91a9790ebc1c88c334a225aa50eaf360d79082b53fce4247ecf6"
+      },
+      {
+        "file": "match-360-dark-before.png",
+        "sha256": "65b0416e1448a776dadd3a312dcb0f31fcc59084a71d53bbc3368c3f1ea200cb"
+      },
+      {
+        "file": "match-360-dark-highlight.png",
+        "sha256": "1fe0fbd57c13d6df6babff3fe528accefb67e598a5fed63fed01b12b9aa1401c"
+      },
+      {
+        "file": "match-360-dark-moved.png",
+        "sha256": "c79e363c2c5ffc285e48d2863f76da71c0506c8488f83c33dea7149c274d9847"
+      },
+      {
+        "file": "match-360-dark-saved.png",
+        "sha256": "4f4c6d3c56545ae6c1aef0b3870a77589c763512d04239757b4c6c404d097b49"
+      },
+      {
+        "file": "match-360-dark-cancel-restored.png",
+        "sha256": "55b3f28fa8b60a1c0e7448956741030c0b63fdd5d62ab7683646b624979e16fb"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "match-430-light",
+    "browser": "156.0.8078.4",
+    "width": 430,
+    "checks": [
+      "white and black palette choices available through real touch controls",
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake save and reopen retain exact sides",
+      "mouse drag works in a touch-capable browser",
+      "cancel editing restores saved sides"
+    ],
+    "frames": [
+      {
+        "file": "match-430-light-palette.png",
+        "sha256": "bf4787c543043d4f4b65bc4ccae1959c4c5c7bef2056d5fc2299dd351d778451"
+      },
+      {
+        "file": "match-430-light-before.png",
+        "sha256": "275436fefe6ee3405baf0e8e9ac22e6b002ce0c0dff27d189caee02a5948727a"
+      },
+      {
+        "file": "match-430-light-highlight.png",
+        "sha256": "138f29d911323d75203f592ebed2bb93d929038b7d32ca95b625c8de82824513"
+      },
+      {
+        "file": "match-430-light-moved.png",
+        "sha256": "1ef2d0e10bd00b2d040a25ae01d4749a406365ca82c514a7ad102c166c6e8833"
+      },
+      {
+        "file": "match-430-light-saved.png",
+        "sha256": "da8147bf43043c8bbd8c46e5faafbf4254c72e0b3ab00becf5823ce4eacd7b3f"
+      },
+      {
+        "file": "match-430-light-cancel-restored.png",
+        "sha256": "1c0d16fc654ac75350c40e9a398328678f6dc442cc6457f509d749ef6a00b144"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "match-430-dark",
+    "browser": "156.0.8078.4",
+    "width": 430,
+    "checks": [
+      "white and black palette choices available through real touch controls",
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake save and reopen retain exact sides",
+      "mouse drag works in a touch-capable browser",
+      "cancel editing restores saved sides"
+    ],
+    "frames": [
+      {
+        "file": "match-430-dark-palette.png",
+        "sha256": "2f7626fd0a8a230336fa527b5cf375bea4e45847f5ec32a1b488dbf6a8595439"
+      },
+      {
+        "file": "match-430-dark-before.png",
+        "sha256": "4eb3bc0906898736535ef8e4b31d2a6ae91a762517605321bab07035d537b6a5"
+      },
+      {
+        "file": "match-430-dark-highlight.png",
+        "sha256": "a2fd5fbf890f1f0c7727f378655b3cc831b0407ba7bc909258c2fc8276739316"
+      },
+      {
+        "file": "match-430-dark-moved.png",
+        "sha256": "82af218ff2e3dac387464c2b67c1e67a85dbd6e5765726e59b0c6c644f4aba07"
+      },
+      {
+        "file": "match-430-dark-saved.png",
+        "sha256": "2109aed6395b09e1d86146387924c4f9197cac69f276dd6e445cd1067ed4e1e2"
+      },
+      {
+        "file": "match-430-dark-cancel-restored.png",
+        "sha256": "ae04779c525040adb0b4a71dc8fcf4dd80f3a127b348c852640be40d88bcfd37"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "results-360-light",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "checks": [
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake acceptance opens details with transferred sides"
+    ],
+    "frames": [
+      {
+        "file": "results-360-light-before.png",
+        "sha256": "13ce148e34d27ca5748b2575a9f865a92e415e57498674931d7826e355a5fcef"
+      },
+      {
+        "file": "results-360-light-highlight.png",
+        "sha256": "f32e39f8088623470371ab2758c30659cc2176f648b83ce1527481009195f2a8"
+      },
+      {
+        "file": "results-360-light-moved.png",
+        "sha256": "8411640c70fd7aefccfb963a897f85b7cfe51427cd37e636ce1d3d0271edac0e"
+      },
+      {
+        "file": "results-360-light-accepted.png",
+        "sha256": "738ec17c7c9be796a58e8783bbe046c97199cdc28901a23db43f7610278dfd86"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "results-360-dark",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "checks": [
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake acceptance opens details with transferred sides"
+    ],
+    "frames": [
+      {
+        "file": "results-360-dark-before.png",
+        "sha256": "b6e3cce92544e961c5b5f130e35cf54e7d948f9169cad3c34a1be683509d871f"
+      },
+      {
+        "file": "results-360-dark-highlight.png",
+        "sha256": "7f96879e58a0f7a848d598e7752518f6728759c26cb8692f0a53187ef9bd6549"
+      },
+      {
+        "file": "results-360-dark-moved.png",
+        "sha256": "ce217c7911447ddef9eec795a55fc65223854e3c80099bc0088f483fa0064e9a"
+      },
+      {
+        "file": "results-360-dark-accepted.png",
+        "sha256": "4f4c6d3c56545ae6c1aef0b3870a77589c763512d04239757b4c6c404d097b49"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "results-430-light",
+    "browser": "156.0.8078.4",
+    "width": 430,
+    "checks": [
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake acceptance opens details with transferred sides"
+    ],
+    "frames": [
+      {
+        "file": "results-430-light-before.png",
+        "sha256": "4315e520c106a5044f02a8d04165272793da3c368452ed0970cae56ecfa5455e"
+      },
+      {
+        "file": "results-430-light-highlight.png",
+        "sha256": "a7176b54712136194bb7194c6221c0248e0523516ce9433a4fa4a9d59e13f9b6"
+      },
+      {
+        "file": "results-430-light-moved.png",
+        "sha256": "bbf528805fbdd3d855f5b2b9b549bc461156cad4b91d5778c615877b9302ce1f"
+      },
+      {
+        "file": "results-430-light-accepted.png",
+        "sha256": "da8147bf43043c8bbd8c46e5faafbf4254c72e0b3ab00becf5823ce4eacd7b3f"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "results-430-dark",
+    "browser": "156.0.8078.4",
+    "width": 430,
+    "checks": [
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake acceptance opens details with transferred sides"
+    ],
+    "frames": [
+      {
+        "file": "results-430-dark-before.png",
+        "sha256": "21509a1e61441543ce17c0c29ebbc6f84ca456a7a8cb307c24b35b5757f2708a"
+      },
+      {
+        "file": "results-430-dark-highlight.png",
+        "sha256": "d62f4ab3f68fe0b25757c5c4c6ae3c0b682ce08c1d5123590b3e952f143f9007"
+      },
+      {
+        "file": "results-430-dark-moved.png",
+        "sha256": "18e5d215559dd9da61042a6baa117fc32135324461a04bcdadb7f1f796eef0be"
+      },
+      {
+        "file": "results-430-dark-accepted.png",
+        "sha256": "2109aed6395b09e1d86146387924c4f9197cac69f276dd6e445cd1067ed4e1e2"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "match-390-dark-empty",
+    "browser": "156.0.8078.4",
+    "width": 390,
+    "checks": [
+      "white and black palette choices available through real touch controls",
+      "touch home to away changes exactly one of all identities; highlighted frame differs",
+      "touch away to home preserves all identities",
+      "touchCancel over target changes no sides",
+      "fake save and reopen retain exact sides",
+      "mouse drag works in a touch-capable browser",
+      "cancel editing restores saved sides"
+    ],
+    "frames": [
+      {
+        "file": "match-390-dark-empty-palette.png",
+        "sha256": "0f1fa7ce6cf4948a939bd6225af4db65918f1024dbb42e41d549887c0b6b26a6"
+      },
+      {
+        "file": "match-390-dark-empty-before.png",
+        "sha256": "58f6b38abcc7a91066329e54f8a8e8e51dd2bbbe874124697543e8ff3d5dcbea"
+      },
+      {
+        "file": "match-390-dark-empty-highlight.png",
+        "sha256": "b13edab3b6c10d8451809df7bc71a91c33fd0f5e1379b2cd562a19f930246fd1"
+      },
+      {
+        "file": "match-390-dark-empty-moved.png",
+        "sha256": "dc0b84f677667ee671c84fd826fac889b7ae71e93fd374a058c14090fa549301"
+      },
+      {
+        "file": "match-390-dark-empty-saved.png",
+        "sha256": "f4518ca2b0bdde754be7b5a0eda2a345e132208022abac187faa5442c2926ce9"
+      },
+      {
+        "file": "match-390-dark-empty-cancel-restored.png",
+        "sha256": "58f6b38abcc7a91066329e54f8a8e8e51dd2bbbe874124697543e8ff3d5dcbea"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  },
+  {
+    "case": "match-390-light-long",
+    "browser": "156.0.8078.4",
+    "width": 390,
+    "checks": [
+      "white and black palette choices available through real touch controls",
+      "quick touch scroll changes position, not sides; full long identities remain in semantics"
+    ],
+    "frames": [
+      {
+        "file": "match-390-light-long-palette.png",
+        "sha256": "e4046be0bd87082570303adfbf9ef4ce6197ee80cbc16f3f603cd49db770c639"
+      },
+      {
+        "file": "match-390-light-long-before.png",
+        "sha256": "73c79e6206dfa4540a06909ec978adbd0859d150d55715ac898020b00b880498"
+      },
+      {
+        "file": "match-390-light-long-scrolled.png",
+        "sha256": "91a5727982e3d8ca6b8512c5ac4036818d11fd2b5a9fe78e8fbd172d62e2f0d8"
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1
+  }
+]
