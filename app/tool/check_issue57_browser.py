@@ -230,8 +230,8 @@ with sync_playwright() as pw:
             totals(page, record, initial, snapshot=screen == 'match')
             frame(page, record, 'view')
             if scale == 3:
-                label = (page.locator('[role="group"][aria-label^="Szansa na wygraną:"]')
-                         if screen == 'match' else page.get_by_text(re.compile(r'^Gospodarze\s+52%$')))
+                prefix = 'Szansa na wygraną:' if screen == 'match' else 'Szansa wygranej propozycji'
+                label = page.locator(f'[role="group"][aria-label^="{prefix}"]')
                 limit = 792 if screen == 'match' else page.get_by_role('button', name='Zakceptuj propozycję', exact=True).bounding_box()['y']
                 for _ in range(40):
                     box = label.first.bounding_box() if label.count() else None
@@ -240,10 +240,11 @@ with sync_playwright() as pw:
                     swipe(page, cdp, (width / 2, 640), (width / 2, 200))
                 else:
                     raise AssertionError(('3x probability labels not reachable', box, limit, label.count()))
-                labels = [label] if screen == 'match' else [page.get_by_text(re.compile(text)) for text in [r'^Gospodarze\s+52%$', r'^Goście\s+48%$']]
-                for side_label in labels:
-                    box = side_label.bounding_box()
-                    assert box['x'] >= 0 and box['x'] + box['width'] <= width, box
+                accessible = label.get_attribute('aria-label')
+                assert re.search(r'Gospodarze\s+52%', accessible), accessible
+                assert re.search(r'Goście\s+48%', accessible), accessible
+                box = label.bounding_box()
+                assert box['x'] >= 0 and box['x'] + box['width'] <= width, box
                 frame(page, record, 'probability-3x')
                 record['checks'].append('320px/3x full-scale probability labels wrap within width and remain reachable')
                 # The reported 3x case is a layout/label check. Reload the
