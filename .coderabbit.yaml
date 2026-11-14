@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://www.coderabbit.ai/integrations/schema.v2.json
+# Keep CodeRabbit inactive while the GitHub App is still installed.
+reviews:
+  auto_review:
+    enabled: false
+    auto_incremental_review: false
+    description_keyword: ""
+    labels: []
+  high_level_summary: false
+  review_status: false
+  review_progress: false
+  commit_status: false
+  auto_apply_labels: false
+  auto_assign_reviewers: false
+chat:
+  auto_reply: false
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+  planning:
+    enabled: false
+    auto_planning:
+      enabled: false
+  labeling:
+    auto_apply_labels: false
