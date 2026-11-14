@@ -22,15 +22,19 @@ class PlayerTransferDrag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final faded = Opacity(opacity: .4, child: child);
+    final lifted = FractionalTranslation(
+      translation: const Offset(-.5, -1),
+      child: feedback,
+    );
     return _MouseDrag(
       data: data,
-      feedback: feedback,
+      feedback: lifted,
       childWhenDragging: faded,
       onDragStarted: onDragStarted,
       onDragEnd: (_) => onDragEnd?.call(),
       child: _TouchDrag(
         data: data,
-        feedback: feedback,
+        feedback: lifted,
         childWhenDragging: faded,
         onDragStarted: onDragStarted,
         onDragEnd: (_) => onDragEnd?.call(),

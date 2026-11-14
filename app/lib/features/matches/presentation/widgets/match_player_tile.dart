@@ -58,10 +58,18 @@ class MatchPlayerTile extends StatelessWidget {
     }
 
     final feedback = ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: compact ? 320 : 520),
+      constraints: BoxConstraints(
+        maxWidth: compact
+            ? (MediaQuery.sizeOf(context).width < 640
+                  ? MediaQuery.sizeOf(context).width / 2 - 8
+                  : 320)
+            : 520,
+      ),
       child: Material(
-        color: Colors.transparent,
-        child: Opacity(opacity: 0.9, child: tile),
+        color: Theme.of(context).colorScheme.surface,
+        elevation: 6,
+        borderRadius: BorderRadius.circular(8),
+        child: tile,
       ),
     );
 

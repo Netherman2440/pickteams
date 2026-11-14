@@ -159,7 +159,9 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
       if (collapsed) {
@@ -291,7 +293,9 @@ class _LineupHeaderDelegate extends SliverPersistentHeaderDelegate {
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Theme.of(context).colorScheme.outline),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const SizedBox(width: 8),

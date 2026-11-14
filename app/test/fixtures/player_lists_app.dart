@@ -69,6 +69,9 @@ class FixtureWrites {
   int deletions = 0;
   int rematches = 0;
   Object? draftExtra;
+  MatchDetailsDto? storedMatch;
+  int teamSaves = 0;
+  int metaSaves = 0;
 }
 
 class PlayerListsFixture extends StatefulWidget {
@@ -82,6 +85,8 @@ class PlayerListsFixture extends StatefulWidget {
     this.systemPadding,
     this.players,
     this.guest = false,
+    this.brightness = Brightness.dark,
+    this.proposalMatchId,
   });
   final String page;
   final SquadRole role;
@@ -91,6 +96,8 @@ class PlayerListsFixture extends StatefulWidget {
   final EdgeInsets? systemPadding;
   final List<Player>? players;
   final bool guest;
+  final Brightness brightness;
+  final String? proposalMatchId;
   @override
   State<PlayerListsFixture> createState() => _PlayerListsFixtureState();
 }
@@ -169,7 +176,7 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
 
   Widget _results() => DraftResultsPage(
     squadId: 'fixture',
-    matchId: 'match',
+    matchId: widget.proposalMatchId,
     selectedPlayerIds: (widget.players ?? fixturePlayers.take(16))
         .map((p) => p.playerId)
         .toList(),
@@ -200,17 +207,22 @@ class _PlayerListsFixtureState extends State<PlayerListsFixture> {
         GetSquadPlayersUseCase(_FixturePlayers()),
       ),
       draftSessionNotifierProvider.overrideWith(
-        () => _FixtureDraft(widget.players),
+        () => _FixtureDraft(
+          widget.players,
+          widget.proposalMatchId == null ? null : widget.match,
+        ),
       ),
       matchDetailsProvider.overrideWith(
         () => FixtureMatch(initial: widget.match, writes: widget.writes),
       ),
       draftAcceptanceRepositoryProvider.overrideWithValue(
-        _FixtureAcceptance(widget.writes),
+        _FixtureAcceptance(widget.writes, widget.match, widget.players),
       ),
     ],
     child: MaterialApp.router(
-      theme: AppTheme.darkTheme,
+      theme: widget.brightness == Brightness.dark
+          ? AppTheme.darkTheme
+          : AppTheme.lightTheme,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       builder: (context, child) => MediaQuery(
@@ -253,8 +265,9 @@ class _FixturePlayers implements PlayerRepository {
 }
 
 class _FixtureDraft extends DraftSessionNotifier {
-  _FixtureDraft(this.players);
+  _FixtureDraft(this.players, this.match);
   final List<Player>? players;
+  final MatchDetailsDto? match;
 
   @override
   Future<void> load({
@@ -291,6 +304,8 @@ class _FixtureDraft extends DraftSessionNotifier {
         away: away,
         winRateMatrix: const {},
         homeWinProbability: .52,
+        homeColor: match?.homeTeam?.color ?? '#FFFFFF',
+        awayColor: match?.awayTeam?.color ?? '#000000',
       ),
     );
   }
@@ -304,6 +319,8 @@ MatchDetailsDto fixtureMatch({
   String? tournamentId,
   bool withoutTeams = false,
   List<Player>? players,
+  String homeColor = '#1E88E5',
+  String awayColor = '#E53935',
 }) {
   final roster = players ?? fixturePlayers;
   TeamDto team(String id, String name, String color, List<String> ids) =>
@@ -336,7 +353,7 @@ MatchDetailsDto fixtureMatch({
         : team(
             'home',
             'Niebiescy',
-            '#1E88E5',
+            homeColor,
             homeIds ?? fixturePlayers.take(8).map((p) => p.playerId).toList(),
           ),
     awayTeam: withoutTeams
@@ -344,7 +361,7 @@ MatchDetailsDto fixtureMatch({
         : team(
             'away',
             'Czerwoni',
-            '#E53935',
+            awayColor,
             awayIds ??
                 fixturePlayers.skip(8).take(8).map((p) => p.playerId).toList(),
           ),
@@ -358,7 +375,7 @@ class FixtureMatch extends MatchDetailsNotifier {
 
   @override
   AsyncValue<MatchDetailsDto> build(String matchId) =>
-      AsyncData(initial ?? fixtureMatch());
+      AsyncData(writes?.storedMatch ?? initial ?? fixtureMatch());
   @override
   Future<void> updateScore(String squadId, int homeScore, int awayScore) async {
     _replace(homeScore: homeScore, awayScore: awayScore);
@@ -369,6 +386,7 @@ class FixtureMatch extends MatchDetailsNotifier {
     List<String> homePlayerIds,
     List<String> awayPlayerIds,
   ) async {
+    if (writes != null) writes!.teamSaves++;
     final match = state.requireValue;
     final players = {
       for (final player in [
@@ -398,6 +416,7 @@ class FixtureMatch extends MatchDetailsNotifier {
     String? awayName,
     String? awayColor,
   }) async {
+    if (writes != null) writes!.metaSaves++;
     final match = state.requireValue;
     _replace(
       homeTeam: _team(match.homeTeam!, name: homeName, color: homeColor),
@@ -440,6 +459,7 @@ class FixtureMatch extends MatchDetailsNotifier {
         awayTeam: awayTeam ?? match.awayTeam,
       ),
     );
+    writes?.storedMatch = state.requireValue;
   }
 
   @override
@@ -455,8 +475,10 @@ class FixtureMatch extends MatchDetailsNotifier {
 }
 
 class _FixtureAcceptance implements DraftAcceptanceRepository {
-  _FixtureAcceptance(this.writes);
+  _FixtureAcceptance(this.writes, this.initial, this.players);
   final FixtureWrites? writes;
+  final MatchDetailsDto? initial;
+  final List<Player>? players;
 
   @override
   Future<String> accept({
@@ -468,6 +490,19 @@ class _FixtureAcceptance implements DraftAcceptanceRepository {
     if (writes != null) writes!.acceptances++;
     writes?.homeIds = (payload['home'] as List).cast<String>();
     writes?.awayIds = (payload['away'] as List).cast<String>();
+    // In-memory equivalent of the existing RPC's insert/default and redraw
+    // metadata preservation contract. This fixture never contacts Supabase.
+    writes?.storedMatch = fixtureMatch(
+      homeIds: (payload['home'] as List).cast<String>(),
+      awayIds: (payload['away'] as List).cast<String>(),
+      players: players,
+      homeColor: matchId == null
+          ? '#FFFFFF'
+          : initial?.homeTeam?.color ?? '#808080',
+      awayColor: matchId == null
+          ? '#000000'
+          : initial?.awayTeam?.color ?? '#808080',
+    );
     return matchId ?? 'match';
   }
 }

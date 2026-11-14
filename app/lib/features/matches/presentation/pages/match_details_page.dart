@@ -446,10 +446,8 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                       color: _parseColor(hex),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.outline,
-                        width: isSelected ? 2 : 1,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        width: isSelected ? 3 : 1,
                       ),
                     ),
                     child: isSelected
@@ -923,7 +921,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
         border: Border.all(
           color: editable
               ? theme.colorScheme.primary
-              : theme.colorScheme.outline,
+              : theme.colorScheme.onSurfaceVariant,
           width: editable ? 2 : 1,
         ),
         borderRadius: BorderRadius.circular(4),
@@ -1034,11 +1032,16 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                       onTap: () => _pickTeamColor(side),
                       child: Tooltip(
                         message: 'Zmień kolor',
-                        child: _buildTeamColorBox(
-                          context: context,
-                          color: teamColor,
-                          size: compact ? 14 : 32,
-                          editable: true,
+                        child: SizedBox.square(
+                          dimension: 44,
+                          child: Center(
+                            child: _buildTeamColorBox(
+                              context: context,
+                              color: teamColor,
+                              size: compact ? 14 : 32,
+                              editable: true,
+                            ),
+                          ),
                         ),
                       ),
                     )

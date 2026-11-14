@@ -25,9 +25,11 @@ class TeamTransferTarget extends StatelessWidget {
       return Container(
         constraints: const BoxConstraints(minHeight: 144),
         decoration: BoxDecoration(
-          color: active ? scheme.primaryContainer : Colors.transparent,
+          color: active
+              ? scheme.primary.withValues(alpha: .12)
+              : Colors.transparent,
           border: Border.all(
-            color: active ? scheme.primary : scheme.outline,
+            color: scheme.onSurfaceVariant,
             width: active ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),

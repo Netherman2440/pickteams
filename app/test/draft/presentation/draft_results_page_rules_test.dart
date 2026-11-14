@@ -25,6 +25,9 @@ import 'package:app/features/draft/presentation/pages/draft_selection_page.dart'
 import 'package:app/features/draft/presentation/pages/draft_results_page.dart';
 import 'package:app/features/draft/presentation/controllers/draft_selection_controller.dart';
 import 'package:app/features/matches/domain/repositories/match_repository.dart';
+import 'package:app/features/matches/domain/entities/match.dart';
+import 'package:app/features/matches/domain/entities/team.dart';
+import 'package:app/features/matches/domain/entities/match_enums.dart';
 import 'package:app/features/matches/domain/repositories/team_repository.dart';
 import 'package:app/features/matches/matches_providers.dart';
 import 'package:app/features/players/domain/entities/player.dart';
@@ -58,13 +61,57 @@ void main() {
             matchId: matchId,
           );
           expect(container.read(draftSessionNotifierProvider).hasError, fail);
+          if (!fail) {
+            final state = container
+                .read(draftSessionNotifierProvider)
+                .requireValue;
+            expect(state.homeColor, matchId == null ? '#FFFFFF' : '#1E88E5');
+            expect(state.awayColor, matchId == null ? '#000000' : '#E53935');
+            if (matchId != null) {
+              verify(
+                () => fixture.matches.getMatch(matchId: 'existing'),
+              ).called(1);
+              verify(() => fixture.teams.getMatchTeams('existing')).called(1);
+            }
+          }
           notifier.selectProposal(1);
+          if (!fail) {
+            notifier.movePlayer(playerId: 'p0', toHome: false);
+            final changed = container
+                .read(draftSessionNotifierProvider)
+                .requireValue;
+            expect(changed.homeColor, matchId == null ? '#FFFFFF' : '#1E88E5');
+            expect(changed.awayColor, matchId == null ? '#000000' : '#E53935');
+          }
           notifier.cancelLoad();
           fixture.expectNoWrites();
         },
       );
     }
   }
+
+  test(
+    'redraw color read failure does not expose an accept-ready default preview',
+    () async {
+      final fixture = _Fixture();
+      when(
+        () => fixture.matches.getMatch(matchId: 'existing'),
+      ).thenThrow(StateError('color read failed'));
+      final container = ProviderContainer(overrides: fixture.overrides);
+      addTearDown(container.dispose);
+      await container
+          .read(draftSessionNotifierProvider.notifier)
+          .load(
+            squadId: 'squad-1',
+            selectedPlayerIds: ids,
+            algorithm: DraftAlgorithm.combinatory,
+            matchId: 'existing',
+          );
+      expect(container.read(draftSessionNotifierProvider).hasError, isTrue);
+      verify(() => fixture.matches.getMatch(matchId: 'existing')).called(1);
+      fixture.expectNoWrites();
+    },
+  );
 
   test('stored proposal lookup is read-only and does not regenerate', () async {
     final fixture = _Fixture();
@@ -104,6 +151,11 @@ void main() {
       container.read(draftSessionNotifierProvider).requireValue.proposals,
       hasLength(1),
     );
+    final state = container.read(draftSessionNotifierProvider).requireValue;
+    expect(state.homeColor, '#1E88E5');
+    expect(state.awayColor, '#E53935');
+    verify(() => fixture.matches.getMatch(matchId: 'existing')).called(1);
+    verify(() => fixture.teams.getMatchTeams('existing')).called(1);
     expect(fixture.generator.calls, 0);
     verify(
       () => fixture.persistence.getMatchDraft(matchId: 'existing'),
@@ -268,6 +320,41 @@ class _Fixture {
           ),
       ],
     );
+    when(() => matches.getMatch(matchId: 'existing')).thenAnswer(
+      (_) async => Match(
+        matchId: 'existing',
+        squadId: 'squad-1',
+        createdAt: DateTime(2026),
+        homeTeam: const Team(
+          teamId: 'h',
+          matchId: 'existing',
+          side: Side.home,
+          color: '#1E88E5',
+        ),
+        awayTeam: const Team(
+          teamId: 'a',
+          matchId: 'existing',
+          side: Side.away,
+          color: '#E53935',
+        ),
+      ),
+    );
+    when(() => teams.getMatchTeams('existing')).thenAnswer(
+      (_) async => const [
+        Team(
+          teamId: 'h',
+          matchId: 'existing',
+          side: Side.home,
+          color: '#1E88E5',
+        ),
+        Team(
+          teamId: 'a',
+          matchId: 'existing',
+          side: Side.away,
+          color: '#E53935',
+        ),
+      ],
+    );
     when(
       () => matches.getMatch(matchId: 'accepted'),
     ).thenThrow(StateError('fixture detail boundary'));
@@ -320,8 +407,8 @@ class _Fixture {
   }
 
   void expectNoWrites({bool checkPersistence = true}) {
-    verifyZeroInteractions(matches);
-    verifyZeroInteractions(teams);
+    verifyNoMoreInteractions(matches);
+    verifyNoMoreInteractions(teams);
     verifyZeroInteractions(ranking);
     if (checkPersistence) verifyZeroInteractions(persistence);
     expect(acceptance.calls, 0);

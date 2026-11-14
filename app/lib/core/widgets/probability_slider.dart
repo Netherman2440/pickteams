@@ -151,7 +151,9 @@ class _AnimatedBar extends StatelessWidget {
           child: Container(
             height: 12,
             foregroundDecoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).colorScheme.outline),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Stack(
