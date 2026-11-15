@@ -1,4 +1,8 @@
-# Issue 57: candidate screenshots
+# Issue 57: original candidate screenshots
+
+For the current ranking corrections, updated screenshots, recordings and validation,
+see [ranking-corrections/README.md](ranking-corrections/README.md). The material
+below documents the earlier candidate and is retained as historical evidence.
 
 These are original screenshots of running Flutter widgets, not mockups. All
 players, team names, rankings and match data come from synthetic test fixtures.

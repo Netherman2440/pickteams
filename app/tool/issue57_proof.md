@@ -1,5 +1,10 @@
 # Issue 57: team colors and mobile-web transfers
 
+For the PR #58 ranking follow-up, current source pin, 19-case matrix and recordings,
+see [ranking-corrections/README.md](../../docs/review/issue-57/ranking-corrections/README.md).
+Set `ISSUE57_VIDEO=1` when running the collector to record the 360 px, 1× match
+and proposal cases. The original candidate report below retains its earlier scope.
+
 ## Candidate contract
 
 New proposals show home white (`#FFFFFF`) and away black (`#000000`).
