@@ -28,10 +28,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        for (final label in [
-          'Ranking gospodarzy: 468.0',
-          'Ranking gości: 436.0',
-        ]) {
+        for (final label in ['Ranking: 468.0', 'Ranking: 436.0']) {
           final finder = find.text(label);
           expect(finder, findsOneWidget);
           await tester.ensureVisible(finder);

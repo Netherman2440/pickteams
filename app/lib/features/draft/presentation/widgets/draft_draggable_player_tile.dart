@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:app/core/widgets/player_transfer_drag.dart';
 import 'package:flutter/material.dart';
 import 'package:app/core/widgets/player_list_row.dart';
 
@@ -38,7 +38,19 @@ class DraftDraggablePlayerTile extends StatelessWidget {
       ranking: player.ranking,
       compact: compact,
       density: density,
-      leading: leading,
+      leading:
+          leading ??
+          (dragData == null
+              ? null
+              : Semantics(
+                  container: true,
+                  identifier: 'transfer-handle-${player.playerId}',
+                  child: const Tooltip(
+                    triggerMode: TooltipTriggerMode.manual,
+                    message: 'Przytrzymaj i przeciągnij',
+                    child: Icon(Icons.drag_indicator, size: 16),
+                  ),
+                )),
       trailing: trailing,
       onTap: onTap,
       supporting: !simple && (positionText != null || difference != 0)
@@ -59,47 +71,22 @@ class DraftDraggablePlayerTile extends StatelessWidget {
     }
 
     final feedback = ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: compact ? 320 : 520),
+      constraints: BoxConstraints(
+        maxWidth: compact
+            ? (MediaQuery.sizeOf(context).width < 640
+                  ? MediaQuery.sizeOf(context).width / 2 - 8
+                  : 320)
+            : 520,
+      ),
       child: Material(
-        color: Colors.transparent,
-        child: Opacity(opacity: 0.9, child: tile),
+        color: Theme.of(context).colorScheme.surface,
+        elevation: 6,
+        borderRadius: BorderRadius.circular(8),
+        child: tile,
       ),
     );
 
-    final childWhenDragging = Opacity(opacity: 0.4, child: tile);
-
-    if (_shouldUseImmediateDrag) {
-      return Draggable<Object>(
-        data: data,
-        feedback: feedback,
-        childWhenDragging: childWhenDragging,
-        child: tile,
-      );
-    }
-
-    return LongPressDraggable<Object>(
-      data: data,
-      feedback: feedback,
-      childWhenDragging: childWhenDragging,
-      child: tile,
-    );
-  }
-}
-
-bool get _shouldUseImmediateDrag {
-  if (kIsWeb) {
-    return true;
-  }
-
-  switch (defaultTargetPlatform) {
-    case TargetPlatform.windows:
-    case TargetPlatform.macOS:
-    case TargetPlatform.linux:
-      return true;
-    case TargetPlatform.android:
-    case TargetPlatform.iOS:
-    case TargetPlatform.fuchsia:
-      return false;
+    return PlayerTransferDrag(data: data, feedback: feedback, child: tile);
   }
 }
 

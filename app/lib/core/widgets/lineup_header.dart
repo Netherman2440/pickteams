@@ -21,9 +21,7 @@ class LineupHeader extends StatelessWidget {
   final Color awayColor;
   final bool stackedIdentity;
 
-  /// Team-total ranking labels shown under the team names in the expanded
-  /// stacked header. Collapsing hides them together with the names, leaving
-  /// only the pinned color badges. Unused by the default inline variant.
+  /// Team totals stay with the identity above the roster, even when pinned.
   final String? homeRanking;
   final String? awayRanking;
 
@@ -103,18 +101,18 @@ Widget _stackedHeader(BuildContext context, double width, LineupHeader header) {
           measure(header.awayRanking ?? '', columnWidth, rankingStyle),
         )
       : 0.0;
-  // Badge, gap, name and optional totals measured at their final column
-  // width; the 16 px collapsed badge always fits the pinned minimum.
+  // Only the badge shrinks. Measure all text at its actual column width;
+  // neither names nor totals disappear as the roster scrolls underneath.
   final contentHeight =
-      48 + 8 + nameHeight + (hasTotals ? 4 + totalHeight : 0.0);
+      16 + 8 + nameHeight + (hasTotals ? 4 + totalHeight : 0.0);
   return SliverPersistentHeader(
     pinned: true,
     delegate: _StackedIdentityDelegate(
       header: header,
       style: style,
       rankingStyle: rankingStyle,
-      minimum: 36,
-      expanded: contentHeight + 16,
+      minimum: contentHeight + 16,
+      expanded: contentHeight + 48,
     ),
   );
 }
@@ -137,7 +135,7 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get minExtent => minimum;
   @override
-  double get maxExtent => math.max(minimum + 48, expanded);
+  double get maxExtent => expanded;
 
   @override
   Widget build(
@@ -145,26 +143,21 @@ class _StackedIdentityDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    // Keep the complete stacked identity only while it fits. A header that
-    // cannot show badge, name and totals without cutting reduces to the color
-    // badges; the pinned strip never renders intermediate or clipped content.
     final available = math.max(minExtent, maxExtent - shrinkOffset);
-    final collapsed =
-        available < expanded - 16 || shrinkOffset >= maxExtent - minExtent;
+    final badgeSize = 48 - shrinkOffset.clamp(0.0, 32.0);
     Widget identity(String side, String name, Color color, String? total) {
       final badge = Container(
         key: ValueKey('lineup-$side-badge'),
-        width: collapsed ? 16 : 48,
-        height: collapsed ? 16 : 48,
+        width: badgeSize,
+        height: badgeSize,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
-      if (collapsed) {
-        return Expanded(child: Center(child: badge));
-      }
       return Expanded(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -291,7 +284,9 @@ class _LineupHeaderDelegate extends SliverPersistentHeaderDelegate {
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Theme.of(context).colorScheme.outline),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const SizedBox(width: 8),

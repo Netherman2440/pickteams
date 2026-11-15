@@ -60,12 +60,10 @@ void main() {
                     candidate.player.playerId == widget.player.playerId,
               )
             : find.byWidget(widget);
-        if (page == 'match') {
-          // Full two-line panels need scrolling; the old all-eight-at-once
-          // assertion conflicts with the approved full-name layout.
-          await Scrollable.ensureVisible(tester.element(row), alignment: 1);
-          await tester.pumpAndSettle();
-        }
+        // Full names and persistent identity take real space. Each complete
+        // row must remain reachable; all eight need not fit at once.
+        await Scrollable.ensureVisible(tester.element(row), alignment: 1);
+        await tester.pumpAndSettle();
         final rect = tester.getRect(row);
         expect(rect.left, greaterThanOrEqualTo(0));
         expect(rect.right, lessThanOrEqualTo(360));
@@ -81,12 +79,11 @@ void main() {
       }
       expect(find.byTooltip('Otwórz nawigację'), findsOneWidget);
       if (page == 'match') {
-        // The collapsed match header keeps only its color badges; team
-        // names and totals hide with it.
-        expect(find.text('Niebiescy'), findsNothing);
-        expect(find.text('Czerwoni'), findsNothing);
-        expect(find.text('Ranking: 387.0'), findsNothing);
-        expect(find.text('Ranking: 355.0'), findsNothing);
+        // Compact identity keeps names and totals visible with the badges.
+        expect(find.text('Niebiescy').hitTestable(), findsOneWidget);
+        expect(find.text('Czerwoni').hitTestable(), findsOneWidget);
+        expect(find.text('Ranking: 387.0').hitTestable(), findsOneWidget);
+        expect(find.text('Ranking: 355.0').hitTestable(), findsOneWidget);
         expect(
           find.byKey(const ValueKey('lineup-home-badge')).hitTestable(),
           findsOneWidget,

@@ -1,0 +1,1910 @@
+[
+  {
+    "case": "match-320-light-x1",
+    "browser": "156.0.8078.4",
+    "width": 320,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake save/reopen and cancel restore exact totals and sides; mouse handle drag works"
+    ],
+    "frames": [
+      {
+        "file": "match-320-light-x1-view.png",
+        "sha256": "d586c251489de9e49219db4f23e145fa2af9c7c421c51460fa5ea22cc0c7d449"
+      },
+      {
+        "file": "match-320-light-x1-before.png",
+        "sha256": "feec31143f0de3eadb719cf920456ed1fe060ab6df75fbe22e6c98bb8caa539a"
+      },
+      {
+        "file": "match-320-light-x1-highlight.png",
+        "sha256": "7f6d5acffe7afb1c105e07d533b8fb2a3a63549431ef7c61590ea05f4577d8a7"
+      },
+      {
+        "file": "match-320-light-x1-moved.png",
+        "sha256": "11f1a6765421da65ba7992e894b735e6eb8bf691f8efe68dae143d993daf9928"
+      },
+      {
+        "file": "match-320-light-x1-saved.png",
+        "sha256": "827666f4d358027668863c03d1ecee6e954de73b84d09724949d413ed7495f14"
+      },
+      {
+        "file": "match-320-light-x1-cancel-restored.png",
+        "sha256": "e76f3f0e2819b71f346ce372488dfca707f30b002bab075fa2151defb570ecde"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 290.3,
+        "away": 363.7
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          301.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 169,
+          "y": 336,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          177.0,
+          344.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 169,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          177.0,
+          301.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 169,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          177.0,
+          301.0
+        ],
+        "mouse": true
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "match-320-dark-x1.6",
+    "browser": "156.0.8078.4",
+    "width": 320,
+    "height": 800,
+    "textScale": 1.6,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake save/reopen and cancel restore exact totals and sides; mouse handle drag works"
+    ],
+    "frames": [
+      {
+        "file": "match-320-dark-x1.6-view.png",
+        "sha256": "b1cd035c0a9395e98b14f03d2c329919a30cfbf5f562614bd8f9403b6a9a0106"
+      },
+      {
+        "file": "match-320-dark-x1.6-before.png",
+        "sha256": "ef29a38858a735c1dbcb972e43c4575c493370f16543418930e568af51d91c4c"
+      },
+      {
+        "file": "match-320-dark-x1.6-highlight.png",
+        "sha256": "fa480caf2520ac65d392832039b1c57a9e055546f9873aab90b4a7c80cce32bf"
+      },
+      {
+        "file": "match-320-dark-x1.6-moved.png",
+        "sha256": "e71208c9d404221a01cd0c055f89d23fe1a6c1e97efb985f38c3df7a489d3006"
+      },
+      {
+        "file": "match-320-dark-x1.6-saved.png",
+        "sha256": "dea47330f582929aec79e581fba99a20f3e00d2f2cf0475ed3566ebbd5fec78c"
+      },
+      {
+        "file": "match-320-dark-x1.6-cancel-restored.png",
+        "sha256": "2b3831c7435b6d791825feba9cea0103f4144bfbce6754360aa1707573736823"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 290.3,
+        "away": 363.7
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 389.79998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          397.79998779296875
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 169,
+          "y": 512.7999877929688,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          177.0,
+          520.7999877929688
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 169,
+          "y": 389.79998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          177.0,
+          397.79998779296875
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 169,
+          "y": 389.79998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          177.0,
+          397.79998779296875
+        ],
+        "mouse": true
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "match-360-light-x1",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "real touch palette exposes white and black",
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake save/reopen and cancel restore exact totals and sides; mouse handle drag works"
+    ],
+    "frames": [
+      {
+        "file": "match-360-light-x1-view.png",
+        "sha256": "55347f3de583f1bbbf39549097fa79ae258cf85f6af6a2e18728e2f236088d18"
+      },
+      {
+        "file": "match-360-light-x1-palette.png",
+        "sha256": "b7e5ccbb637cba8d19daffba5eba80fb9c81c33c8d20e8ff816c2f3be8a0288e"
+      },
+      {
+        "file": "match-360-light-x1-before.png",
+        "sha256": "f428dc2a70665ee468c06ef2ac0542e8605acf96a3d4453ab5abb9be0ba271c9"
+      },
+      {
+        "file": "match-360-light-x1-highlight.png",
+        "sha256": "78dac4655f0ae06f1e0206584b50e5603bfa795ed0369bc8c4fb0015d431b676"
+      },
+      {
+        "file": "match-360-light-x1-moved.png",
+        "sha256": "67881f3d5ac7642e8a40d771b6669770a2957fe924e497cf659aa1f1c472e4fd"
+      },
+      {
+        "file": "match-360-light-x1-saved.png",
+        "sha256": "24f53dc17f8029124b048c8a88576a5d65476fd91d4aba2856f0a73881408281"
+      },
+      {
+        "file": "match-360-light-x1-cancel-restored.png",
+        "sha256": "23877ba53d5304686c5f928692f960e075edee1949fa2c65e16744a0b5635709"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 290.3,
+        "away": 363.7
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          301.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 189,
+          "y": 336,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          197.0,
+          344.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 189,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          197.0,
+          301.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 189,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          197.0,
+          301.0
+        ],
+        "mouse": true
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "video": "videos/page@ca1b36c6ee66c2d7a57bd1a1ee336df8.webm",
+    "passed": true,
+    "videoSha256": "c0f55203bf46438300b331ba4f0e9ceefbf1767310e0456d8d7847b632fa5fb1"
+  },
+  {
+    "case": "match-360-dark-x1.6",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "height": 800,
+    "textScale": 1.6,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake save/reopen and cancel restore exact totals and sides; mouse handle drag works"
+    ],
+    "frames": [
+      {
+        "file": "match-360-dark-x1.6-view.png",
+        "sha256": "8dc36cad6dcda8b1c267a5b1643a8cbab7f99dfff50328df7240356e3ab2bb9f"
+      },
+      {
+        "file": "match-360-dark-x1.6-before.png",
+        "sha256": "d61f98974107e124e86e79f6c4038acbb79f2ef36b5e6cbcdc64d9fddc388850"
+      },
+      {
+        "file": "match-360-dark-x1.6-highlight.png",
+        "sha256": "0123ad8d57bac63eb686c0dd7f4eb0f28c99962917dadf579949394e984dcf26"
+      },
+      {
+        "file": "match-360-dark-x1.6-moved.png",
+        "sha256": "fbcf2c81f342346353f7d429995f9d76e2dfa00feb0e0b408ef5e3d48f8f9b1d"
+      },
+      {
+        "file": "match-360-dark-x1.6-saved.png",
+        "sha256": "c363801b345f4a645dac2f85eb3d41742d19246eaaf2cf2c9d95c571e3699380"
+      },
+      {
+        "file": "match-360-dark-x1.6-cancel-restored.png",
+        "sha256": "45c9c27b09ed512f44c39243eb963cbc7c651dac332049dc9dc2c4f8d2c70dcb"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 290.3,
+        "away": 363.7
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 375.29998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          383.29998779296875
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 189,
+          "y": 469.29998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          197.0,
+          477.29998779296875
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 189,
+          "y": 375.29998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          197.0,
+          383.29998779296875
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 189,
+          "y": 375.29998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          197.0,
+          383.29998779296875
+        ],
+        "mouse": true
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "match-430-light-x1",
+    "browser": "156.0.8078.4",
+    "width": 430,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake save/reopen and cancel restore exact totals and sides; mouse handle drag works"
+    ],
+    "frames": [
+      {
+        "file": "match-430-light-x1-view.png",
+        "sha256": "20019ad0cebb7e1cf1e40a014857e98114491c9be9b095d7c708b970b0ca68c2"
+      },
+      {
+        "file": "match-430-light-x1-before.png",
+        "sha256": "49d99f36ce129d06a0c209d867db253c39f8d97ab7e8e11909ca69a9b71d456c"
+      },
+      {
+        "file": "match-430-light-x1-highlight.png",
+        "sha256": "360cb11cedc864b1d14a1de8b5ca6a21e5e7d233cf100ff82d246845218bda55"
+      },
+      {
+        "file": "match-430-light-x1-moved.png",
+        "sha256": "fd205f415c30d7df04b8a62e867ee715b564f7048c589cb7b4ad2da74fc5dc5e"
+      },
+      {
+        "file": "match-430-light-x1-saved.png",
+        "sha256": "060d29d85b77a057ad107f597244151f09b68a0b62da48a5d940e9809b337221"
+      },
+      {
+        "file": "match-430-light-x1-cancel-restored.png",
+        "sha256": "3d1430be7f13912089a1fc15cbfd755230b6cbc5adf5762978ec867c5bfc28c4"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 290.3,
+        "away": 363.7
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 287.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          295.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 224,
+          "y": 319.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          232.0,
+          327.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 224,
+          "y": 287.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          232.0,
+          295.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 224,
+          "y": 287.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          232.0,
+          295.5
+        ],
+        "mouse": true
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "match-430-dark-x1.6",
+    "browser": "156.0.8078.4",
+    "width": 430,
+    "height": 800,
+    "textScale": 1.6,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake save/reopen and cancel restore exact totals and sides; mouse handle drag works"
+    ],
+    "frames": [
+      {
+        "file": "match-430-dark-x1.6-view.png",
+        "sha256": "e5b829e6631788d507e6406022f726e5312d9603d298af72afeb596ea9efa024"
+      },
+      {
+        "file": "match-430-dark-x1.6-before.png",
+        "sha256": "a55564959212e17d31b94408783ef6db202f8e376bf781bd7e97ba9532383098"
+      },
+      {
+        "file": "match-430-dark-x1.6-highlight.png",
+        "sha256": "f19e49e59283ebbf596097cf6c822986e7b52a8e7368ab984e33bc6d5485f4be"
+      },
+      {
+        "file": "match-430-dark-x1.6-moved.png",
+        "sha256": "6c9596f136f7ade1bdb75d60fb341d43afefedcffa91c02ce604654ee66b2c48"
+      },
+      {
+        "file": "match-430-dark-x1.6-saved.png",
+        "sha256": "e50c99b12516347f2b289137bd6a8413c40f5e576080b5013cdec9bb0170aec4"
+      },
+      {
+        "file": "match-430-dark-x1.6-cancel-restored.png",
+        "sha256": "8db1a6e89dc432b026304ae4a4e9a6dc7a744c284dfc905c888b54722cc0da74"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 290.3,
+        "away": 363.7
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 360.79998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          368.79998779296875
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 224,
+          "y": 425.79998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          232.0,
+          433.79998779296875
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 224,
+          "y": 360.79998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          232.0,
+          368.79998779296875
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 224,
+          "y": 360.79998779296875,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          232.0,
+          368.79998779296875
+        ],
+        "mouse": true
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "results-320-light-x1",
+    "browser": "156.0.8078.4",
+    "width": 320,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake acceptance opens details with exact transferred sides and snapshot totals"
+    ],
+    "frames": [
+      {
+        "file": "results-320-light-x1-view.png",
+        "sha256": "f94a0bb94658d43d37dbf24fe47780347d26df726b1aca10372df083ed35ead0"
+      },
+      {
+        "file": "results-320-light-x1-before.png",
+        "sha256": "f94a0bb94658d43d37dbf24fe47780347d26df726b1aca10372df083ed35ead0"
+      },
+      {
+        "file": "results-320-light-x1-highlight.png",
+        "sha256": "82e4984da1e85b6ff1a247b7318d1bf4d0e0ce1a42eaeb423c1299a09a562627"
+      },
+      {
+        "file": "results-320-light-x1-moved.png",
+        "sha256": "8e4323446c00409efd15abd500aa015cff7bdf791f220136887eeda3646363e1"
+      },
+      {
+        "file": "results-320-light-x1-accepted.png",
+        "sha256": "827666f4d358027668863c03d1ecee6e954de73b84d09724949d413ed7495f14"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 351.0,
+        "away": 444.7
+      },
+      {
+        "home": 407.8,
+        "away": 388.1
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 274,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          282.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 171,
+          "y": 317,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          179.0,
+          325.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 171,
+          "y": 274,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          179.0,
+          282.0
+        ],
+        "mouse": false
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "results-320-dark-x1.6",
+    "browser": "156.0.8078.4",
+    "width": 320,
+    "height": 800,
+    "textScale": 1.6,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake acceptance opens details with exact transferred sides and snapshot totals"
+    ],
+    "frames": [
+      {
+        "file": "results-320-dark-x1.6-view.png",
+        "sha256": "3260d7df206de35420960867bf0d973a7a7958f4920758537fc1afe7411ad157"
+      },
+      {
+        "file": "results-320-dark-x1.6-before.png",
+        "sha256": "308ac5e42ba23322654e052d29b2b7ebbcc9d1446649936c5d910777c1b9e297"
+      },
+      {
+        "file": "results-320-dark-x1.6-highlight.png",
+        "sha256": "9df6c80dcf89912dceb5c51cf8df310cb1c6ade6a95b972bee864121d8ab585f"
+      },
+      {
+        "file": "results-320-dark-x1.6-moved.png",
+        "sha256": "bd0287534f67ce6487b8618500b310319973de07578ee732b84ca98b602e33d4"
+      },
+      {
+        "file": "results-320-dark-x1.6-accepted.png",
+        "sha256": "dea47330f582929aec79e581fba99a20f3e00d2f2cf0475ed3566ebbd5fec78c"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 351.0,
+        "away": 444.7
+      },
+      {
+        "home": 407.8,
+        "away": 388.1
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 336,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          344.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 171,
+          "y": 459,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          179.0,
+          467.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 171,
+          "y": 336,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          179.0,
+          344.0
+        ],
+        "mouse": false
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "results-360-light-x1",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake acceptance opens details with exact transferred sides and snapshot totals"
+    ],
+    "frames": [
+      {
+        "file": "results-360-light-x1-view.png",
+        "sha256": "e22aaafe1e87d0e9b66622c8d62b15bc1a248e05482cbefa77732d02ef59258b"
+      },
+      {
+        "file": "results-360-light-x1-before.png",
+        "sha256": "e22aaafe1e87d0e9b66622c8d62b15bc1a248e05482cbefa77732d02ef59258b"
+      },
+      {
+        "file": "results-360-light-x1-highlight.png",
+        "sha256": "f77eb849c75581bdc589274f3918e99f9c014c866ce34a56bd5f413551e922da"
+      },
+      {
+        "file": "results-360-light-x1-moved.png",
+        "sha256": "ada15cad22c98d114ee40f6bbdefe0b67fc16209413969ae9603b9c1c0cdaebd"
+      },
+      {
+        "file": "results-360-light-x1-accepted.png",
+        "sha256": "24f53dc17f8029124b048c8a88576a5d65476fd91d4aba2856f0a73881408281"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 351.0,
+        "away": 444.7
+      },
+      {
+        "home": 407.8,
+        "away": 388.1
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 274,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          282.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 191,
+          "y": 317,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          199.0,
+          325.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 191,
+          "y": 274,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          199.0,
+          282.0
+        ],
+        "mouse": false
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "video": "videos/page@f8ea285d7e58e7877fe6cabe1d1c131d.webm",
+    "passed": true,
+    "videoSha256": "fbb8be1206660bda9fd3491ecb7219a842f19da24137011b30fd3194032766a6"
+  },
+  {
+    "case": "results-360-dark-x1.6",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "height": 800,
+    "textScale": 1.6,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake acceptance opens details with exact transferred sides and snapshot totals"
+    ],
+    "frames": [
+      {
+        "file": "results-360-dark-x1.6-view.png",
+        "sha256": "ef19b64c0cc10f03ed8fc1e3fcd8fed828ecd29ab7d6f94d1b39f0240ed0607a"
+      },
+      {
+        "file": "results-360-dark-x1.6-before.png",
+        "sha256": "ef19b64c0cc10f03ed8fc1e3fcd8fed828ecd29ab7d6f94d1b39f0240ed0607a"
+      },
+      {
+        "file": "results-360-dark-x1.6-highlight.png",
+        "sha256": "580a048bd5dfea05c1443e970742b648ce86def3a05657ffaa2cf00cca05f23c"
+      },
+      {
+        "file": "results-360-dark-x1.6-moved.png",
+        "sha256": "cea13aef91f15012a97473149a45e9940f953e0f804154caccb821e2b64d3920"
+      },
+      {
+        "file": "results-360-dark-x1.6-accepted.png",
+        "sha256": "c363801b345f4a645dac2f85eb3d41742d19246eaaf2cf2c9d95c571e3699380"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 351.0,
+        "away": 444.7
+      },
+      {
+        "home": 407.8,
+        "away": 388.1
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 321.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          329.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 191,
+          "y": 415.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          199.0,
+          423.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 191,
+          "y": 321.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          199.0,
+          329.5
+        ],
+        "mouse": false
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "results-430-light-x1",
+    "browser": "156.0.8078.4",
+    "width": 430,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake acceptance opens details with exact transferred sides and snapshot totals"
+    ],
+    "frames": [
+      {
+        "file": "results-430-light-x1-view.png",
+        "sha256": "177117680671e7a4f8192242b8483f5b9611da0b7f9dbb711fb14ecd2aa8d874"
+      },
+      {
+        "file": "results-430-light-x1-before.png",
+        "sha256": "177117680671e7a4f8192242b8483f5b9611da0b7f9dbb711fb14ecd2aa8d874"
+      },
+      {
+        "file": "results-430-light-x1-highlight.png",
+        "sha256": "e2a04411e50ea4cd6b5c473c10e7028c7a57b025ac2294fbd46e9f0194ebdaa6"
+      },
+      {
+        "file": "results-430-light-x1-moved.png",
+        "sha256": "20716c5e896786a61e40f9d6b1ec13323ffcf0602d9ca567cf839e9daaf65ec2"
+      },
+      {
+        "file": "results-430-light-x1-accepted.png",
+        "sha256": "060d29d85b77a057ad107f597244151f09b68a0b62da48a5d940e9809b337221"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 351.0,
+        "away": 444.7
+      },
+      {
+        "home": 407.8,
+        "away": 388.1
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 268.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          276.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 226,
+          "y": 300.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          234.0,
+          308.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 226,
+          "y": 268.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          234.0,
+          276.5
+        ],
+        "mouse": false
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "results-430-dark-x1.6",
+    "browser": "156.0.8078.4",
+    "width": 430,
+    "height": 800,
+    "textScale": 1.6,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake acceptance opens details with exact transferred sides and snapshot totals"
+    ],
+    "frames": [
+      {
+        "file": "results-430-dark-x1.6-view.png",
+        "sha256": "4b7e1b61abf87ebf1f8a5e8fe3f1a80adb3019d33bf1ee3cc0709e4f1fdfd091"
+      },
+      {
+        "file": "results-430-dark-x1.6-before.png",
+        "sha256": "4b7e1b61abf87ebf1f8a5e8fe3f1a80adb3019d33bf1ee3cc0709e4f1fdfd091"
+      },
+      {
+        "file": "results-430-dark-x1.6-highlight.png",
+        "sha256": "cf9e944586bbe0f83c97f779f1fad843d83bf5eb5d904d534baa2eede29f4678"
+      },
+      {
+        "file": "results-430-dark-x1.6-moved.png",
+        "sha256": "3789bfa1e0a581a30681083c843c025e63a8f94ccb7c4388473a21d065d3102d"
+      },
+      {
+        "file": "results-430-dark-x1.6-accepted.png",
+        "sha256": "e50c99b12516347f2b289137bd6a8413c40f5e576080b5013cdec9bb0170aec4"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 351.0,
+        "away": 444.7
+      },
+      {
+        "home": 407.8,
+        "away": 388.1
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 307,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          315.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 226,
+          "y": 372,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          234.0,
+          380.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 226,
+          "y": 307,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          234.0,
+          315.0
+        ],
+        "mouse": false
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "match-320-light-x3",
+    "browser": "156.0.8078.4",
+    "width": 320,
+    "height": 800,
+    "textScale": 3,
+    "checks": [
+      "320px/3x full-scale probability labels wrap within width and remain reachable",
+      "both exact effective totals are above players and inside viewport width",
+      "3x proposal/match/edit layout only; transfer matrix runs at 1x and 1.6x"
+    ],
+    "frames": [
+      {
+        "file": "match-320-light-x3-view.png",
+        "sha256": "a68cf15caea9c88aad101b55afeebbb8751e869b5c04211e951b6a4fbef212d8"
+      },
+      {
+        "file": "match-320-light-x3-probability-3x.png",
+        "sha256": "42bf4890a9a18dcc9c82b030f3ab471e9da45b7cf233d0a144697af45ad92f4a"
+      },
+      {
+        "file": "match-320-light-x3-before.png",
+        "sha256": "8dcc946d423e260fbd8d3d7b22768882ed6d9afab735240a4247ee0121b4e286"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      }
+    ],
+    "handleStarts": [],
+    "errors": [],
+    "blockedRequests": 2,
+    "passed": true
+  },
+  {
+    "case": "results-320-light-x3",
+    "browser": "156.0.8078.4",
+    "width": 320,
+    "height": 800,
+    "textScale": 3,
+    "checks": [
+      "320px/3x full-scale probability labels wrap within width and remain reachable",
+      "both exact effective totals are above players and inside viewport width",
+      "3x proposal/match/edit layout only; transfer matrix runs at 1x and 1.6x"
+    ],
+    "frames": [
+      {
+        "file": "results-320-light-x3-view.png",
+        "sha256": "9f1b5dacaf3120329a464eec60b05480f1578365c2ba5e8b746505c2f918c218"
+      },
+      {
+        "file": "results-320-light-x3-probability-3x.png",
+        "sha256": "30bb2d3137043f69cbf0c4bda3eb1cde573ab5b1d6381b35045869ec352ab795"
+      },
+      {
+        "file": "results-320-light-x3-before.png",
+        "sha256": "0c65cbcb5af0dc7a372ecf313488447c6ae8733895064a8a8f878437e24824c2"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      }
+    ],
+    "handleStarts": [],
+    "errors": [],
+    "blockedRequests": 2,
+    "passed": true
+  },
+  {
+    "case": "match-360-dark-x1-empty",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "real touch palette exposes white and black",
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake save/reopen and cancel restore exact totals and sides; mouse handle drag works"
+    ],
+    "frames": [
+      {
+        "file": "match-360-dark-x1-empty-view.png",
+        "sha256": "a6d931fcde1315380b01127d08fb7b9a69b75c7d190171771feb2ec1900d233c"
+      },
+      {
+        "file": "match-360-dark-x1-empty-palette.png",
+        "sha256": "a890be8dbbd8b1e43973304594d88f90cd929be910ff74ef733b8a72b6fb60bd"
+      },
+      {
+        "file": "match-360-dark-x1-empty-before.png",
+        "sha256": "5bfd1a5dd35596d7f328df83f616396b1bae0fa95f0e1761d3826ad4b13ae0dc"
+      },
+      {
+        "file": "match-360-dark-x1-empty-highlight.png",
+        "sha256": "cd426f1beed105cc45983ff0a2a617cf09d9b92f51ca91b9b1562622451182af"
+      },
+      {
+        "file": "match-360-dark-x1-empty-moved.png",
+        "sha256": "8c36fc42664c02494eac7c90f3df1951d4cbfbebd44372468207b1b3761dbe50"
+      },
+      {
+        "file": "match-360-dark-x1-empty-saved.png",
+        "sha256": "a6d931fcde1315380b01127d08fb7b9a69b75c7d190171771feb2ec1900d233c"
+      },
+      {
+        "file": "match-360-dark-x1-empty-cancel-restored.png",
+        "sha256": "5bfd1a5dd35596d7f328df83f616396b1bae0fa95f0e1761d3826ad4b13ae0dc"
+      }
+    ],
+    "totals": [
+      {
+        "home": 338.6,
+        "away": 0.0
+      },
+      {
+        "home": 338.6,
+        "away": 0.0
+      },
+      {
+        "home": 291.8,
+        "away": 46.6
+      },
+      {
+        "home": 338.6,
+        "away": 0.0
+      },
+      {
+        "home": 338.6,
+        "away": 0.0
+      },
+      {
+        "home": 338.6,
+        "away": 0.0
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 13,
+          "y": 583,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          591.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 189,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          197.0,
+          301.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          301.0
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 13,
+          "y": 293,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          21.0,
+          301.0
+        ],
+        "mouse": true
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "match-360-dark-x1.6-long",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "height": 800,
+    "textScale": 1.6,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "quick vertical swipe ON HANDLE scrolls without transfer"
+    ],
+    "frames": [
+      {
+        "file": "match-360-dark-x1.6-long-view.png",
+        "sha256": "fe32abedae01958721a1cccd0e2061e58f5d81d638424d1928c83e5bc3efc998"
+      },
+      {
+        "file": "match-360-dark-x1.6-long-before.png",
+        "sha256": "8e2d1e0d539123efad2c493e8a02e94ee538521863fb0320ddb7fd3c03bdf1e9"
+      },
+      {
+        "file": "match-360-dark-x1.6-long-scrolled.png",
+        "sha256": "c2e7f5ca8844cae84b39b65fe860af9b113272f14d304fe38a454b7c1b73d712"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      }
+    ],
+    "handleStarts": [],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "results-360-dark-x1.6-long",
+    "browser": "156.0.8078.4",
+    "width": 360,
+    "height": 800,
+    "textScale": 1.6,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "quick vertical swipe ON HANDLE scrolls without transfer"
+    ],
+    "frames": [
+      {
+        "file": "results-360-dark-x1.6-long-view.png",
+        "sha256": "ece83c4c02a0eaef3a58c5cc3e00f957001ff6ee128970ef3e99f1477d2a59cf"
+      },
+      {
+        "file": "results-360-dark-x1.6-long-before.png",
+        "sha256": "ece83c4c02a0eaef3a58c5cc3e00f957001ff6ee128970ef3e99f1477d2a59cf"
+      },
+      {
+        "file": "results-360-dark-x1.6-long-scrolled.png",
+        "sha256": "bf978105b82d9bc0a2423850b7e3580b29f86bf1d9beb3cb2d5f20a05c9badf0"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      }
+    ],
+    "handleStarts": [],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "match-1440-light-x1",
+    "browser": "156.0.8078.4",
+    "width": 1440,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake save/reopen and cancel restore exact totals and sides; mouse handle drag works"
+    ],
+    "frames": [
+      {
+        "file": "match-1440-light-x1-view.png",
+        "sha256": "a24bf5ff43c8d313c4278bfa57c591d5ddb7b1b12faa7c04c7975127bb29b3b0"
+      },
+      {
+        "file": "match-1440-light-x1-before.png",
+        "sha256": "e10426ece1d4c4c733a3ae16d8aac4af1cc816e09e38c01d45be9e4d9ee61e0a"
+      },
+      {
+        "file": "match-1440-light-x1-highlight.png",
+        "sha256": "2d16d48eff11d5be37662fe42e7a70f6b0c7724371bc6b07d33bc99e5710b095"
+      },
+      {
+        "file": "match-1440-light-x1-moved.png",
+        "sha256": "494d642a1cdc36ed28c3fdb8c7247631715d40ccb5e4df9ba34bb6d168fb47d6"
+      },
+      {
+        "file": "match-1440-light-x1-saved.png",
+        "sha256": "e762f304b0643c8d73f4ca001981074a7f53017448eed89733d948a8f6920fae"
+      },
+      {
+        "file": "match-1440-light-x1-cancel-restored.png",
+        "sha256": "5eb0795114f3c6f3b36a64596277e32fdda6c5853f0be27dedd2ec9d3c384831"
+      }
+    ],
+    "totals": [
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 340.4,
+        "away": 314.1
+      },
+      {
+        "home": 290.3,
+        "away": 363.7
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 261,
+          "y": 322.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          269.0,
+          330.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 761,
+          "y": 354.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          769.0,
+          362.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 761,
+          "y": 322.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          769.0,
+          330.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 761,
+          "y": 322.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          769.0,
+          330.5
+        ],
+        "mouse": true
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  },
+  {
+    "case": "results-1440-light-x1",
+    "browser": "156.0.8078.4",
+    "width": 1440,
+    "height": 800,
+    "textScale": 1,
+    "checks": [
+      "both exact effective totals are above players and inside viewport width",
+      "hold ON HANDLE transfers exactly one identity and updates both exact totals",
+      "reverse transfer and touchCancel preserve every identity",
+      "fake acceptance opens details with exact transferred sides and snapshot totals"
+    ],
+    "frames": [
+      {
+        "file": "results-1440-light-x1-view.png",
+        "sha256": "ba93fde35b671b75e9291bbb794cf624975a31310a348bbcb79531ae076afd24"
+      },
+      {
+        "file": "results-1440-light-x1-before.png",
+        "sha256": "ba93fde35b671b75e9291bbb794cf624975a31310a348bbcb79531ae076afd24"
+      },
+      {
+        "file": "results-1440-light-x1-highlight.png",
+        "sha256": "673911f744c4c97562bd269062e393bf7d7a8f8892551a010a8a8bf45539e446"
+      },
+      {
+        "file": "results-1440-light-x1-moved.png",
+        "sha256": "6f9e642a8b819fab8d5202433f5c05aec21ca21b9fba2907e1c28bb33093bff3"
+      },
+      {
+        "file": "results-1440-light-x1-accepted.png",
+        "sha256": "cec1f92e23ea92a4a074b80dbe83925cf067f0b4a735e2188065815cf437c89d"
+      }
+    ],
+    "totals": [
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 411.3,
+        "away": 385.0
+      },
+      {
+        "home": 351.0,
+        "away": 444.7
+      },
+      {
+        "home": 407.8,
+        "away": 388.1
+      },
+      {
+        "home": 336.9,
+        "away": 317.2
+      }
+    ],
+    "handleStarts": [
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 311,
+          "y": 268.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          319.0,
+          276.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Bartosz Mazur",
+        "rect": {
+          "x": 759,
+          "y": 300.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          767.0,
+          308.5
+        ],
+        "mouse": false
+      },
+      {
+        "name": "Michał Kowalski",
+        "rect": {
+          "x": 759,
+          "y": 268.5,
+          "width": 16,
+          "height": 16
+        },
+        "point": [
+          767.0,
+          276.5
+        ],
+        "mouse": false
+      }
+    ],
+    "errors": [],
+    "blockedRequests": 1,
+    "passed": true
+  }
+]

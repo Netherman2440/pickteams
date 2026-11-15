@@ -1,0 +1,27 @@
+{
+  "sourceCommit": "4b1d1da6d7d3fd3adb4b28ea8f4c181cb2c2433e",
+  "sourceAppTree": "2f42e96f5b869bd53de854324b7f623e035ce7b6",
+  "flutter": "3.47.9",
+  "dart": "3.13.7",
+  "checks": [
+    {"command": "flutter pub get --enforce-lockfile", "exitCode": 0},
+    {"command": "flutter test --no-pub --concurrency=1", "exitCode": 0, "passed": 421, "skipped": 1},
+    {"command": "flutter analyze --no-pub", "exitCode": 0, "issues": 0},
+    {"command": "dart format --output=none --set-exit-if-changed <changed Dart files>", "exitCode": 0, "changed": 0},
+    {"command": "flutter build web --no-pub --target=tool/issue57_preview.dart --output=build/issue57-web --no-web-resources-cdn", "exitCode": 0},
+    {"command": "ISSUE57_VIDEO=1 python app/tool/check_issue57_browser.py <evidence directory>", "exitCode": 0, "casesPassed": 19, "screenshots": 97, "videos": 2, "pageErrors": 0}
+  ],
+  "review": {
+    "candidate": "4b1d1da6d7d3fd3adb4b28ea8f4c181cb2c2433e",
+    "verdict": "No blocking defect found",
+    "scope": "Independent read-only source and test review; runtime checks performed separately by coordinator",
+    "note": "Widget totals helper is not side-specific; browser collector verifies totals by side"
+  },
+  "limitations": [
+    "Chromium mobile/touch emulation, not a physical Android device",
+    "Synthetic fixture data and in-memory persistence, not production data or database durability",
+    "320px at 3x covers layout only, not transfers",
+    "Existing secure-storage Wasm dry-run warnings; the validated build targets JavaScript",
+    "No merge or deployment; local checks do not establish a working Vercel preview"
+  ]
+}

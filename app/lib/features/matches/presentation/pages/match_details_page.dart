@@ -17,6 +17,7 @@ import 'package:app/features/matches/presentation/controllers/squad_matches_noti
 import 'package:app/core/app_config.dart';
 import 'package:app/core/widgets/probability_slider.dart';
 import 'package:app/core/widgets/lineup_header.dart';
+import 'package:app/core/widgets/team_transfer_target.dart';
 
 enum _MatchDetailsEditMode { none, teams, score }
 
@@ -63,6 +64,8 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
   bool get _isScoreEditing => _editMode == _MatchDetailsEditMode.score;
 
   static const List<String> _teamColorOptions = [
+    '#FFFFFF',
+    '#000000',
     '#E53935',
     '#D81B60',
     '#8E24AA',
@@ -426,20 +429,35 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
           runSpacing: 12,
           children: _teamColorOptions.map((hex) {
             final isSelected = hex == current;
-            return InkWell(
-              onTap: () => Navigator.of(context).pop(hex),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: _parseColor(hex),
+            return Semantics(
+              label: 'Kolor $hex',
+              selected: isSelected,
+              button: true,
+              child: Tooltip(
+                message: hex,
+                child: InkWell(
+                  key: ValueKey('team-color-$hex'),
+                  onTap: () => Navigator.of(context).pop(hex),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : Colors.grey.withValues(alpha: 0.5),
-                    width: isSelected ? 2 : 1,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _parseColor(hex),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        width: isSelected ? 3 : 1,
+                      ),
+                    ),
+                    child: isSelected
+                        ? Icon(
+                            Icons.check,
+                            color: _parseColor(hex).computeLuminance() > .5
+                                ? Colors.black
+                                : Colors.white,
+                          )
+                        : null,
                   ),
                 ),
               ),
@@ -706,13 +724,15 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
 
                       final gap = compact ? 8.0 : 16.0;
 
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: homeSection),
-                          SizedBox(width: gap),
-                          Expanded(child: awaySection),
-                        ],
+                      return IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: homeSection),
+                            SizedBox(width: gap),
+                            Expanded(child: awaySection),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -720,7 +740,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                   if (_isTeamEditing) ...[
                     const SizedBox(height: 12),
                     Text(
-                      'Przeciągnij by zmienić drużyny.',
+                      'Przytrzymaj gracza i przeciągnij do drugiej drużyny.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -756,8 +776,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
               awayName: _displayTeamName(match.awayTeam?.name, 'Goście'),
               homeColor: _parseColor(match.homeTeam?.color),
               awayColor: _parseColor(match.awayTeam?.color),
-              // Team totals live in the expanded header under each team name;
-              // the roster footer keeps only the probability.
+              // Totals stay with identity, including the compact pinned header.
               homeRanking:
                   'Ranking: ${_effectiveTeamRating(home, away.length).toStringAsFixed(1)}',
               awayRanking:
@@ -901,7 +920,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
         border: Border.all(
           color: editable
               ? theme.colorScheme.primary
-              : Colors.grey.withValues(alpha: 0.5),
+              : theme.colorScheme.onSurfaceVariant,
           width: editable ? 2 : 1,
         ),
         borderRadius: BorderRadius.circular(4),
@@ -1000,71 +1019,75 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
 
     final effective = _effectiveTeamRating(players, opponentCount);
 
-    final list = Column(
+    final header = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showHeader) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _isTeamEditing
-                  ? GestureDetector(
-                      onTap: () => _pickTeamColor(side),
-                      child: Tooltip(
-                        message: 'Zmień kolor',
-                        child: _buildTeamColorBox(
-                          context: context,
-                          color: teamColor,
-                          size: compact ? 14 : 32,
-                          editable: true,
+        Column(
+          children: [
+            _isTeamEditing
+                ? GestureDetector(
+                    onTap: () => _pickTeamColor(side),
+                    child: Tooltip(
+                      message: 'Zmień kolor',
+                      child: SizedBox.square(
+                        dimension: 44,
+                        child: Center(
+                          child: _buildTeamColorBox(
+                            context: context,
+                            color: teamColor,
+                            size: compact ? 14 : 32,
+                            editable: true,
+                          ),
                         ),
                       ),
-                    )
-                  : _buildTeamColorBox(
-                      context: context,
-                      color: teamColor,
-                      size: compact ? 14 : 32,
-                      editable: false,
                     ),
-              SizedBox(width: compact ? 6 : 8),
-              if (_isTeamEditing && nameController != null)
-                Flexible(
-                  child: _buildEditableTeamNameField(
+                  )
+                : _buildTeamColorBox(
                     context: context,
-                    controller: nameController,
-                    hintText: fallbackLabel,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: compact ? 16 : null,
-                    ),
-                    maxWidth: compact ? 140 : 200,
+                    color: teamColor,
+                    size: compact ? 14 : 32,
+                    editable: false,
                   ),
-                )
-              else
-                Flexible(
-                  child: Text(
-                    _displayTeamName(teamName, fallbackLabel),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: compact ? 14 : null,
-                    ),
-                  ),
+            const SizedBox(height: 8),
+            if (_isTeamEditing && nameController != null)
+              _buildEditableTeamNameField(
+                context: context,
+                controller: nameController,
+                hintText: fallbackLabel,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: compact ? 16 : null,
                 ),
-              // Balance the color marker so the name itself stays centered.
-              SizedBox(width: compact ? 20 : 40),
-            ],
+              )
+            else
+              Text(
+                _displayTeamName(teamName, fallbackLabel),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: compact ? 14 : null,
+                ),
+              ),
+          ],
+        ),
+        SizedBox(height: compact ? 4 : 6),
+        Text(
+          'Ranking: ${effective.toStringAsFixed(1)}',
+          key: ValueKey('edit-$side-ranking'),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: compact ? 11 : null,
           ),
-          SizedBox(height: compact ? 4 : 6),
-          Text(
-            'Ranking: ${effective.toStringAsFixed(1)}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: compact ? 11 : null,
-            ),
-          ),
-          const Divider(height: 6),
-        ],
+        ),
+        const Divider(height: 6),
+      ],
+    );
+    final list = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         ...sortedPlayers.map(
           (player) => MatchPlayerTile(
+            key: ValueKey(player.playerId),
             player: player,
             trailing: null,
             dragData: _isTeamEditing ? player.playerId : null,
@@ -1102,23 +1125,26 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
     );
 
     if (_isTeamEditing) {
-      return DragTarget<Object>(
-        builder: (context, candidateData, rejectedData) {
-          return Container(
-            decoration: BoxDecoration(
-              color: candidateData.isNotEmpty
-                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showHeader) header,
+          Expanded(
+            child: TeamTransferTarget(
+              key: ValueKey('match-$side-target'),
+              playerIds: players.map((p) => p.playerId),
+              onAccept: (id) => _onPlayerDropped(id, side),
+              child: list,
             ),
-            child: list,
-          );
-        },
-        onAcceptWithDetails: (details) => _onPlayerDropped(details.data, side),
+          ),
+        ],
       );
     }
 
-    return list;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [if (showHeader) header, list],
+    );
   }
 }
 

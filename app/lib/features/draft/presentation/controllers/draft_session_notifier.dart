@@ -100,7 +100,7 @@ class DraftSessionNotifier extends Notifier<AsyncValue<DraftSessionState>> {
   }
 
   Future<void> _performLoad(_DraftLoadRequest request, int generation) async {
-    final result = await AsyncValue.guard(() async {
+    var result = await AsyncValue.guard(() async {
       final allPlayers = await ref
           .read(getSquadPlayersUseCaseProvider)
           .execute(squadId: request.squadId);
@@ -199,6 +199,19 @@ class DraftSessionNotifier extends Notifier<AsyncValue<DraftSessionState>> {
         selectedPlayerIds: request.selectedPlayerIds,
       );
     });
+    if (result.hasValue && request.matchId != null) {
+      result = await AsyncValue.guard(() async {
+        // Redraw preserves stored team metadata in acceptance. Preview the same
+        // colors, and fail the load rather than display invented defaults.
+        final match = await ref
+            .read(getMatchUseCaseProvider)
+            .execute(matchId: request.matchId!);
+        return result.requireValue.copyWith(
+          homeColor: match.homeTeam?.color ?? '#808080',
+          awayColor: match.awayTeam?.color ?? '#808080',
+        );
+      });
+    }
     if (ref.mounted && generation == _generation) state = result;
   }
 
