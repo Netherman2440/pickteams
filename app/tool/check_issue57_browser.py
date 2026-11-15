@@ -5,6 +5,7 @@ lock and memory gate. Text scale comes from MediaQuery, not browser zoom.
 """
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -12,7 +13,7 @@ from urllib.parse import urlencode, urlparse
 
 from playwright.sync_api import sync_playwright
 
-OUT = Path(sys.argv[1])
+OUT = Path(sys.argv[1]).resolve()
 OUT.mkdir(parents=True, exist_ok=True)
 URL = 'http://127.0.0.1:8857/'
 CHROME = Path.home() / '.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell'
@@ -203,9 +204,15 @@ with sync_playwright() as pw:
             record = {'case': case, 'browser': browser.version, 'width': width, 'height': 800, 'textScale': scale,
                       'checks': [], 'frames': [], 'totals': [], 'handleStarts': [], 'errors': [], 'blockedRequests': 0}
             records.append(record)
+            video_options = {}
+            if os.environ.get('ISSUE57_VIDEO') == '1' and width == 360 and scale == 1 and not empty:
+                video_options = {'record_video_dir': str(OUT / 'videos'),
+                                 'record_video_size': {'width': width, 'height': 800}}
             context = browser.new_context(viewport={'width': width, 'height': 800}, device_scale_factor=1,
-                                          is_mobile=width < 1000, has_touch=True)
+                                          is_mobile=width < 1000, has_touch=True, **video_options)
             page = context.new_page()
+            if page.video:
+                record['video'] = str(Path(page.video.path()).relative_to(OUT))
             page.set_default_timeout(10000)
             page.on('pageerror', lambda error, r=record: r['errors'].append(str(error)))
 
@@ -346,4 +353,7 @@ with sync_playwright() as pw:
         raise
     finally:
         browser.close()
+        for record in records:
+            if 'video' in record:
+                record['videoSha256'] = hashlib.sha256((OUT / record['video']).read_bytes()).hexdigest()
         (OUT / 'checks.json').write_text(json.dumps(records, indent=2, ensure_ascii=False))
