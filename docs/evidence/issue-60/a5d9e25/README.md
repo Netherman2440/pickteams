@@ -12,7 +12,7 @@ Whole issue #60 is NOT COMPLETE/VERIFIED. Existing production history is not ass
 
 ## 20 fresh regular-flow frames
 
-[regular/](regular/) contains proposal plus before-result, after-result, after-reload and after-correction frames for four equal/unequal substitutes-on/off scenarios. These were freshly captured from the retained fixture release bundle built at the exact source above. [capture-final.log](capture-final.log) records the successful coordinator run under immediate nonblocking lock and the unchanged 2621440 KiB memory gate. Script: [capture_regular.py](capture_regular.py).
+[regular/](regular/) contains proposal plus before-result, after-result, after-reload and after-correction frames for four equal/unequal substitutes-on/off scenarios. These were freshly captured from the retained fixture release bundle built at the exact source above. [capture-final.txt](capture-final.txt) records the successful coordinator run under immediate nonblocking lock and the unchanged 2621440 KiB memory gate. Script: [capture_regular.py](capture_regular.py).
 
 Both real pages show 105.0 / 167.3 for unequal teams with substitutes OFF, 105.0 / 111.5 with substitutes ON, and 105.0 / 110.8 for equal teams in either mode. Adam stays 41.25, Bartek stays 63.75 above him, and away ordering stays Dawid/Emil/Cezary. The banner changes current scores through result/correction; the input values and totals stay fixed. Synthetic raw away sum 167.25 is displayed as 167.3.
 

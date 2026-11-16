@@ -1,0 +1,2 @@
+MemAvailable: 3375164 KiB; minimum: 2621440 KiB
+PASS: 20 actual Flutter frames; proposal/match sums agree for equal/unequal substitutes on/off; fixed inputs and ordering across result/reload/correction; synthetic current scores change independently.
