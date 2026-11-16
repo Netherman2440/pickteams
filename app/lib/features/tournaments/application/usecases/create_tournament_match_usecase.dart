@@ -86,10 +86,14 @@ class CreateTournamentMatchUseCase {
       scoreMeta: {
         'tournament_home_team_id': homeTournamentTeamId,
         'tournament_away_team_id': awayTournamentTeamId,
+        'draft_rankings': rankings,
       },
       preservedRankings: rankings,
       playWithSubstitute: inputs?.playWithSubstitute,
-      createRankingEntries: true,
+      // Tournament results retain their existing tournament-level ranking math.
+      // Match inputs live in metadata, not new history events that would change
+      // the experience-factor count of later regular matches.
+      createRankingEntries: false,
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:app/core/app_theme.dart';
 import 'package:app/core/global_dependencies.dart';
+import 'package:app/features/draft/presentation/pages/draft_results_page.dart';
 import 'package:app/features/auth/domain/entities/auth_entity.dart';
 import 'package:app/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:app/features/matches/presentation/controllers/match_details_notifier.dart';
@@ -22,7 +23,34 @@ void main() {
   final backend = SnapshotBackend(
     substitutes: query['substitutes'] == 'on',
     count: query['equal'] == '1' ? 4 : 5,
-  )..changeCurrentScores();
+  );
+  // A stored generation proposal and the accepted fixture match share A.
+  // Current players then move to B. Both real pages must still display A.
+  backend.tables['drafts']!.add({
+    'draft_id': 'draft',
+    'match_id': 'match',
+    'status': 'completed',
+    'team_count': 2,
+    'proposals_count': 1,
+  });
+  backend.tables['draft_payloads']!.add({
+    'draft_id': 'draft',
+    'proposals': [
+      {
+        'teams': [
+          ['p0', 'p1'],
+          [for (var i = 2; i < backend.tables['players']!.length; i++) 'p$i'],
+        ],
+        'rankings': {
+          for (final p in backend.tables['players']!)
+            p['player_id']: p['score'],
+        },
+        'play_with_substitute': query['substitutes'] == 'on',
+      },
+    ],
+    'win_rate_matrix': <String, dynamic>{},
+  });
+  backend.changeCurrentScores();
   runApp(
     ProviderScope(
       overrides: [
@@ -57,6 +85,14 @@ class _Preview extends ConsumerStatefulWidget {
 class _PreviewState extends ConsumerState<_Preview> {
   late final router = GoRouter(
     routes: [
+      GoRoute(
+        path: '/proposal',
+        builder: (_, _) => const DraftResultsPage(
+          squadId: 'fixture',
+          selectedPlayerIds: [],
+          matchId: 'match',
+        ),
+      ),
       GoRoute(
         path: '/',
         builder: (_, _) =>
@@ -99,6 +135,14 @@ class _PreviewState extends ConsumerState<_Preview> {
                       'Current scores (not match inputs): ${widget.backend.tables['players']!.map((p) => '${p['name']} ${p['score']}').join(', ')}',
                       style: const TextStyle(fontSize: 13, color: Colors.black),
                     ),
+                  ),
+                  TextButton(
+                    onPressed: () => router.go('/proposal'),
+                    child: const Text('Proposal'),
+                  ),
+                  TextButton(
+                    onPressed: () => router.go('/'),
+                    child: const Text('Match'),
                   ),
                   TextButton(
                     onPressed: () =>

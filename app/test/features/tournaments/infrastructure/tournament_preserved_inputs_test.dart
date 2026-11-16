@@ -181,9 +181,32 @@ void main() {
             backend.tables['ranking_history']!
                 .where((r) => r['match_id'] == created.matchId)
                 .length,
-            count,
+            0,
           );
+          // Input preservation must not add experience-factor history events.
+          expect(backend.tables['ranking_history']!.length, count);
           expect(backend.tables['players']!.first['score'], 12.0);
+          // A malformed new payload cannot be completed from creation history A.
+          storedRaw[1]['rankings'] = {'p0': 90.0};
+          await expectLater(
+            drafts.getTournamentDraft(tournamentDraftId: id),
+            throwsException,
+          );
+          // ID-only legacy metadata uses preserved history, never current C.
+          for (final raw in storedRaw.skip(1)) {
+            (raw as Map).remove('rankings');
+          }
+          final legacy = (await drafts.getTournamentDraft(
+            tournamentDraftId: id,
+          ))!;
+          expect(legacy.inputs.rankings['p0'], 41.25);
+          backend.tables['ranking_history']!.removeWhere(
+            (r) => r['match_id'] == null,
+          );
+          await expectLater(
+            drafts.getTournamentDraft(tournamentDraftId: id),
+            throwsException,
+          );
         },
       );
     }

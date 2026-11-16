@@ -7,10 +7,24 @@ Future<Map<String, double>> loadPreservedRankings(
 }) async {
   final match = await client
       .from('matches')
-      .select('tournament_id')
+      .select('tournament_id, score_meta')
       .eq('match_id', matchId)
       .maybeSingle();
   final tournamentId = match?['tournament_id'] as String?;
+  final metadata = match?['score_meta'];
+  if (metadata is Map && metadata.containsKey('draft_rankings')) {
+    final raw = metadata['draft_rankings'];
+    if (raw is! Map || raw.keys.any((id) => id is! String)) {
+      throw StateError('Malformed preserved match inputs');
+    }
+    // New tournament-match vectors are authoritative. Never fill a malformed
+    // or partial vector from older creation history.
+    return resolveProposalRankings(
+      proposal: {'rankings': raw},
+      playerIds: raw.keys.cast<String>(),
+      preservedRankings: const {},
+    );
+  }
   final rankings = <String, double>{};
   if (tournamentId != null) {
     final history = await client
