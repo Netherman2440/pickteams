@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:app/core/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app/features/matches/application/match_level_providers.dart';
 import 'package:app/features/matches/application/save_star_thresholds.dart';
@@ -84,7 +86,23 @@ class _SquadStarThresholdsPageState
   Widget build(BuildContext context) {
     final squad = ref.watch(squadDetailProvider(widget.squadId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Progi gwiazdek')),
+      appBar: AppBar(
+        title: const Text('Progi gwiazdek'),
+        leading: IconButton(
+          tooltip: 'Powrót do ustawień',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.goNamed(
+                AppRoute.settings.name,
+                pathParameters: {'squadId': widget.squadId},
+              );
+            }
+          },
+        ),
+      ),
       body: SafeArea(
         child: squad.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -149,7 +167,8 @@ class _SquadStarThresholdsPageState
                                       signed: true,
                                     ),
                                 decoration: InputDecoration(
-                                  labelText: '${i + 1} ★ — próg',
+                                  labelText: '${i + 1} — próg pełnych gwiazdek',
+                                  prefixIcon: const Icon(Icons.star),
                                   border: const OutlineInputBorder(),
                                 ),
                                 onChanged: (_) =>
@@ -159,8 +178,14 @@ class _SquadStarThresholdsPageState
                           const SizedBox(height: 8),
                           const Text('Automatyczne połówki'),
                           for (var i = 0; i < 4; i++)
-                            Text(
-                              '${i + 1},5 ★: ${draft == null ? '—' : draft.halves[i].toString().replaceAll('.', ',')}',
+                            Row(
+                              children: [
+                                const Icon(Icons.star_half, size: 18),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${i + 1},5: ${draft == null ? '—' : draft.halves[i].toString().replaceAll('.', ',')}',
+                                ),
+                              ],
                             ),
                           const SizedBox(height: 12),
                           if (draft == null)
