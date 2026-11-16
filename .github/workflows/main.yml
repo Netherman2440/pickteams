@@ -26,6 +26,12 @@ jobs:
         run: python3 -m pip install -r tool/match_view_requirements.txt
       - name: Test build, artifact privacy and visual-check tooling
         run: python3 -m unittest discover -s tool -p 'test_*.py'
+      - name: Test Supabase tooling without a database
+        run: python3 -m unittest discover -s ../supabase/tools -v
+      - name: Check source branding and OAuth
+        run: |
+          python3 tool/check_android_branding.py
+          python3 tool/check_android_oauth.py
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -53,6 +59,13 @@ jobs:
           git diff --exit-code
       - name: Flutter test
         run: flutter test --no-pub --coverage --concurrency=1
+      - name: Preserve Flutter coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage-${{ github.sha }}
+          path: app/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 7
       - name: Web-only auth regressions
         run: |
           export CHROME_EXECUTABLE="$(command -v google-chrome)"
@@ -87,3 +100,11 @@ jobs:
           name: web-release-metadata-${{ github.sha }}
           path: app/build/web/release.json
           if-no-files-found: error
+          retention-days: 7
+      - name: Preserve configured public web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-${{ github.sha }}
+          path: app/build/web/
+          if-no-files-found: error
+          retention-days: 7
