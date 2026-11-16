@@ -1,0 +1,34 @@
+Candidate: a5d9e256c0a1ee82b72c0e88b940b058494c6ed0
+Review cwd: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-60-independent-review-4-d1103678
+R=/home/agents/dev/pickteams/.limen/task-coordinators/issue-60/review-4
+W=/home/agents/dev/pickteams/.limen/task-coordinators/issue-60/repair-3
+E=/home/agents/dev/pickteams/.limen/task-coordinators/issue-60/evidence
+
+Initial and final identity checks:
+git rev-parse HEAD
+git status --short
+Expected candidate and clean tracked tree. Exit 0.
+
+App cwd:
+bash "$W/check.sh" flutter pub get --enforce-lockfile
+exit 0; pub-get.log. MemAvailable 3198704 KiB. Restored only Flutter's automatic analysis_options.yaml exclusion addition to HEAD before testing. No lockfile changes.
+
+App cwd:
+bash "$W/check.sh" flutter test --no-pub --concurrency=1 test/features/matches/presentation/roster_recovery_test.dart test/features/matches/presentation/team_transfer_gesture_test.dart test/features/matches/application/atomic_roster_retry_test.dart test/features/matches/infrastructure/preserved_rankings_test.dart test/features/matches/historical_rankings_test.dart test/features/tournaments/infrastructure/tournament_preserved_inputs_test.dart test/features/tournaments/application/tournament_completion_roster_test.dart test/draft/application/accept_match_draft_use_case_test.dart "$R/independent_regression_test.dart" --reporter expanded
+exit 0; focused.log, 97 passed. MemAvailable 3122792 KiB. External tests use this candidate's package config and absolute fixture imports; no product/test edits or borrowed checkout symlinks.
+
+Repository cwd:
+LD_LIBRARY_PATH="$E/pg-package/root/usr/lib/x86_64-linux-gnu" bash "$W/check.sh" python3 supabase/tools/test_atomic_roster.py --pg-bin "$E/pg-package/root/usr/lib/postgresql/16/bin" --proof-dir "$R/sql"
+exit 0; sql.log, sql/. MemAvailable 3062452 KiB. Native atomic numeric/ACL tests and real score-lock race pass. Scoring session exit 0; editing session expected exit 3 after blocked scored-match rejection; runner exit 0. Owned private cluster stopped.
+
+App cwd:
+bash "$W/check.sh" flutter test --no-pub --concurrency=1 "$R/transport_regression_test.dart" --reporter expanded
+exit 0; transport.log, one passed. MemAvailable 3119724 KiB. Independent TimeoutException injected after synthetic commit; actual notifier/repository recovery keeps exact request through cancel/reload and blocks different intent.
+
+Repository cwd:
+python3 "$R/verify_state.py"
+exit 0; final-state.log. This runs git rev-parse HEAD; git status --porcelain=v1; git diff --check 54a1ac8..HEAD; git diff --quiet; scoped git diff --exit-code 54a1ac8..HEAD for audit/interface, generator algorithms, score/completion formula and player source. It verifies both approved SHA256 digests, 20 inspected worker final artifact hashes, four source copies and worker validated-sha.txt. It writes no worker evidence.
+
+Static inspection: read full stored issue-60.json and five comments, owner clarification, prior review-3/review.md and conflict_reload_test.dart; repair delta; changed callers/contracts/tests; source-map source references; raw final worker logs and capture source/browser.json. Opened all eight repair-3/frames-final PNGs. No new browser capture.
+
+No full lane rerun, analyze/format/build rerun, audit 32-case rerun, real Auth/PostgREST, Supabase CLI lint, live-backed preview, production access, mobile/device/Android validation, publication, commit, push, PR edit, merge, deployment, new privilege, subagent, board or #55/#61 changes. No denied gate, capacity wait/poll, lower threshold, helper or transient validation failure occurred.

@@ -1,5 +1,7 @@
 # Historical match rankings: fixture screenshots
 
+**Current reviewed source:** `a5d9e256c0a1ee82b72c0e88b940b058494c6ed0`. [Current 28 frames, independent review, actual commands/results and limits](a5d9e25/README.md). The files in this parent directory are retained older-source evidence only.
+
 These are actual Flutter `MatchDetailsPage` frames at code candidate `2a74532dd25b8292ff83311dee305d54683da7c3`. They use the app's repositories and score use case over a synthetic in-memory HTTP transport. They are browser emulation, not live Supabase, physical-device, or production-durability evidence. The yellow banner labels the fixture and lists current scores separately from historical match inputs.
 
 Four scenarios cover equal/unequal teams with substitutes enabled/disabled. Each has before-result, after-result, after-reload and after-correction frames. Adam's historical input stays 41.25 while the current score changes 90 → 95 → 85. Bartek stays above Adam at historical 63.75. Unequal raw team sums are 105.0 / 167.3; with substitutes enabled they are 105.0 / 111.5. Equal-team sums are 105.0 / 110.8 for either option. Reload invalidates the provider over the same fixture; it is not an independent database reconnect.

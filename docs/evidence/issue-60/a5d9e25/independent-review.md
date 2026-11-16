@@ -1,0 +1,60 @@
+PASS a5d9e256c0a1ee82b72c0e88b940b058494c6ed0
+
+The prior P2 conflict-recovery blocker is closed in the actual notifier/page flow. No new blocking finding was proved in repair delta `54a1ac85cc9b7e92e8ea3dfec9d3a1281005140b..HEAD`. The coordinator may update scoped **DRAFT PR #62** to this locally reviewed candidate through normal existing PR infrastructure. This is not owner acceptance, whole-issue verification, merge or release approval.
+
+Evidence root R: `/home/agents/dev/pickteams/.limen/task-coordinators/issue-60/review-4`. W is sibling `repair-3`; E is sibling `evidence`. HEAD exactly matches the requested candidate. The tracked tree was clean during tests and is clean now. Scope was the prior `review-3/review.md` findings, repair delta and its concrete caller/history risks; original feature base is `4691439a685bed479c23cf391e2813195e2b661d`.
+
+## Unverified acceptance and limits
+
+- **UNVERIFIED — existing data and legacy policy.** Issue #60 remains **NOT COMPLETE/VERIFIED**, and #61 remains blocked. The owner authorized necessary READ ONLY checks for **Politechnika Lubelska**. No existing authenticated session/path or production inventory was verified or used. Local fixtures do not establish absence, irrecoverability or population size. Exact old generation inputs/options still need scoped existing-data evidence and an explicit policy where faithful recovery cannot be proved. Missing-input errors are NOT owner-approved historical behavior. This review does not settle or expand that policy.
+- **UNVERIFIED — live/native runtime.** No real Auth/PostgREST, Supabase CLI lint, live-backed preview, phone, physical device or Android build was run. Native checks here mean host Flutter tests and disposable PostgreSQL with fixture authentication, not a deployed Supabase stack. Role revocation/session switching during a UI request was not runtime-tested; SQL owner/admin/member/foreign/anonymous boundaries were tested. Client pending state is in memory, not a durable restart queue.
+- No independent full Flutter/analyze/format/release-build lane or browser recapture was run. Final worker evidence was inspected and hash-checked instead. Old SHA `605660a` proposal/match frames remain prior evidence, not new runtime proof. Later owner-accepted release still requires matching verified WEB and installable ANDROID; neither release nor its preparation belongs to this review.
+
+## Prior findings and repair proof
+
+**PROVEN — prior B1-R/P2 closed; no remaining blocker at these lines.** `update_match_teams_usecase.dart:43–60,100–107,213–237` retains unresolved membership/input/UUID/base, rejects different intent and permits token-checked discard only for a confirmed rejection. `supabase_team_repository.dart:227–242` distinguishes listed PostgreSQL rollback codes from unknown errors. Actual `match_details_notifier.dart:37–59` captures the rejected token before explicit refresh/cancel and discards it only after a successful read. The page wires recovery at `match_details_page.dart:153–177,585–600,656–676`.
+
+Independent run of the real notifier/widget tests proves conflict → actual reload/cancel → same intended membership succeeds with a NEW UUID/base and newly selected addition input. It also drives actual drag and Save controls, not just the fixture Save button. Failed reads retain the rejected request. In-flight refresh/cancel/discard rejects; obsolete tokens do not delete newer unknown commands. Frozen addition values survive unknown retry and score drift. The old external reproduction called only `GetMatchUseCase`; that read must remain read-only. I read it but did not reuse its obsolete claim that it is the whole notifier refresh path.
+
+**PROVEN — unknown outcomes stay unresolved until exact retry.** Repository tests pass for unknown replies through actual page reload/cancel/retry. An additional independent regression injects a `TimeoutException` after the synthetic RPC has committed, rather than returning a fake SQL rejection. Actual notifier cancel and refresh retain the command; a different intent rejects; retry sends identical serialized inputs and succeeds (`R/transport.log`). Another independent regression disposes and recreates the auto-disposed details notifier: the non-auto-disposed editor retains the command, raw details reads do not clear it, and the reopened notifier resolves the same UUID (`R/focused.log`). These prove client behavior over synthetic HTTP, not network durability on production.
+
+**PROVEN — numeric and ACL notes repaired; atomic boundary retained.** Migration `20261116130000_atomic_preserved_roster.sql:73–79` rejects JSONB numeric overflow before roster/vector writes. Lines 108–109 explicitly revoke PUBLIC/anon execute and grant authenticated execute. Direct native SQL proves both signs of overflow reject without any state change; finite extrema, zero and underflow remain readable under the tested reader contract. SECURITY INVOKER, RLS, owner/admin authorization, member/foreign/anon rejection, receipt/version checks, exact replay and scored guard pass. Metadata-write and partial-insert failure injections roll back the full state. A real two-session edit waits behind the scoring row lock, then rejects after score commit without partial roster/vector/history changes. Empty rosters remain existing behavior, now documented, not a new rejection requirement. No current-score updates or new history events occur in the roster RPC.
+
+No new proven or plausible defect requiring a repair was found. No unverified concern is used as a blocker.
+
+## Owner history rule and ordering
+
+**PROVEN — source-map conclusion is appropriately bounded.** The actual input is the ranking BEFORE ACTUAL GENERATION. `SupabasePlayerRepository.addPlayer` initializes score and base_score together; that supplies the initial base input before match-driven changes. It does not authorize substituting today's base/current score for an old generation. `ranking_history.ranking` is a before-change snapshot; `change` is nullable and later mutable. The history reader orders creation time; the graph accumulates deltas from base. Result/correction writers replace the same row's delta and updated_at. Thus neither match.created_at order, creation-order accumulation nor the latest row update proves an arbitrary earlier generation state. Existing preserved history remains useful evidence and is not assumed absent. W/player-history-map.md states these limits accurately.
+
+**PROVEN — independent delayed-result ordering regression on the new path.** `R/independent_regression_test.dart` uses the real generator on A, then enters and corrects the result of an earlier, previously unscored match BEFORE acceptance. Current p0 score changes 41.25 → 46.25 → 36.25 while the earlier history row retains its January creation time and receives a later updated_at. The real acceptance use case/repository sends A; accepted match and stored-proposal reloads retain A and matching sums. Another correction changes current score to 46.25 without changing A. Acceptance persistence in this external regression is explicitly synthetic; native SQL acceptance is covered by inspected same-SHA worker full SQL evidence. This is new-path correctness, not proof of exact legacy recoverability. The strict missing-input regression is only a no-current-score-fallback check, not approval of an error-screen policy.
+
+Result/correction/clamp/repeated-result/experience tests and both tournament-completion experience settings pass independently. Generator algorithm, current-score/completion formula and player-history implementation files are byte-unchanged in this repair, confirmed by scoped Git checks.
+
+## Visual evidence and provenance
+
+**PROVEN — inspected retained local frames, not recaptured.** I opened all eight W/frames-final PNGs and inspected capture source, browser.json, raw logs and SHA provenance. Their manifest hashes match; four retained source copies match this candidate. They are labeled actual Flutter UI over synthetic local HTTP, not live Auth/PostgREST.
+
+The conflict frames show 40001 with Reload/Cancel controls, then the other roster with pending=false and sums 63.8/208.5; the new save has a different UUID and base=synthetic-other-operation, sums 79.8/192.5. The uncertain frames show an unknown error with Retry/Reload/Cancel, then the committed roster with pending=true and the retry icon. Final retry keeps the same UUID/base and clears pending. Adam remains 41.25 against labeled current score 90. Initial sums are 105.0/167.3. These visible transitions, not just scenario flags, support recovery acceptance. The initial save is a labeled synthetic fixture control; the separately executed widget test supplies actual drag/Save integration proof. Blocked external font requests were not fetched. No live-backed preview was visited and no preview HOLD is reintroduced.
+
+## Audit approval retained
+
+Independent SHA256 equality checks pass:
+
+- Audit: `2f0c2ef57b26f6eb2bdb72f25ccc6ee2682348254b3cf080aef75da734cec937`.
+- Operator interface: `ee754894b03e3387b76a713a9b7bf6a0cb8a276edb3a55d0c7d534e623110fc4`.
+
+Both artifacts are unchanged from the prior approved review. The prior 32 audit cases were NOT rerun. Artifact approval creates no authenticated route, production execution or privilege authority.
+
+## Checks actually run
+
+Exact expanded commands and exits are in `R/commands.txt`; all commands below exited 0. Every heavy command used inspected `bash "$W/check.sh"`: immediate `flock -n -E75 /tmp/pickteams-flutter-validation.lock`, THEN MemAvailable >=2621440 KiB. Four admissions were 3198704, 3122792, 3062452 and 3119724 KiB. No denial, wait, capacity polling, lower gate, capacity helper, interrupted command or transient validation failure occurred.
+
+1. App cwd: `flutter pub get --enforce-lockfile` — installed from candidate lockfile (`R/pub-get.log`). Restored only Flutter's automatic analysis-options exclusion addition to HEAD before tests.
+2. App cwd: `flutter test --no-pub --concurrency=1` on roster_recovery, team_transfer_gesture, atomic_roster_retry, preserved_rankings, historical_rankings, tournament_preserved_inputs, tournament_completion_roster, accept_match_draft_use_case and the external independent_regression test, `--reporter expanded` — **97 passed** (`R/focused.log`).
+3. Repository cwd, packaged PG library path: `python3 supabase/tools/test_atomic_roster.py --pg-bin "$E/pg-package/root/usr/lib/postgresql/16/bin" --proof-dir "$R/sql"` — native atomic/numeric/ACL test and score-lock race pass (`R/sql.log`, `R/sql/`). Score session exit 0; edit session expected exit 3 on scored rejection; runner exit 0. Private Unix socket, jit=off, fixture auth, ambient PG settings stripped; owned cluster/sessions stopped.
+4. App cwd: `flutter test --no-pub --concurrency=1 "$R/transport_regression_test.dart" --reporter expanded` — **one passed** (`R/transport.log`).
+5. Repository cwd: `python3 "$R/verify_state.py"` — expected HEAD, clean tree, `git diff --quiet`, `git diff --check 54a1ac8..HEAD`, scoped unchanged-source Git diff, both audit hashes, 20 inspected retained evidence hashes, four matching source copies and worker SHA; all pass (`R/final-state.log`). Initial/final `git rev-parse HEAD` and status also match/are clean.
+
+Inspected, not independently rerun: W/flutter-full.log ends **460 passed/one skip**; W/sql-final.log reports **17 scripts plus real score-lock race**; analyze has no issues; format has ten files/zero changes; product and fixture release web builds succeed with the existing pwa-strategy deprecation warning; browser-final records eight frames. Same-SHA provenance and manifest checks pass. Earlier failed worker attempts remain failed attempts and are not substituted for final evidence.
+
+No product implementation/test edits, commit, push, PR change, subagent, board/#55/#61 work, merge, deploy, release, production read/write/backfill, credential access or new privilege occurred. Only the coordinator may publish the scoped DRAFT update. Existing-data evidence/policy remains the next separate issue-level gate.
