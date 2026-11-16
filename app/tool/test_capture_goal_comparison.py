@@ -9,9 +9,10 @@ class CaptureContractTest(unittest.TestCase):
     def test_fixture_cases_and_browser_dimensions(self):
         self.assertEqual(set(SCENARIOS), {
             'positive', 'negative', 'zero', 'rounded-zero',
-            'missing-color', 'empty', 'no-absences', 'error',
+            'missing-color', 'empty', 'no-absences', 'error', 'tournament',
         })
-        self.assertEqual(len(VIEWPORTS) * len(SCENARIOS), 32)
+        self.assertEqual(len(VIEWPORTS) * len(SCENARIOS), 36)
+        self.assertEqual(SCENARIOS['tournament'][:2], ['+4,00', '−1,00'])
         self.assertIn((320, 900, 1.6), VIEWPORTS)
 
     def test_url_labels_scenario_and_scale_without_live_credentials(self):

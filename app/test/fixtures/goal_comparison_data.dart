@@ -1,4 +1,5 @@
 import 'package:app/features/players/domain/services/player_goal_comparison.dart';
+import 'package:app/features/players/infrastructure/repositories/supabase_goal_comparison_repository.dart';
 
 const red = '#FF0000';
 const blue = '#0000ff';
@@ -40,6 +41,35 @@ List<GoalComparisonMatch> comparisonFixture(String scenario) {
       ),
   ];
   return switch (scenario) {
+    // Persisted shape from CreateTournamentMatchUseCase and the score writer.
+    'tournament' => [
+      for (final present in [true, false])
+        decodeGoalComparisonMatch({
+          'home_score': present ? 6 : 2,
+          'away_score': present ? 2 : 3,
+          'score_type': null,
+          'score_meta': {
+            'tournament_home_team_id': 'tournament-red',
+            'tournament_away_team_id': 'tournament-blue',
+          },
+          'teams': [
+            {
+              'side': 'home',
+              'color': red,
+              'team_players': [
+                {'player_id': present ? 'player' : 'absent'},
+              ],
+            },
+            {
+              'side': 'away',
+              'color': blue,
+              'team_players': [
+                {'player_id': 'other'},
+              ],
+            },
+          ],
+        }),
+    ],
     'empty' => [],
     'no-absences' => played,
     'missing-color' => [

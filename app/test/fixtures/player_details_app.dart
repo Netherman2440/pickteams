@@ -19,6 +19,7 @@ import 'package:app/features/squads/domain/entities/user_squad_role.dart';
 import 'package:app/features/squads/presentation/state/squad_detail_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfileFixtureData {
@@ -38,6 +39,8 @@ class ProfileFixtureData {
        );
   Player player;
   final String comparison;
+  List<GoalComparisonMatch>? goalHistory;
+  int goalHistoryReads = 0;
   bool fail;
   int reads = 0;
   final List<String> writes = [];
@@ -61,10 +64,16 @@ class PlayerDetailsFixture extends StatefulWidget {
     required this.data,
     this.role = SquadRole.owner,
     this.textScale = 1,
+    this.matchesBuilder,
+    this.matchRoutes = const [],
+    this.providerOverrides = const [],
   });
   final ProfileFixtureData data;
   final SquadRole role;
   final double textScale;
+  final WidgetBuilder? matchesBuilder;
+  final List<RouteBase> matchRoutes;
+  final List<Override> providerOverrides;
   @override
   State<PlayerDetailsFixture> createState() => _PlayerDetailsFixtureState();
 }
@@ -83,16 +92,20 @@ class _PlayerDetailsFixtureState extends State<PlayerDetailsFixture> {
             builder: (_, _) =>
                 const PlayerDetailsPage(squadId: 'fixture', playerId: 'player'),
           ),
+          ...widget.matchRoutes,
           for (final destination in ['Matches', 'Tournaments', 'Stats'])
             GoRoute(
               path:
                   '/squads/:squadId/players/:playerId/${destination.toLowerCase()}',
               name: 'player$destination',
-              builder: (_, state) => Scaffold(
-                body: Text(
-                  '$destination ${state.pathParameters['squadId']} ${state.pathParameters['playerId']}',
-                ),
-              ),
+              builder: (context, state) =>
+                  destination == 'Matches' && widget.matchesBuilder != null
+                  ? widget.matchesBuilder!(context)
+                  : Scaffold(
+                      body: Text(
+                        '$destination ${state.pathParameters['squadId']} ${state.pathParameters['playerId']}',
+                      ),
+                    ),
             ),
         ],
       ),
@@ -107,9 +120,10 @@ class _PlayerDetailsFixtureState extends State<PlayerDetailsFixture> {
   @override
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
+      ...widget.providerOverrides,
       authStateProvider.overrideWith(_ProfileAuth.new),
       goalComparisonRepositoryProvider.overrideWithValue(
-        _ProfileGoalHistory(widget.data.comparison),
+        _ProfileGoalHistory(widget.data),
       ),
       squadDetailProvider.overrideWith(
         (ref, id) async => Squad(
@@ -169,12 +183,15 @@ class _PlayerDetailsFixtureState extends State<PlayerDetailsFixture> {
 }
 
 class _ProfileGoalHistory implements GoalComparisonRepository {
-  _ProfileGoalHistory(this.scenario);
-  final String scenario;
+  _ProfileGoalHistory(this.data);
+  final ProfileFixtureData data;
   @override
   Future<List<GoalComparisonMatch>> getSquadHistory(String squadId) async {
-    if (scenario == 'error') throw StateError('Synthetic history read failure');
-    return comparisonFixture(scenario);
+    data.goalHistoryReads++;
+    if (data.comparison == 'error') {
+      throw StateError('Synthetic history read failure');
+    }
+    return data.goalHistory ?? comparisonFixture(data.comparison);
   }
 }
 

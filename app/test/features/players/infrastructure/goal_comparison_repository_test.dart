@@ -1,14 +1,12 @@
 import 'dart:convert';
+import 'package:app/features/players/domain/services/player_goal_comparison.dart';
 import 'package:app/features/players/infrastructure/repositories/supabase_goal_comparison_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Map<String, dynamic> row({
-  String? type,
-  Map<String, dynamic> meta = const {},
-}) => {
+Map<String, dynamic> row({String? type, Object? meta = const {}}) => {
   'match_id': 'm',
   'home_score': 2,
   'away_score': 1,
@@ -87,7 +85,55 @@ void main() {
       );
     },
   );
-  test('only ordinary goals with empty metadata are eligible', () {
+  test('tournament snapshots reach calculation, including mixed history', () {
+    // The creator persists these IDs; the score writer leaves them unchanged.
+    const tournamentMeta = {
+      'tournament_home_team_id': 'tournament-red',
+      'tournament_away_team_id': 'tournament-blue',
+    };
+    Map<String, dynamic> snapshot(
+      int gf,
+      int ga,
+      bool present, {
+      bool tournament = true,
+    }) {
+      final result = row(meta: tournament ? tournamentMeta : const {})
+        ..['home_score'] = gf
+        ..['away_score'] = ga;
+      (result['teams'] as List)[0]['team_players'] = [
+        {'player_id': present ? 'historical-id' : 'absent-replacement'},
+      ];
+      return result;
+    }
+
+    final history = [snapshot(6, 2, true), snapshot(2, 3, false)];
+    GoalComparison compare(List<Map<String, dynamic>> rows) =>
+        comparePlayerGoals(
+          rows.map(decodeGoalComparisonMatch).toList(),
+          'historical-id',
+        );
+    final tournament = compare(history);
+    expect(tournament.unavailable, isNull);
+    expect(tournament.scored, 4);
+    expect(tournament.conceded, -1);
+
+    final mixed = compare([
+      ...history,
+      snapshot(4, 4, true, tournament: false),
+      snapshot(2, 3, false, tournament: false),
+      for (final type in ['penalties', 'walkover', 'unknown'])
+        snapshot(99, 0, true)..['score_type'] = type,
+      for (final meta in [
+        {'sets': []},
+        {'unknown': true},
+      ])
+        snapshot(99, 0, true)..['score_meta'] = {...tournamentMeta, ...meta},
+    ]);
+    expect(mixed.unavailable, isNull);
+    expect(mixed.scored, 3);
+    expect(mixed.conceded, 0);
+  });
+  test('only ordinary goals with known non-scoring metadata are eligible', () {
     expect(decodeGoalComparisonMatch(row()).ordinaryGoals, isTrue);
     expect(
       decodeGoalComparisonMatch(row(type: 'regular')).ordinaryGoals,
@@ -97,6 +143,15 @@ void main() {
       expect(decodeGoalComparisonMatch(row(type: type)).ordinaryGoals, isFalse);
     }
     for (final meta in [
+      null,
+      const {},
+      {'tournament_home_team_id': 'red', 'tournament_away_team_id': 'blue'},
+    ]) {
+      expect(decodeGoalComparisonMatch(row(meta: meta)).ordinaryGoals, isTrue);
+    }
+    for (final meta in [
+      'unknown',
+      [],
       {'cancelled': true},
       {
         'penalties': [4, 3],

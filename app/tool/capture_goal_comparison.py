@@ -12,6 +12,7 @@ from urllib.parse import urlencode, urlparse
 
 SCENARIOS = {
     'positive': ['+3,00', '−0,50', 'więcej strzelonych', 'mniej straconych'],
+    'tournament': ['+4,00', '−1,00', 'więcej strzelonych', 'mniej straconych'],
     'negative': ['−2,00', '+3,00', 'mniej strzelonych', 'więcej straconych'],
     'zero': ['Brak różnicy'],
     'rounded-zero': ['Brak różnicy'],

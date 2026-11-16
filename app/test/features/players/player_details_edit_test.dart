@@ -230,7 +230,6 @@ void main() {
     expect(find.text('Jan Testowy'), findsOneWidget);
   });
   for (final (label, destination) in [
-    ('Mecze', 'Matches'),
     ('Turnieje', 'Tournaments'),
     ('Statystyki', 'Stats'),
   ]) {

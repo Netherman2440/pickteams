@@ -51,6 +51,12 @@ GoalComparisonMatch decodeGoalComparisonMatch(Map<String, dynamic> row) {
     awayScore: row['away_score'] as int?,
     ordinaryGoals:
         (row['score_type'] == null || row['score_type'] == 'regular') &&
-        (meta == null || (meta is Map && meta.isEmpty)),
+        (meta == null ||
+            (meta is Map &&
+                meta.keys.every(
+                  (key) =>
+                      key == 'tournament_home_team_id' ||
+                      key == 'tournament_away_team_id',
+                ))),
   );
 }
