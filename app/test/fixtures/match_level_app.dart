@@ -30,9 +30,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'historical_match_data.dart';
 
 class MatchLevelData {
-  MatchLevelData({this.completed = 26, this.role = SquadRole.owner, bool configured = true}) {
-    thresholds = configured ? [10,20,40,70,120] : null;
-    client = SupabaseClient('https://synthetic.invalid', 'synthetic-key', httpClient: MockClient(_respond));
+  MatchLevelData({
+    this.completed = 26,
+    this.role = SquadRole.owner,
+    bool configured = true,
+  }) {
+    thresholds = configured ? [10, 20, 40, 70, 120] : null;
+    client = SupabaseClient(
+      'https://synthetic.invalid',
+      'synthetic-key',
+      httpClient: MockClient(_respond),
+    );
   }
   final int completed;
   final SquadRole? role;
@@ -45,79 +53,200 @@ class MatchLevelData {
   final requests = <String>[];
 
   Match get match => Match(
-    matchId: 'match', squadId: 'fixture', createdAt: DateTime(2026,11,13),
-    homeScore: 3, awayScore: 1, homeWinProbability: .6,
-    homeTeam: Team(teamId: 'home',matchId: 'match',side: Side.home,name: 'Zieloni',color: '#81B64C', createdAt: DateTime(2026), playerCount: 2),
-    awayTeam: Team(teamId: 'away',matchId: 'match',side: Side.away,name: 'Niebiescy',color: '#1E88E5', createdAt: DateTime(2026), playerCount: 2),
+    matchId: 'match',
+    squadId: 'fixture',
+    createdAt: DateTime(2026, 11, 13),
+    homeScore: 3,
+    awayScore: 1,
+    homeWinProbability: .6,
+    homeTeam: Team(
+      teamId: 'home',
+      matchId: 'match',
+      side: Side.home,
+      name: 'Zieloni',
+      color: '#81B64C',
+      playerCount: 2,
+    ),
+    awayTeam: Team(
+      teamId: 'away',
+      matchId: 'match',
+      side: Side.away,
+      name: 'Niebiescy',
+      color: '#1E88E5',
+      playerCount: 2,
+    ),
   );
   Future<http.Response> _respond(http.Request r) async {
     requests.add('${r.method} ${r.url.pathSegments.last}');
     if ((failLoad && r.method == 'GET') || (failSave && r.method == 'PATCH')) {
-      return http.Response('{"message":"fixture failure"}',403,request:r);
+      return http.Response('{"message":"fixture failure"}', 403, request: r);
     }
     Object? rows;
     switch (r.url.pathSegments.last) {
       case 'squads':
         if (r.method == 'PATCH') {
-          thresholds = (jsonDecode(r.body)['star_thresholds'] as List).cast<num>(); saves++;
-          rows = {'squad_id':'fixture'};
-        } else { rows = {'star_thresholds':thresholds}; }
+          thresholds = (jsonDecode(r.body)['star_thresholds'] as List)
+              .cast<num>();
+          saves++;
+          rows = {'squad_id': 'fixture'};
+        } else {
+          rows = {'star_thresholds': thresholds};
+        }
       case 'matches':
-        rows = [for (var i=0;i<completed;i++) {'match_id':i==0?'match':'m$i','home_score':3,'away_score':1},
-          {'match_id':'pending','home_score':null,'away_score':null}];
+        rows = [
+          for (var i = 0; i < completed; i++)
+            {
+              'match_id': i == 0 ? 'match' : 'm$i',
+              'home_score': 3,
+              'away_score': 1,
+            },
+          {'match_id': 'pending', 'home_score': null, 'away_score': null},
+        ];
       case 'team_players':
-        rows = [for (final id in ['p0','p1','p2','p3']) {'match_id':'match','player_id':id}];
+        rows = [
+          for (final id in ['p0', 'p1', 'p2', 'p3'])
+            {'match_id': 'match', 'player_id': id},
+        ];
       case 'ranking_history':
-        rows = [for (final e in lineup.snapshots.entries.where((e)=>e.key!='p4')) {'match_id':'match','player_id':e.key,'ranking':e.value}];
-      default: throw StateError('Unexpected fixture request');
+        rows = [
+          for (final e in lineup.snapshots.entries.where((e) => e.key != 'p4'))
+            {'match_id': 'match', 'player_id': e.key, 'ranking': e.value},
+        ];
+      default:
+        throw StateError('Unexpected fixture request');
     }
-    return http.Response(jsonEncode(rows),200,headers:{'content-type':'application/json'},request:r);
+    return http.Response(
+      jsonEncode(rows),
+      200,
+      headers: {'content-type': 'application/json'},
+      request: r,
+    );
   }
-  Future<void> dispose() async { await client.dispose(); await lineup.client.dispose(); }
+
+  Future<void> dispose() async {
+    await client.dispose();
+    await lineup.client.dispose();
+  }
 }
 
 class _Matches extends SquadMatchesNotifier {
-  _Matches(this.data); final MatchLevelData data;
-  @override AsyncValue<List<Match>> build(String squadId) => AsyncData([data.match]);
+  _Matches(this.data);
+  final MatchLevelData data;
+  @override
+  AsyncValue<List<Match>> build(String squadId) => AsyncData([data.match]);
 }
+
 class _Members extends SquadSettingsNotifier {
-  @override Future<List<SquadMember>> build() async => [];
-  @override Future<void> load(String squadId) async {}
+  @override
+  Future<List<SquadMember>> build() async => [];
+  @override
+  Future<void> load(String squadId) async {}
 }
+
 class _Read implements MatchRepository {
-  _Read(this.data); final MatchLevelData data;
-  @override Future<Match> getMatch({required String matchId}) async => data.match;
-  @override dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  _Read(this.data);
+  final MatchLevelData data;
+  @override
+  Future<Match> getMatch({required String matchId}) async => data.match;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MatchLevelApp extends StatefulWidget {
   const MatchLevelApp({super.key, required this.data, this.screen = 'list'});
   final MatchLevelData data;
   final String screen;
-  @override State<MatchLevelApp> createState()=>_MatchLevelAppState();
+  @override
+  State<MatchLevelApp> createState() => _MatchLevelAppState();
 }
+
 class _MatchLevelAppState extends State<MatchLevelApp> {
-  late final router = GoRouter(initialLocation: switch(widget.screen) {
-    'details'=>'/squads/fixture/matches/match',
-    'settings'=>'/squads/fixture/settings',
-    'stars'=>'/squads/fixture/settings/stars',
-    _=>'/squads/fixture/matches',
-  }, routes:[
-    GoRoute(path:'/squads/:squadId/matches',name:AppRoute.matches.name,builder:(_,_)=>const SquadMatchesPage(squadId:'fixture')),
-    GoRoute(path:'/squads/:squadId/matches/:matchId',name:AppRoute.matchDetails.name,builder:(_,_)=>const MatchDetailsPage(squadId:'fixture',matchId:'match')),
-    GoRoute(path:'/squads/:squadId/settings',name:AppRoute.settings.name,builder:(_,_)=>const SquadSettingsPage(squadId:'fixture')),
-    GoRoute(path:'/squads/:squadId/settings/stars',name:AppRoute.starThresholds.name,builder:(_,_)=>const SquadStarThresholdsPage(squadId:'fixture')),
-  ]);
-  @override void dispose(){ router.dispose(); super.dispose(); }
-  @override Widget build(BuildContext context)=>ProviderScope(overrides:[
-    matchLevelRepositoryProvider.overrideWithValue(SupabaseMatchLevelRepository(widget.data.client)),
-    squadMatchesProvider.overrideWith(()=>_Matches(widget.data)),
-    getMatchUseCaseProvider.overrideWithValue(GetMatchUseCase(_Read(widget.data),SupabaseTeamRepository(widget.data.lineup.client))),
-    squadDetailProvider.overrideWith((ref,id)async=>Squad(squadId:id,ownerId:'synthetic',name:'SYNTHETIC',visibility:SquadVisibility.private,sportType:SportType.football,role:widget.data.role,createdAt:DateTime(2026))),
-    squadSettingsProvider.overrideWith(_Members.new),
-    squadInviteLinkProvider.overrideWith((ref,id)async=>null),
-  ],child:MaterialApp.router(theme:AppTheme.darkTheme,routerConfig:router,builder:(context,child)=>Column(children:[
-    const Material(color:Colors.amber,child:SafeArea(bottom:false,child:SizedBox(width:double.infinity,child:Text('SYNTHETIC browser fixture — not production',style:TextStyle(color:Colors.black,fontSize:12),textAlign:TextAlign.center)))),
-    Expanded(child:child!),
-  ])));
+  late final router = GoRouter(
+    initialLocation: switch (widget.screen) {
+      'details' => '/squads/fixture/matches/match',
+      'settings' => '/squads/fixture/settings',
+      'stars' => '/squads/fixture/settings/stars',
+      _ => '/squads/fixture/matches',
+    },
+    routes: [
+      GoRoute(
+        path: '/squads/:squadId/matches',
+        name: AppRoute.matches.name,
+        builder: (_, _) => const SquadMatchesPage(squadId: 'fixture'),
+      ),
+      GoRoute(
+        path: '/squads/:squadId/matches/:matchId',
+        name: AppRoute.matchDetails.name,
+        builder: (_, _) =>
+            const MatchDetailsPage(squadId: 'fixture', matchId: 'match'),
+      ),
+      GoRoute(
+        path: '/squads/:squadId/settings',
+        name: AppRoute.settings.name,
+        builder: (_, _) => const SquadSettingsPage(squadId: 'fixture'),
+      ),
+      GoRoute(
+        path: '/squads/:squadId/settings/stars',
+        name: AppRoute.starThresholds.name,
+        builder: (_, _) => const SquadStarThresholdsPage(squadId: 'fixture'),
+      ),
+    ],
+  );
+  @override
+  void dispose() {
+    router.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ProviderScope(
+    overrides: [
+      matchLevelRepositoryProvider.overrideWithValue(
+        SupabaseMatchLevelRepository(widget.data.client),
+      ),
+      squadMatchesProvider.overrideWith(() => _Matches(widget.data)),
+      getMatchUseCaseProvider.overrideWithValue(
+        GetMatchUseCase(
+          _Read(widget.data),
+          SupabaseTeamRepository(widget.data.lineup.client),
+        ),
+      ),
+      squadDetailProvider.overrideWith(
+        (ref, id) async => Squad(
+          squadId: id,
+          ownerId: 'synthetic',
+          name: 'SYNTHETIC',
+          visibility: SquadVisibility.private,
+          sportType: SportType.football,
+          role: widget.data.role ?? SquadRole.none,
+          createdAt: DateTime(2026),
+        ),
+      ),
+      squadSettingsProvider.overrideWith(_Members.new),
+      squadInviteLinkProvider.overrideWith((ref, id) async => null),
+    ],
+    child: MaterialApp.router(
+      theme: AppTheme.darkTheme,
+      routerConfig: router,
+      builder: (context, child) => Column(
+        children: [
+          const Material(
+            color: Colors.amber,
+            child: SafeArea(
+              bottom: false,
+              child: SizedBox(
+                width: double.infinity,
+                child: Text(
+                  'SYNTHETIC browser fixture — not production',
+                  style: TextStyle(color: Colors.black, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: child!),
+        ],
+      ),
+    ),
+  );
 }
