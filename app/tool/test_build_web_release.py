@@ -565,7 +565,79 @@ class WebSourceBoundaryTest(unittest.TestCase):
                         self.env['VERCEL_GIT_COMMIT_SHA'] = self.git('rev-parse', 'HEAD').decode().strip()
                     self.reject()
 
-    def test_full_bytes_modes_and_index_do_not_depend_on_status_cache(self):
+    def test_git_executable_checkouts_respect_umask(self):
+        original_umask = os.umask(0o022)
+        try:
+            for mask, expected in ((0o022, 0o755), (0o002, 0o775),
+                                   (0o027, 0o750), (0o077, 0o700)):
+                with self.subTest(umask=oct(mask), mode=oct(expected)):
+                    os.umask(mask)
+                    fixture = WebSourceBoundaryTest('test_clean_ci_and_generated_app_output_keep_strict_admission')
+                    try:
+                        fixture.setUp()
+                        entries = fixture.git('ls-tree', '-r', 'HEAD').decode().splitlines()
+                        executables = [row.split('\t', 1)[1] for row in entries if row.startswith('100755 ')]
+                        self.assertTrue(executables)
+                        for path in executables:
+                            self.assertEqual((fixture.root / path).stat().st_mode & 0o7777, expected)
+                        self.assertEqual(fixture.git('status', '--porcelain'), b'')
+                        self.assertEqual(fixture.check({}), fixture.head)
+                        self.assertEqual(verify_source(fixture.root), fixture.head)
+                        fixture.materialize()
+                        self.assertEqual(fixture.check(), fixture.head)
+                        with self.assertRaisesRegex(AssertionError, 'Source mutation'):
+                            native.verify_source(fixture.root)
+                    finally:
+                        fixture.doCleanups()
+        finally:
+            os.umask(original_umask)
+
+    def test_source_modes_reject_missing_owner_execute_any_nonexec_x_and_special_bits(self):
+        self.git('config', 'core.fileMode', 'false')
+        executable = '.specify/scripts/bash/check-prerequisites.sh'
+        for path, modes in (
+            (executable, (0o600, 0o644, 0o601, 0o610, 0o611, 0o4755, 0o2755, 0o1755)),
+            ('app/lib/main.dart', (0o601, 0o610, 0o700, 0o711, 0o4644, 0o2644, 0o1644)),
+        ):
+            target = self.root / path
+            original = target.stat().st_mode & 0o7777
+            try:
+                for mode in modes:
+                    with self.subTest(path=path, mode=oct(mode)):
+                        target.chmod(mode)  # One adversarial file, never fixture normalization.
+                        self.assertEqual(target.stat().st_mode & 0o7777, mode)
+                        self.assertEqual(self.git('status', '--porcelain'), b'')
+                        with self.assertRaisesRegex(AssertionError, 'Source (special )?mode mutation'):
+                            self.check({})
+            finally:
+                target.chmod(original)
+        # A hidden tracked symlink must not pass the physical-file gate either.
+        target = self.root / executable
+        original = target.read_bytes()
+        self.put('.git/source-copy', original)
+        self.git('update-index', '--assume-unchanged', executable)
+        target.unlink()
+        target.symlink_to(self.root / '.git/source-copy')
+        self.assertEqual(self.git('status', '--porcelain'), b'')
+        with self.assertRaises(OSError):
+            self.check({})
+
+    def test_index_mode_changes_reject_even_when_physical_modes_are_unchanged(self):
+        self.git('config', 'core.fileMode', 'false')
+        for path, changed, original in (
+            ('app/lib/main.dart', '+x', '-x'),
+            ('.specify/scripts/bash/check-prerequisites.sh', '-x', '+x'),
+        ):
+            with self.subTest(path=path):
+                physical = (self.root / path).stat().st_mode
+                self.git('update-index', '--chmod=' + changed, path)
+                self.assertEqual((self.root / path).stat().st_mode, physical)
+                with self.assertRaisesRegex(AssertionError, 'Staged source mutation'):
+                    self.check({})
+                self.git('update-index', '--chmod=' + original, path)
+        self.assertEqual(self.check({}), self.head)
+
+    def test_full_bytes_and_index_do_not_depend_on_status_cache(self):
         for flag in ('--assume-unchanged', '--skip-worktree'):
             self.git('update-index', flag, 'app/lib/main.dart')
             self.put('app/lib/main.dart', 'SYNTHETIC_SECRET')
@@ -574,11 +646,6 @@ class WebSourceBoundaryTest(unittest.TestCase):
             self.git('update-index', '--no-assume-unchanged', 'app/lib/main.dart')
             self.git('update-index', '--no-skip-worktree', 'app/lib/main.dart')
             self.reset_fixture()
-        self.git('config', 'core.fileMode', 'false')
-        (self.root / 'app/lib/main.dart').chmod(0o755)
-        self.assertEqual(self.git('status', '--porcelain'), b'')
-        self.reject({})
-        (self.root / 'app/lib/main.dart').chmod(0o644)
         self.put('app/lib/main.dart', 'SYNTHETIC_SECRET')
         self.git('add', 'app/lib/main.dart')
         self.put('app/lib/main.dart', self.git('show', 'HEAD:app/lib/main.dart'))
@@ -586,7 +653,8 @@ class WebSourceBoundaryTest(unittest.TestCase):
 
     def test_links_modes_oversize_duplicate_json_and_ignored_metadata_reject(self):
         for path in ('vercel.json', '.vercel/project.json'):
-            for mutation in ('symlink', 'executable', 'oversize', 'duplicate', 'nan'):
+            for mutation in ('symlink', 'owner-x', 'group-x', 'other-x', 'setuid',
+                             'setgid', 'sticky', 'world-write', 'oversize', 'duplicate', 'nan'):
                 with self.subTest(path=path, mutation=mutation):
                     self.reset_fixture()
                     self.materialize()
@@ -594,8 +662,10 @@ class WebSourceBoundaryTest(unittest.TestCase):
                     if mutation == 'symlink':
                         target.unlink()
                         target.symlink_to(self.root / 'app/vercel.json')
-                    elif mutation == 'executable':
-                        target.chmod(0o755)
+                    elif mutation in ('owner-x', 'group-x', 'other-x', 'setuid', 'setgid', 'sticky', 'world-write'):
+                        bits = {'owner-x': 0o100, 'group-x': 0o010, 'other-x': 0o001,
+                                'setuid': 0o4000, 'setgid': 0o2000, 'sticky': 0o1000, 'world-write': 0o002}
+                        target.chmod((target.stat().st_mode & 0o7777) | bits[mutation])
                     elif mutation == 'oversize':
                         target.write_bytes(target.read_bytes() + b' ' * 65537)
                     elif mutation == 'duplicate':

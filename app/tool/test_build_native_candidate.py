@@ -52,9 +52,33 @@ class ArtifactPrivacyTest(unittest.TestCase):
         return path
 
     def test_local_build_stops_before_environment_or_sdk_access(self):
-        with patch.dict(os.environ, {}, clear=True):
-            with self.assertRaisesRegex(AssertionError, 'Ephemeral CI only'):
-                build_native_candidate.main()
+        original_umask = os.umask(0o022)
+        try:
+            with patch.dict(os.environ, {}, clear=True):
+                with self.assertRaisesRegex(AssertionError, 'Ephemeral CI only'):
+                    build_native_candidate.main()
+            self.assertEqual(os.umask(original_umask), 0o077)
+        finally:
+            os.umask(original_umask)
+
+    def test_local_build_test_restores_each_callers_umask(self):
+        original_umask = os.umask(0o022)
+        try:
+            for mask in (0o022, 0o002, 0o077):
+                with self.subTest(umask=oct(mask)):
+                    os.umask(mask)
+                    result = unittest.TestResult()
+                    ArtifactPrivacyTest('test_local_build_stops_before_environment_or_sdk_access').run(result)
+                    self.assertTrue(result.wasSuccessful(), (result.errors, result.failures))
+                    self.assertEqual(os.umask(mask), mask)
+            # Cleanup must also run when the nested test fails unexpectedly.
+            with patch.object(build_native_candidate, 'main', side_effect=RuntimeError('synthetic')):
+                result = unittest.TestResult()
+                ArtifactPrivacyTest('test_local_build_stops_before_environment_or_sdk_access').run(result)
+                self.assertEqual(len(result.errors), 1)
+                self.assertEqual(os.umask(0o077), 0o077)
+        finally:
+            os.umask(original_umask)
 
     def test_encoded_defines_are_rejected(self):
         encoded = base64.b64encode(b'SUPABASE_URL=https://synthetic.invalid')

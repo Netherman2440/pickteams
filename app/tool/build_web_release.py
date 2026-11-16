@@ -248,7 +248,12 @@ def verify_web_source(root, env):
         parts = os.fsdecode(path).split('/')
         with source_file(root, parts) as fd:
             info = os.fstat(fd)
-            assert info.st_mode & 0o7111 == (0o111 if mode == b'100755' else 0), 'Source mode mutation'
+            assert not info.st_mode & 0o7000, 'Source special mode mutation'
+            if mode == b'100755':
+                # Git records owner execute; umask may remove group/other X.
+                assert info.st_mode & stat.S_IXUSR, 'Source mode mutation'
+            else:
+                assert not info.st_mode & 0o111, 'Source mode mutation'
             if materialized and path == b'vercel.json':
                 continue  # All schema/values were compared to immutable APP.
             digest = hashlib.sha1(b'blob ' + str(info.st_size).encode() + b'\0')
