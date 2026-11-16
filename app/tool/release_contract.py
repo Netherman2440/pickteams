@@ -65,6 +65,18 @@ def verify_source(root):
     status = git('status', '--porcelain', '--untracked-files=all')
     # Status contains paths only; never dump diffs or configuration contents.
     assert not status, f'Source mutation (status paths only): {status!r}'
+    return verify_source_history(root)
+
+
+def verify_source_history(root):
+    """Immutable release policy, separate from each caller's worktree admission.
+
+    This is not source admission by itself. Generic/native callers must use
+    verify_source; web also checks every tracked byte, mode, index and control.
+    """
+    def git(*args):
+        return subprocess.check_output(['git', *args], cwd=root)
+
     subprocess.run(['git', 'merge-base', '--is-ancestor', ACCEPTED_SOURCE, 'HEAD'], cwd=root, check=True)
     changed = git('diff', '--name-only', ACCEPTED_SOURCE, 'HEAD').decode().splitlines()
     assert set(changed) <= set(RELEASE_FILES) | {'app/pubspec.yaml', 'app/.gitignore'}, 'Unapproved source differences'

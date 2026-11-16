@@ -14,7 +14,9 @@ import tempfile
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
-from release_contract import restore_analysis, verify_source
+from contextlib import contextmanager
+
+from release_contract import ACCEPTED_SOURCE, restore_analysis, verify_source_history
 
 FLUTTER_VERSION = "3.47.9"
 FLUTTER_REVISION = "c197ca5199e9ee5661e865596c9c07294dfab51c"
@@ -95,13 +97,7 @@ def committed_web_config(root, name):
                                    stderr=subprocess.DEVNULL)
 
 
-def web_control_diagnostics(root):
-    """Read-only evidence, never admission. Emit fixed labels, not provider values.
-
-    CLI build reads project settings and the selected workPath config. A dirty
-    root config is not a proven CLI transformation. Keep the source gate closed
-    and distinguish exact repository projections from unknown content safely.
-    """
+def parse_control(raw):
     def pairs(items):
         result = {}
         for key, value in items:
@@ -110,33 +106,157 @@ def web_control_diagnostics(root):
             result[key] = value
         return result
 
-    def parse(raw):
-        value = json.loads(raw, object_pairs_hook=pairs)
-        if not isinstance(value, dict):
-            raise ValueError('not an object')
-        return value
+    def invalid_constant(value):
+        raise ValueError('non-JSON constant')
+
+    value = json.loads(raw, object_pairs_hook=pairs, parse_constant=invalid_constant)
+    if not isinstance(value, dict):
+        raise ValueError('not an object')
+    return value
+
+
+def same_json(left, right):
+    # Unlike Python equality, JSON equality must distinguish bool from number.
+    return json.dumps(left, sort_keys=True, allow_nan=False) == json.dumps(right, sort_keys=True, allow_nan=False)
+
+
+@contextmanager
+def source_file(root, parts):
+    """Open a regular source file without following any path component's links."""
+    directory = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for part in parts[:-1]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                            dir_fd=directory)
+            os.close(directory)
+            directory = child
+        fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                     dir_fd=directory)
+        try:
+            assert stat.S_ISREG(os.fstat(fd).st_mode), 'Nonregular source file'
+            yield fd
+        finally:
+            os.close(fd)
+    finally:
+        os.close(directory)
+
+
+def read_web_control(root, parts):
+    with source_file(root, parts) as fd:
+        info = os.fstat(fd)
+        # Git records the executable bit, not umask-dependent group write bits.
+        assert not info.st_mode & 0o7113, 'Unsafe web control mode'
+        assert info.st_size <= 65536, 'Oversize web control'
+        raw = os.read(fd, 65537)
+        assert len(raw) <= 65536, 'Oversize web control'
+        return raw
+
+
+def checked_web_controls(root, env):
+    """Validate the observed app-root projection, not arbitrary provider settings.
+
+    IDs and system environment are consistency context, NOT authentication. The
+    trust boundary is immutable Git source plus an exact, nonexecuting schema.
+    Never accept commands, routing or environment from metadata by path alone.
+    """
+    app = parse_control(committed_web_config(root, 'app/vercel.json'))
+    projected = parse_control(read_web_control(root, ('vercel.json',)))
+    assert same_json(projected, app), 'Web root projection differs from immutable app config'
+    metadata = parse_control(read_web_control(root, ('.vercel', 'project.json')))
+    required = {'projectId', 'orgId', 'settings'}
+    assert required <= metadata.keys() <= required | {'projectName'}, 'Unknown or missing project fields'
+    assert env.get('VERCEL') == '1' and env.get('VERCEL_ENV') in ('preview', 'production'), 'Unsafe web provider context'
+    for key, variable, pattern in [('projectId', 'VERCEL_PROJECT_ID', r'[A-Za-z0-9_-]{1,160}'),
+                                   ('orgId', 'VERCEL_ORG_ID', r'[A-Za-z0-9_-]{1,160}'),
+                                   ('projectName', 'VERCEL_PROJECT_NAME', r'[a-z0-9][a-z0-9._-]{0,99}')]:
+        if key == 'projectName' and key not in metadata:
+            continue  # CLI 65.15 omits this even when the system env has a name.
+        value = metadata[key]
+        assert isinstance(value, str) and re.fullmatch(pattern, value), 'Invalid project identity'
+        assert value == env.get(variable), 'Project identity context mismatch'
+    settings = metadata['settings']
+    fields = {'createdAt', 'framework', 'devCommand', 'installCommand', 'buildCommand',
+              'outputDirectory', 'rootDirectory', 'nodeVersion'}
+    assert isinstance(settings, dict) and set(settings) == fields, 'Unknown or missing project settings'
+    assert settings['rootDirectory'] == 'app', 'Unexpected project selection'
+    for key in ('framework', 'installCommand', 'buildCommand', 'outputDirectory'):
+        assert key in app and same_json(settings[key], app[key]), 'Project control mismatch'
+    # The only execution-control normalization: absent devCommand in immutable
+    # source equals the observed CLI null default. Ignore must remain absent.
+    assert 'devCommand' not in app and settings['devCommand'] is None, 'Unexpected dev command'
+    assert 'ignoreCommand' not in app, 'Unexpected ignore command'
+    # These fields are not commands. Bound their types and syntax, not guessed
+    # private values. nodeVersion is CLI runtime metadata; it never selects our
+    # checksum/revision-pinned Flutter SDK or Python build command.
+    assert type(settings['createdAt']) is int and 0 <= settings['createdAt'] <= 9007199254740991, 'Invalid creation timestamp'
+    assert isinstance(settings['nodeVersion'], str) and re.fullmatch(r'[1-9][0-9]?\.x', settings['nodeVersion']), 'Invalid node metadata'
+
+
+def verify_web_source(root, env):
+    """Full source admission plus one checked, unstaged web materialization."""
+    def git(*args):
+        return subprocess.check_output(['git', *args], cwd=root)
+
+    head = git('rev-parse', 'HEAD').decode().strip()
+    assert re.fullmatch(r'[a-f0-9]{40}', head), 'Invalid source SHA'
+    assert git('remote', 'get-url', 'origin').strip() in (
+        b'https://github.com/Netherman2440/pickteams',
+        b'https://github.com/Netherman2440/pickteams.git',
+    ), 'Unexpected source origin'
+    if 'VERCEL_GIT_COMMIT_SHA' in env:
+        assert env['VERCEL_GIT_COMMIT_SHA'] == head, 'Build commit differs from checked out source'
+    # Index equality is mandatory even for the checked paths. No caller can
+    # supply exclusions, alternate baselines, or repaired metadata.
+    assert git('write-tree').strip() == git('rev-parse', 'HEAD^{tree}').strip(), 'Staged source mutation'
+    status = set(filter(None, git('status', '--porcelain=v1', '-z', '--untracked-files=all').split(b'\0')))
+    materialized = status == {b' M vercel.json', b'?? .vercel/project.json'}
+    assert not status or materialized, 'Source mutation outside checked web controls'
+    # Check physical presence too: an ignored/symlinked metadata path must not
+    # bypass admission just because Git status omits it.
+    metadata_present = os.path.lexists(root / '.vercel')
+    if materialized:
+        assert env.get('VERCEL_GIT_COMMIT_SHA') == head, 'Missing web source context'
+        checked_web_controls(root, env)
+    elif metadata_present:
+        # Root output is not used by the app-root CLI. Do not bless ignored
+        # project settings (or a .vercel directory symlink) in a clean checkout.
+        assert not os.path.islink(root / '.vercel'), 'Unsafe web metadata directory'
+        assert not os.path.lexists(root / '.vercel/project.json'), 'Unchecked web metadata'
+
+    # Git status alone misses assume-unchanged/skip-worktree and core.fileMode.
+    # Compare all HEAD blobs and physical modes independently of Git's cache.
+    accepted_modes = {entry.split(b'\t', 1)[1]: entry.split(b' ', 1)[0]
+                      for entry in git('ls-tree', '-rz', ACCEPTED_SOURCE).split(b'\0') if entry}
+    for entry in git('ls-tree', '-rz', 'HEAD').split(b'\0'):
+        if not entry:
+            continue
+        header, path = entry.split(b'\t', 1)
+        mode, kind, oid = header.split()
+        assert kind == b'blob' and mode in (b'100644', b'100755'), 'Unsupported source entry'
+        assert mode == accepted_modes.get(path, b'100644'), 'Changed source mode'
+        parts = os.fsdecode(path).split('/')
+        with source_file(root, parts) as fd:
+            info = os.fstat(fd)
+            assert info.st_mode & 0o7111 == (0o111 if mode == b'100755' else 0), 'Source mode mutation'
+            if materialized and path == b'vercel.json':
+                continue  # All schema/values were compared to immutable APP.
+            digest = hashlib.sha1(b'blob ' + str(info.st_size).encode() + b'\0')
+            while chunk := os.read(fd, 1024 * 1024):
+                digest.update(chunk)
+            assert digest.hexdigest().encode() == oid, 'Source byte mutation'
+    assert verify_source_history(root) == head, 'Source HEAD changed'
+    return head
+
+
+def web_control_diagnostics(root):
+    """Read-only fixed labels, never admission or complete provider equality."""
+    parse = parse_control
 
     def read_control(parts):
-        # Never follow links, block on a FIFO, or read unbounded provider data.
-        directory = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
         try:
-            for part in parts[:-1]:
-                child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
-                                dir_fd=directory)
-                os.close(directory)
-                directory = child
-            fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
-                         dir_fd=directory)
-            try:
-                info = os.fstat(fd)
-                if not stat.S_ISREG(info.st_mode) or info.st_size > 65536:
-                    return None
-                raw = os.read(fd, 65537)
-                return raw if len(raw) <= 65536 else None
-            finally:
-                os.close(fd)
-        finally:
-            os.close(directory)
+            return read_web_control(root, parts)
+        except AssertionError:
+            return None
 
     baselines = {}
 
@@ -259,11 +379,11 @@ def web_control_diagnostics(root):
 
 
 def verify_source_stage(root, stage):
-    """Name the gate and diagnose controls without accepting any dirty source."""
+    """Recheck immutable source and web controls at every existing build stage."""
     print(f"Release source check: {stage}", flush=True)
     try:
-        commit = verify_source(root)
-    except AssertionError:
+        commit = verify_web_source(root, os.environ)
+    except (AssertionError, OSError, ValueError, RecursionError, subprocess.CalledProcessError):
         print('Web control diagnostics: ' + json.dumps(web_control_diagnostics(root), sort_keys=True), flush=True)
         raise
     print(f"Release source verified: {stage} {commit}", flush=True)

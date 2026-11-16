@@ -5,10 +5,12 @@ from io import BytesIO, StringIO
 import json
 from pathlib import Path
 import tempfile
+import subprocess
+import os
 import unittest
 from unittest.mock import patch
 
-from release_contract import ANALYSIS_MIGRATION, VERSION, VERSION_CODE
+from release_contract import ANALYSIS_MIGRATION, VERSION, VERSION_CODE, verify_source
 
 RELEASE_VERSION = f'{VERSION}+{VERSION_CODE}'
 import build_web_release as release
@@ -26,8 +28,8 @@ def config():
 
 class WebReleaseTest(unittest.TestCase):
     def setUp(self):
-        # Source policy has real Git positive/negative tests in test_release_contract.
-        source = patch.object(release, 'verify_source', return_value='a' * 40)
+        # Build orchestration only. WebSourceBoundaryTest exercises real Git admission.
+        source = patch.object(release, 'verify_web_source', return_value='a' * 40)
         self.source = source.start()
         self.addCleanup(source.stop)
 
@@ -128,7 +130,7 @@ class WebReleaseTest(unittest.TestCase):
             self.assertNotIn(config()["SUPABASE_ANON_KEY"], output.getvalue())
             self.assertNotIn("client.invalid", json.dumps(manifest))
 
-    def test_provider_control_diagnostics_do_not_admit_any_mutation(self):
+    def test_provider_control_diagnostics_label_configs_without_disclosure(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             head = (release.APP.parent / 'vercel.json').read_bytes()
@@ -147,17 +149,13 @@ class WebReleaseTest(unittest.TestCase):
             ]:
                 with self.subTest(classification=classification):
                     (root / 'vercel.json').write_bytes(content)
-                    self.source.side_effect = AssertionError('Source mutation')
-                    output = StringIO()
-                    with patch.object(release, 'committed_web_config', side_effect=[head, app]), redirect_stdout(output):
-                        with self.assertRaisesRegex(AssertionError, 'Source mutation'):
-                            release.verify_source_stage(root, 'before-sdk')
-                    report = json.loads(output.getvalue().split('Web control diagnostics: ')[1])
+                    with patch.object(release, 'committed_web_config', side_effect=[head, app]):
+                        report = release.web_control_diagnostics(root)
                     self.assertEqual(report['rootConfig']['classification'], classification)
                     self.assertEqual(report['projectMetadata']['rootDirectory'], 'app')
                     self.assertIn('buildCommand', report['projectMetadata']['settingsFields'])
                     for secret in ('private-project', 'private-org', 'private-command'):
-                        self.assertNotIn(secret, output.getvalue())
+                        self.assertNotIn(secret, json.dumps(report))
 
     def test_project_controls_compare_immutable_configs_without_disclosure(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -347,5 +345,270 @@ class WebReleaseTest(unittest.TestCase):
             self.assertIn({"source": "/release.json", "headers": [{"key": "Cache-Control", "value": "no-store"}]}, data["headers"])
 
 
-if __name__ == "__main__":
+class WebSourceBoundaryTest(unittest.TestCase):
+    """SYNTHETIC CLI data in real-source clones. Not hosted success evidence."""
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name) / 'source'
+        subprocess.run(['git', 'clone', '-q', '--no-hardlinks', '--local',
+                        str(release.APP.parent), str(self.root)], check=True)
+        self.git('remote', 'set-url', 'origin', 'https://github.com/Netherman2440/pickteams')
+        self.head = self.git('rev-parse', 'HEAD').decode().strip()
+        self.app = json.loads(self.git('show', 'HEAD:app/vercel.json'))
+        self.env = {'VERCEL': '1', 'VERCEL_ENV': 'preview', 'VERCEL_GIT_COMMIT_SHA': self.head,
+                    'VERCEL_PROJECT_ID': 'prj_SYNTHETIC', 'VERCEL_ORG_ID': 'team_SYNTHETIC',
+                    'VERCEL_PROJECT_NAME': 'synthetic-project'}
+        self.metadata = {'projectId': self.env['VERCEL_PROJECT_ID'], 'orgId': self.env['VERCEL_ORG_ID'],
+                         'settings': {'createdAt': 1700000000000, 'framework': None, 'devCommand': None,
+                                      'installCommand': '', 'buildCommand': self.app['buildCommand'],
+                                      'outputDirectory': self.app['outputDirectory'],
+                                      'rootDirectory': 'app', 'nodeVersion': '24.x'}}
+
+    def git(self, *args):
+        return subprocess.check_output(['git', *args], cwd=self.root, stderr=subprocess.PIPE)
+
+    def put(self, name, content):
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content if isinstance(content, bytes) else content.encode())
+
+    def materialize(self):
+        self.put('vercel.json', json.dumps(self.app))
+        self.put('.vercel/project.json', json.dumps(self.metadata))
+
+    def check(self, env=None):
+        return release.verify_web_source(self.root, self.env if env is None else env)
+
+    def reject(self, env=None):
+        with self.assertRaises((AssertionError, OSError, ValueError, subprocess.CalledProcessError)) as error:
+            self.check(env)
+        self.assertNotIn('SYNTHETIC_SECRET', str(error.exception))
+
+    def reset_fixture(self):
+        # This reset/clean is confined to a disposable test-owned clone.
+        self.git('reset', '--hard', self.head)
+        self.git('clean', '-fdq')
+
+    def commit(self):
+        self.git('add', '.')
+        self.git('-c', 'user.name=Synthetic', '-c', 'user.email=test@invalid', 'commit', '-qm', 'fixture')
+        self.env['VERCEL_GIT_COMMIT_SHA'] = self.git('rev-parse', 'HEAD').decode().strip()
+
+    def test_observed_projection_passes_all_web_stages_but_not_generic_or_native(self):
+        self.materialize()
+        with patch.dict(os.environ, self.env, clear=True):
+            report = release.web_control_diagnostics(self.root)
+            self.assertEqual(report['rootConfig']['classification'], 'app-json')
+            project = report['projectMetadata']
+            self.assertEqual(project['settingsFields'], list(self.metadata['settings']))
+            self.assertEqual(project['selectedConfig']['completeConfigComparison'], 'different-json')
+            self.assertFalse(project['controls']['devCommand']['equalsApp'])
+            self.assertFalse(project['identifiers']['projectName']['present'])
+            for stage in ('before-sdk', 'after-sdk-before-pub-get',
+                          'after-pub-get-and-checked-analysis-restore',
+                          'after-compiler-and-checked-analysis-restore'):
+                with redirect_stdout(StringIO()):
+                    self.assertEqual(release.verify_source_stage(self.root, stage), self.head)
+        with self.assertRaisesRegex(AssertionError, 'Source mutation'):
+            verify_source(self.root)
+        # The native builder imports this exact strict entry point.
+        import build_native_candidate as native
+        self.assertIs(native.verify_source, verify_source)
+        with self.assertRaisesRegex(AssertionError, 'Source mutation'):
+            native.verify_source(self.root)
+        self.assertEqual(self.git('status', '--porcelain').decode(),
+                         ' M vercel.json\n?? .vercel/\n')
+
+    def test_clean_ci_and_generated_app_output_keep_strict_admission(self):
+        self.assertEqual(release.verify_web_source(self.root, {}), self.head)
+        self.assertEqual(verify_source(self.root), self.head)
+        self.put('app/.vercel/output/builds.json', '{}')
+        self.assertEqual(release.verify_web_source(self.root, {}), self.head)
+        self.assertEqual(verify_source(self.root), self.head)
+        for mutation in ('vercel.json', 'app/.vercel/project.json', 'app/lib/main.dart', 'unrelated'):
+            with self.subTest(path=mutation):
+                self.reset_fixture()
+                self.put(mutation, 'SYNTHETIC_SECRET')
+                self.reject({})
+                with self.assertRaises(AssertionError):
+                    verify_source(self.root)
+
+    def test_every_root_config_field_and_unknown_routing_env_commands_reject(self):
+        mutations = {'buildCommand': 'SYNTHETIC_SECRET', 'outputDirectory': 'elsewhere',
+                     'framework': 'nextjs', 'installCommand': 'npm install', 'devCommand': None,
+                     'ignoreCommand': '', 'rootDirectory': 'app', '$schema': 'elsewhere',
+                     'headers': [], 'rewrites': [], 'redirects': [], 'routes': [],
+                     'env': {}, 'build': {}, 'builds': [], 'functions': {}, 'unknown': True}
+        self.materialize()
+        for field, value in mutations.items():
+            with self.subTest(field=field):
+                self.put('vercel.json', json.dumps(dict(self.app, **{field: value})))
+                self.reject()
+        for field in self.app:
+            with self.subTest(missing=field):
+                self.put('vercel.json', json.dumps({key: value for key, value in self.app.items() if key != field}))
+                self.reject()
+
+    def test_metadata_schema_controls_and_bounded_nonexecution_fields(self):
+        self.materialize()
+        baseline = json.dumps(self.metadata)
+        mutations = {'buildCommand': 'SYNTHETIC_SECRET', 'outputDirectory': 'elsewhere',
+                     'rootDirectory': '.', 'framework': '', 'installCommand': None,
+                     'devCommand': '', 'commandForIgnoringBuildStep': None, 'ignoreCommand': '',
+                     'headers': [], 'rewrites': [], 'routes': [], 'env': {}, 'unknown': True,
+                     'analyticsId': 'unobserved', 'nodeVersion': '24.x; SYNTHETIC_SECRET',
+                     'createdAt': True}
+        for field, value in mutations.items():
+            with self.subTest(field=field):
+                metadata = json.loads(baseline)
+                metadata['settings'][field] = value
+                self.put('.vercel/project.json', json.dumps(metadata))
+                self.reject()
+        for field in self.metadata['settings']:
+            with self.subTest(missing=field):
+                metadata = json.loads(baseline)
+                del metadata['settings'][field]
+                self.put('.vercel/project.json', json.dumps(metadata))
+                self.reject()
+        for field in ('createdAt', 'nodeVersion'):
+            for value in (None, False, [], {}, '', -1, 1.5, 9007199254740992):
+                with self.subTest(field=field, invalid=value):
+                    metadata = json.loads(baseline)
+                    metadata['settings'][field] = value
+                    self.put('.vercel/project.json', json.dumps(metadata))
+                    self.reject()
+        for field in ('env', 'buildCommand', 'headers', 'routes', 'unknown'):
+            with self.subTest(top=field):
+                self.put('.vercel/project.json', json.dumps(dict(self.metadata, **{field: {}})))
+                self.reject()
+        for settings in (None, [], '', True):
+            self.put('.vercel/project.json', json.dumps(dict(self.metadata, settings=settings)))
+            self.reject()
+
+    def test_identity_context_is_required_but_missing_optional_name_is_not_a_mismatch(self):
+        self.materialize()
+        self.assertEqual(self.check(), self.head)
+        metadata = dict(self.metadata, projectName=self.env['VERCEL_PROJECT_NAME'])
+        self.put('.vercel/project.json', json.dumps(metadata))
+        self.assertEqual(self.check(), self.head)
+        for field in ('projectId', 'orgId', 'projectName'):
+            for value in (None, False, 1, [], {}, '', 'bad identity', 'SYNTHETIC_SECRET'):
+                with self.subTest(field=field, value=value):
+                    self.put('.vercel/project.json', json.dumps(dict(metadata, **{field: value})))
+                    self.reject()
+            if field != 'projectName':
+                self.put('.vercel/project.json', json.dumps({key: value for key, value in metadata.items() if key != field}))
+                self.reject()
+        self.materialize()
+        for field in ('VERCEL', 'VERCEL_ENV', 'VERCEL_GIT_COMMIT_SHA', 'VERCEL_PROJECT_ID', 'VERCEL_ORG_ID'):
+            for value in (None, '', 'SYNTHETIC_SECRET'):
+                with self.subTest(env=field, value=value):
+                    env = dict(self.env)
+                    if value is None:
+                        del env[field]
+                    else:
+                        env[field] = value
+                    self.reject(env)
+        # IDs alone are neither source context nor provider authentication.
+        self.reject({key: value for key, value in self.env.items() if key.endswith('_ID')})
+        self.git('remote', 'set-url', 'origin', 'https://untrusted.invalid/repository')
+        self.reject()
+
+    def test_unrelated_source_staged_or_committed_changes_are_never_hidden(self):
+        for path in ('app/lib/main.dart', 'app/vercel.json', 'unrelated', '.vercel/other.json'):
+            for state in ('unstaged', 'staged', 'committed'):
+                with self.subTest(path=path, state=state):
+                    self.reset_fixture()
+                    self.env['VERCEL_GIT_COMMIT_SHA'] = self.head
+                    self.put(path, 'SYNTHETIC_SECRET')
+                    if state == 'staged':
+                        self.git('add', path)
+                    elif state == 'committed':
+                        self.commit()
+                    self.materialize()
+                    self.reject()
+        for path in ('vercel.json', '.vercel/project.json'):
+            for state in ('staged', 'committed'):
+                with self.subTest(control=path, state=state):
+                    self.reset_fixture()
+                    self.env['VERCEL_GIT_COMMIT_SHA'] = self.head
+                    self.materialize()
+                    self.git('add', path)
+                    if state == 'committed':
+                        self.git('-c', 'user.name=Synthetic', '-c', 'user.email=test@invalid', 'commit', '-qm', 'control')
+                        self.env['VERCEL_GIT_COMMIT_SHA'] = self.git('rev-parse', 'HEAD').decode().strip()
+                    self.reject()
+
+    def test_full_bytes_modes_and_index_do_not_depend_on_status_cache(self):
+        for flag in ('--assume-unchanged', '--skip-worktree'):
+            self.git('update-index', flag, 'app/lib/main.dart')
+            self.put('app/lib/main.dart', 'SYNTHETIC_SECRET')
+            self.assertEqual(self.git('status', '--porcelain'), b'')
+            self.reject({})
+            self.git('update-index', '--no-assume-unchanged', 'app/lib/main.dart')
+            self.git('update-index', '--no-skip-worktree', 'app/lib/main.dart')
+            self.reset_fixture()
+        self.git('config', 'core.fileMode', 'false')
+        (self.root / 'app/lib/main.dart').chmod(0o755)
+        self.assertEqual(self.git('status', '--porcelain'), b'')
+        self.reject({})
+        (self.root / 'app/lib/main.dart').chmod(0o644)
+        self.put('app/lib/main.dart', 'SYNTHETIC_SECRET')
+        self.git('add', 'app/lib/main.dart')
+        self.put('app/lib/main.dart', self.git('show', 'HEAD:app/lib/main.dart'))
+        self.reject({})
+
+    def test_links_modes_oversize_duplicate_json_and_ignored_metadata_reject(self):
+        for path in ('vercel.json', '.vercel/project.json'):
+            for mutation in ('symlink', 'executable', 'oversize', 'duplicate', 'nan'):
+                with self.subTest(path=path, mutation=mutation):
+                    self.reset_fixture()
+                    self.materialize()
+                    target = self.root / path
+                    if mutation == 'symlink':
+                        target.unlink()
+                        target.symlink_to(self.root / 'app/vercel.json')
+                    elif mutation == 'executable':
+                        target.chmod(0o755)
+                    elif mutation == 'oversize':
+                        target.write_bytes(target.read_bytes() + b' ' * 65537)
+                    elif mutation == 'duplicate':
+                        # Last-wins JSON would otherwise be a valid projection.
+                        field = 'framework' if path == 'vercel.json' else 'projectId'
+                        target.write_text('{"' + field + '":"SYNTHETIC_SECRET",' + target.read_text()[1:])
+                    else:
+                        target.write_text('{"settings":NaN}')
+                    self.reject()
+        self.reset_fixture()
+        self.materialize()
+        self.git('config', 'core.excludesFile', str(self.root / '.git/synthetic-ignore'))
+        self.put('.git/synthetic-ignore', '.vercel/\n')
+        self.reject()
+        self.put('vercel.json', self.git('show', 'HEAD:vercel.json'))
+        self.assertEqual(self.git('status', '--porcelain'), b'')
+        self.reject({})
+        # The directory itself cannot redirect traversal, even with clean status.
+        (self.root / '.vercel/project.json').unlink()
+        (self.root / '.vercel').rmdir()
+        (self.root / '.vercel').symlink_to(self.root / 'app', target_is_directory=True)
+        self.reject({})
+
+    def test_each_stage_rechecks_controls_not_only_initial_admission(self):
+        self.materialize()
+        with patch.dict(os.environ, self.env, clear=True), redirect_stdout(StringIO()):
+            self.assertEqual(release.verify_source_stage(self.root, 'before-sdk'), self.head)
+            for stage in ('after-sdk-before-pub-get', 'after-pub-get-and-checked-analysis-restore',
+                          'after-compiler-and-checked-analysis-restore'):
+                self.metadata['settings']['buildCommand'] = 'SYNTHETIC_SECRET'
+                self.materialize()
+                with self.assertRaises(AssertionError):
+                    release.verify_source_stage(self.root, stage)
+                self.metadata['settings']['buildCommand'] = self.app['buildCommand']
+                self.materialize()
+                self.assertEqual(release.verify_source_stage(self.root, stage), self.head)
+
+
+if __name__ == '__main__':
     unittest.main()
+
