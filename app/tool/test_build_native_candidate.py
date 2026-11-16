@@ -51,9 +51,9 @@ class ArtifactPrivacyTest(unittest.TestCase):
                 archive.writestr(name, data)
         return path
 
-    def test_unapproved_source_stops_before_environment_or_sdk_access(self):
-        with patch.object(build_native_candidate, 'UI_SOURCE', None):
-            with self.assertRaisesRegex(AssertionError, 'Await corrected'):
+    def test_local_build_stops_before_environment_or_sdk_access(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(AssertionError, 'Ephemeral CI only'):
                 build_native_candidate.main()
 
     def test_encoded_defines_are_rejected(self):

@@ -26,7 +26,7 @@ import sys
 import zipfile
 
 from audit_native_candidate import LEGACY_DEBUG_CERTIFICATE, audit, digest, signing_config
-from build_native_candidate import UI_SOURCE
+from release_contract import VERSION, VERSION_CODE, validate_metadata, verify_source
 
 SIGNATURE_ENTRY = re.compile(r'^META-INF/(?:MANIFEST\.MF|[^/]+\.(?:SF|RSA|DSA|EC))$', re.I)
 REPO = 'Netherman2440/pickteams'
@@ -171,12 +171,13 @@ def main():
     parser.add_argument('--worktree', default=Path.cwd(), type=Path)
     parser.add_argument('--lock-held', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
-    assert UI_SOURCE is not None, 'Await corrected coordinator-approved UI source pin'
     assert re.fullmatch(r'[0-9a-f]{40}', args.source_sha)
     if not args.lock_held:
         return subprocess.call(['flock', '-n', '-E75', '/tmp/pickteams-flutter-validation.lock', sys.executable, str(Path(__file__).resolve()), *sys.argv[1:], '--lock-held'])
     os.umask(0o077)
     base, evidence, source = args.base.resolve(), args.evidence.resolve(), args.worktree.resolve()
+    assert verify_source(source) == args.source_sha, 'Unexpected signing checkout'
+    assert args.repo == REPO, 'Untrusted artifact repository'
     artifact_zip = args.artifact_zip.resolve()
     candidate = base/'candidates'/('final-a-'+args.source_sha)
     apk = candidate/'pickteams-release.apk'
@@ -245,9 +246,7 @@ def main():
     (evidence/'lock-acquired.txt').write_text('flock -n -E75 /tmp/pickteams-flutter-validation.lock; only serial SDK signing/offline audits, no build or install.\n')
     assert run('head', ['git', 'rev-parse', 'HEAD']).strip() == args.source_sha
     assert not run('status-before', ['git', 'status', '--porcelain'])
-    assert metadata['reviewed_ui_source'] == UI_SOURCE
-    assert metadata['entrypoint'] == 'lib/main.dart'
-    assert (metadata['build_name'], metadata['build_number']) == ('1.0.4', 2026111301)
+    validate_metadata(metadata)
     # 2. The metadata source map must equal the checkout's tracked inputs exactly.
     verify_tracked_inputs(metadata['runtime_input_sha256'], tracked_inputs(source))
     config = json.loads((base/'client-config.json').read_text())
@@ -288,7 +287,7 @@ def main():
         assert public_files == {p for p in args.public_root.resolve().rglob('*') if p.is_file()}
         (evidence/'preservation-after.json').write_text(json.dumps(after, indent=2)+'\n')
         assert not run('status-after', ['git', 'status', '--porcelain'])
-        final = {'apk': str(apk), 'sha256': digest(signed), 'bytes': signed.stat().st_size, 'certificate_sha256': signing['certificate_sha256'], 'source_sha': args.source_sha, 'version': '1.0.4', 'version_code': 2026111301, 'abis': metadata['abis'], 'remote_apk_sha256': digest(remote), 'ephemeral_certificate_sha256': metadata['ephemeral_certificate_sha256'], 'run_id': metadata['run_id'], 'run_attempt': metadata['run_attempt'], 'artifact_id': provenance['artifact']['id'], 'artifact_digest': provenance['artifact']['digest'], 'checks': checks, 'publication': 'Forbidden until coordinator accepts browser and independent native review'}
+        final = {'apk': str(apk), 'sha256': digest(signed), 'bytes': signed.stat().st_size, 'certificate_sha256': signing['certificate_sha256'], 'source_sha': args.source_sha, 'version': VERSION, 'version_code': VERSION_CODE, 'abis': metadata['abis'], 'remote_apk_sha256': digest(remote), 'ephemeral_certificate_sha256': metadata['ephemeral_certificate_sha256'], 'run_id': metadata['run_id'], 'run_attempt': metadata['run_attempt'], 'artifact_id': provenance['artifact']['id'], 'artifact_digest': provenance['artifact']['digest'], 'checks': checks, 'publication': 'Forbidden until coordinator accepts browser and independent native review'}
         (evidence/'local-signing.json').write_text(json.dumps(final, indent=2)+'\n')
     assert apk.stat().st_mode & 0o777 == 0o600, 'Final candidate is not private'
     print('Final signed APK offline acceptance passed; independent review and publication gates remain.')

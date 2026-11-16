@@ -16,25 +16,15 @@ import zipfile
 
 FRAMEWORK = 'c197ca5199e9ee5661e865596c9c07294dfab51c'
 ENGINE = '89c39edfdfae2949f6806e4a315c0c08522238b7'
-# The candidate app tree that the native build must match exactly; only the
-# four native_candidate tool files may differ. This pin is a source binding,
-# not release approval: independent review and final artifact checks still gate it.
-UI_SOURCE = '4efe6e16d913ff008bd3426be37a20b99226fe9e'
+from release_contract import ACCEPTED_SOURCE, VERSION, VERSION_CODE, restore_analysis, verify_source
+
+# Compatibility name in the structured native provenance.
+UI_SOURCE = ACCEPTED_SOURCE
 ABIS = ('armeabi-v7a', 'arm64-v8a', 'x86_64')
 # Credential-bearing callback query OR fragment is never allowed in an export;
 # the bare compiled callback literal (no '?' or '#') stays allowed.
 CALLBACK_CREDENTIALS = re.compile(
     rb'pl\.pickteams://auth/callback[?#][^\s\x00\"\']*(?:code|access_token|refresh_token)=[A-Za-z0-9_-]{8,}')
-MIGRATION = '''analyzer:
-  exclude:
-    - build/**
-    - android/**
-    - ios/**
-    - web/**
-    - windows/**
-    - macos/**
-    - linux/**
-'''.encode()
 
 
 def digest(data):
@@ -82,7 +72,6 @@ def capture(args, cwd, stdout, stderr):
 
 def main():
     os.umask(0o077)
-    assert UI_SOURCE is not None, 'Await corrected coordinator-approved UI source pin'
     assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Ephemeral CI only'
     root = Path.cwd()
     app = root / 'app'
@@ -108,9 +97,8 @@ def main():
         paths = subprocess.check_output(['git', 'ls-files', '-z', 'app'], cwd=root).split(b'\0')
         return {p.decode(): digest((root / p.decode()).read_bytes()) for p in paths if p}
 
-    head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root).decode().strip()
+    head = verify_source(root)
     assert head == os.environ['EXPECTED_HEAD'], 'Unexpected checkout'
-    run('reviewed-runtime-equality', ['git', 'diff', '--exit-code', UI_SOURCE, 'HEAD', '--', 'app', ':!app/tool/build_native_candidate.py', ':!app/tool/test_build_native_candidate.py', ':!app/tool/sign_native_candidate.py', ':!app/tool/audit_native_candidate.py'], root)
     initial = source()
     config = {k: os.environ.pop(k) for k in ('SUPABASE_URL', 'SUPABASE_ANON_KEY')}
     assert all(config.values()), 'Missing production public configuration'
@@ -138,10 +126,7 @@ def main():
         original = analysis.read_bytes()
 
         def restore_known_migration():
-            current = analysis.read_bytes()
-            expected = original.replace(b'include: package:flutter_lints/flutter.yaml', MIGRATION + b'include: package:flutter_lints/flutter.yaml')
-            assert current in (original, expected), 'Unknown analysis migration'
-            analysis.write_bytes(original)
+            restore_analysis(analysis, original)
             assert source() == initial, 'Changed tracked runtime inputs'
 
         run('pub-get', [flutter, 'pub', 'get', '--enforce-lockfile'])
@@ -149,7 +134,7 @@ def main():
         # The release signingConfig is the explicitly opted-in ephemeral debug
         # key (pickteamsEphemeralDebugSigning above); Android creates a disposable
         # keystore on this fresh runner. Production signing happens locally.
-        run('release-build', [flutter, 'build', 'apk', '--release', '--target', 'lib/main.dart', '--dart-define-from-file=' + str(client), '--build-name=1.0.4', '--build-number=2026111301', '--no-pub'])
+        run('release-build', [flutter, 'build', 'apk', '--release', '--target', 'lib/main.dart', '--dart-define-from-file=' + str(client), f'--build-name={VERSION}', f'--build-number={VERSION_CODE}', '--no-pub'])
         restore_known_migration()
         apk = app / 'build/app/outputs/flutter-apk/app-release.apk'
         forbidden = {value for name, value in initial.items() if Path(name).suffix in {'.dart', '.kt', '.java', '.kts', '.gradle', '.yaml', '.yml', '.json', '.env'}}
@@ -167,7 +152,7 @@ def main():
         metadata = {
             'source_sha': head, 'reviewed_ui_source': UI_SOURCE,
             'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
-            'entrypoint': 'lib/main.dart', 'build_name': '1.0.4', 'build_number': 2026111301,
+            'entrypoint': 'lib/main.dart', 'build_name': VERSION, 'build_number': VERSION_CODE,
             'abis': list(ABIS), 'flutter': version, 'java': java,
             'android': {'sdk': 36, 'build_tools': '36.0.0', 'ndk': '28.2.13676358', 'cli': 19},
             'cache': 'Fresh ephemeral Flutter clone and GRADLE_USER_HOME; no restored build cache',
