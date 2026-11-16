@@ -102,8 +102,10 @@ class _SquadSettingsPageState extends ConsumerState<SquadSettingsPage> {
                     _InviteSection(squadId: widget.squadId),
                     const SizedBox(height: 24),
                     Card(
-                      color: theme.colorScheme.primaryContainer,
+                      color: theme.colorScheme.primary.withValues(alpha: .12),
                       child: ListTile(
+                        textColor: theme.colorScheme.primary,
+                        iconColor: theme.colorScheme.primary,
                         title: const Text('Zmiana progów gwiazdek'),
                         subtitle: const Text(
                           'Ustaw poziom meczu dla tego składu. Połówki obliczamy automatycznie.',
