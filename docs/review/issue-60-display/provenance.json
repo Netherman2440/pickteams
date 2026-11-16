@@ -1,0 +1,30 @@
+{
+  "candidate": "f128155a0179f9469a67f75dc0d65488bd0032b7",
+  "base": "01f03757c48c44a5fd9b49d7ce393ebf91a61e96",
+  "branch": "limen/issue-60-display-only",
+  "captureSource": "app/tool/capture_historical_match.py",
+  "captureSourceSha256": "380c4cf640c24fc5e222943b5711f72334f39a6ddaf505a12ca42eb5bc41c1be",
+  "viewport": [
+    1440,
+    1000
+  ],
+  "synthetic": true,
+  "frames": {
+    "equal-0.png": "7072c538089110f05dc927baf574910084d82658c3e5c4a07cf5883fe5b33655",
+    "equal-1.png": "4c971b4293f5e46a3eef7d1e67b3958451c0662ba6538b3998b9aad0c911792c",
+    "equal-2.png": "1dbf2840409e43cfaf07b1c82a20294ad6a8832363ad219f413cf3fddb8160e6",
+    "equal-3.png": "d60b27157373eafc3b61e043b93ed5ea0f26b933d3554aeab9bef4e28b3011c1",
+    "unequal-0.png": "23a54bdfbe4eee079971beeb143f40f2cfef57387d848ab1689f65b0647e8000",
+    "unequal-1.png": "13261e8a234107fcb2f69a27589ca6aa0edf86198b2353a1b70ee4d085f009c7",
+    "unequal-2.png": "162faeb94719d546e7a6f8abc8a3307e7c5155b3ed8b049a8cc371dea76b04b3",
+    "unequal-3.png": "c1637ca6c410b375e813837ea496f6d2c06b4c9c1f3e732d9abeffa8dc1429d9"
+  },
+  "buildFiles": {
+    "index.html": "bb2344a6a7fc25547595cd2298705d6cf02b61852f43e93c6b412a92ca0263dd",
+    "main.dart.js": "2cb9b341cccd2fcb7b8b7be5a51f5539606823679821ea8d60ba3a4fa9947d79"
+  },
+  "configuredInputPresence": {
+    "SUPABASE_URL": false,
+    "SUPABASE_ANON_KEY": false
+  }
+}

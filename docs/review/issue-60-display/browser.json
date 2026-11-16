@@ -1,0 +1,402 @@
+[
+  {
+    "case": "equal",
+    "stage": 0,
+    "image": "equal-0.png",
+    "current": 40,
+    "panels": [
+      {
+        "id": "p1",
+        "ranking": 60
+      },
+      {
+        "id": "p3",
+        "ranking": 70
+      },
+      {
+        "id": "p0",
+        "ranking": 40
+      },
+      {
+        "id": "p2",
+        "ranking": 50
+      }
+    ],
+    "labels": [
+      "SYNTHETIC | 2 vs 2 | before result | Current p0: 40.00",
+      "Next state",
+      "Reload",
+      "Gospodarze",
+      "Ranking: 100.0",
+      "Go\u015bcie",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "01.01.2026 00:00",
+      "-",
+      ":",
+      "-",
+      "\ue092"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "equal",
+    "stage": 1,
+    "image": "equal-1.png",
+    "current": 95,
+    "panels": [
+      {
+        "id": "p1",
+        "ranking": 60
+      },
+      {
+        "id": "p3",
+        "ranking": 70
+      },
+      {
+        "id": "p0",
+        "ranking": 40
+      },
+      {
+        "id": "p2",
+        "ranking": 50
+      }
+    ],
+    "labels": [
+      "SYNTHETIC | 2 vs 2 | after result | Current p0: 95.00",
+      "Next state",
+      "Reload",
+      "Gospodarze",
+      "Ranking: 100.0",
+      "Go\u015bcie",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "01.01.2026 00:00",
+      "3",
+      ":",
+      "1",
+      "\ue092"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "equal",
+    "stage": 2,
+    "image": "equal-2.png",
+    "current": 15,
+    "panels": [
+      {
+        "id": "p1",
+        "ranking": 60
+      },
+      {
+        "id": "p3",
+        "ranking": 70
+      },
+      {
+        "id": "p0",
+        "ranking": 40
+      },
+      {
+        "id": "p2",
+        "ranking": 50
+      }
+    ],
+    "labels": [
+      "SYNTHETIC | 2 vs 2 | correction | Current p0: 15.00",
+      "Next state",
+      "Reload",
+      "Gospodarze",
+      "Ranking: 100.0",
+      "Go\u015bcie",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "01.01.2026 00:00",
+      "1",
+      ":",
+      "4",
+      "\ue092"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "equal",
+    "stage": 3,
+    "image": "equal-3.png",
+    "current": 150,
+    "panels": [
+      {
+        "id": "p1",
+        "ranking": 60
+      },
+      {
+        "id": "p3",
+        "ranking": 70
+      },
+      {
+        "id": "p0",
+        "ranking": 40
+      },
+      {
+        "id": "p2",
+        "ranking": 50
+      }
+    ],
+    "labels": [
+      "SYNTHETIC | 2 vs 2 | later current score | Current p0: 150.00",
+      "Next state",
+      "Reload",
+      "Gospodarze",
+      "Ranking: 100.0",
+      "Go\u015bcie",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "01.01.2026 00:00",
+      "1",
+      ":",
+      "4",
+      "\ue092"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "unequal",
+    "stage": 0,
+    "image": "unequal-0.png",
+    "current": 40,
+    "panels": [
+      {
+        "id": "p1",
+        "ranking": 60
+      },
+      {
+        "id": "p3",
+        "ranking": 70
+      },
+      {
+        "id": "p0",
+        "ranking": 40
+      },
+      {
+        "id": "p2",
+        "ranking": 50
+      },
+      {
+        "id": "p4",
+        "ranking": 30
+      }
+    ],
+    "labels": [
+      "SYNTHETIC | 3 vs 2 (x2/3) | before result | Current p0: 40.00",
+      "Next state",
+      "Reload",
+      "Gospodarze",
+      "Ranking: 86.7",
+      "Go\u015bcie",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "Player p4",
+      "30.00",
+      "01.01.2026 00:00",
+      "-",
+      ":",
+      "-",
+      "\ue092"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "unequal",
+    "stage": 1,
+    "image": "unequal-1.png",
+    "current": 95,
+    "panels": [
+      {
+        "id": "p1",
+        "ranking": 60
+      },
+      {
+        "id": "p3",
+        "ranking": 70
+      },
+      {
+        "id": "p0",
+        "ranking": 40
+      },
+      {
+        "id": "p2",
+        "ranking": 50
+      },
+      {
+        "id": "p4",
+        "ranking": 30
+      }
+    ],
+    "labels": [
+      "SYNTHETIC | 3 vs 2 (x2/3) | after result | Current p0: 95.00",
+      "Next state",
+      "Reload",
+      "Gospodarze",
+      "Ranking: 86.7",
+      "Go\u015bcie",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "Player p4",
+      "30.00",
+      "01.01.2026 00:00",
+      "3",
+      ":",
+      "1",
+      "\ue092"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "unequal",
+    "stage": 2,
+    "image": "unequal-2.png",
+    "current": 15,
+    "panels": [
+      {
+        "id": "p1",
+        "ranking": 60
+      },
+      {
+        "id": "p3",
+        "ranking": 70
+      },
+      {
+        "id": "p0",
+        "ranking": 40
+      },
+      {
+        "id": "p2",
+        "ranking": 50
+      },
+      {
+        "id": "p4",
+        "ranking": 30
+      }
+    ],
+    "labels": [
+      "SYNTHETIC | 3 vs 2 (x2/3) | correction | Current p0: 15.00",
+      "Next state",
+      "Reload",
+      "Gospodarze",
+      "Ranking: 86.7",
+      "Go\u015bcie",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "Player p4",
+      "30.00",
+      "01.01.2026 00:00",
+      "1",
+      ":",
+      "4",
+      "\ue092"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "unequal",
+    "stage": 3,
+    "image": "unequal-3.png",
+    "current": 150,
+    "panels": [
+      {
+        "id": "p1",
+        "ranking": 60
+      },
+      {
+        "id": "p3",
+        "ranking": 70
+      },
+      {
+        "id": "p0",
+        "ranking": 40
+      },
+      {
+        "id": "p2",
+        "ranking": 50
+      },
+      {
+        "id": "p4",
+        "ranking": 30
+      }
+    ],
+    "labels": [
+      "SYNTHETIC | 3 vs 2 (x2/3) | later current score | Current p0: 150.00",
+      "Next state",
+      "Reload",
+      "Gospodarze",
+      "Ranking: 86.7",
+      "Go\u015bcie",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "Player p4",
+      "30.00",
+      "01.01.2026 00:00",
+      "1",
+      ":",
+      "4",
+      "\ue092"
+    ],
+    "pageErrors": []
+  }
+]
