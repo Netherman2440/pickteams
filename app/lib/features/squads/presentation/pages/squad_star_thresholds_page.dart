@@ -23,6 +23,18 @@ class _SquadStarThresholdsPageState
   String? _message;
 
   @override
+  void didUpdateWidget(covariant SquadStarThresholdsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.squadId != widget.squadId) {
+      _initialized = false;
+      _message = null;
+      for (final field in _fields) {
+        field.clear();
+      }
+    }
+  }
+
+  @override
   void dispose() {
     for (final field in _fields) {
       field.dispose();
