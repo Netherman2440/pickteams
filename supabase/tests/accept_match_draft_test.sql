@@ -16,11 +16,11 @@ insert into public.user_squads(user_id, squad_id, role) values
  ('10000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000002','owner');
 insert into public.players(player_id, squad_id, name, base_score, score)
  select ('30000000-0000-0000-0000-' || lpad(i::text,12,'0'))::uuid,
- '20000000-0000-0000-0000-000000000001', 'Player ' || i, 50, 50 + i from generate_series(1,4) i;
+ '20000000-0000-0000-0000-000000000001', 'Player ' || i, 50, 50 + i from generate_series(1,6) i where i <> 5;
 insert into public.players(player_id, squad_id, name, base_score, score) values
  ('30000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000002','Foreign player',50,50);
 
-create function pg_temp.payload() returns jsonb language sql as $$
+create function pg_temp.legacy_payload() returns jsonb language sql as $$
  select '{"home":["30000000-0000-0000-0000-000000000001","30000000-0000-0000-0000-000000000002"],
  "away":["30000000-0000-0000-0000-000000000003","30000000-0000-0000-0000-000000000004"],
  "selected_index":0,"win_rate_matrix":{},"proposals":[{"_meta":{"seed":123}},
@@ -28,6 +28,21 @@ create function pg_temp.payload() returns jsonb language sql as $$
  ["30000000-0000-0000-0000-000000000003","30000000-0000-0000-0000-000000000004"]]},
  {"teams":[["30000000-0000-0000-0000-000000000001","30000000-0000-0000-0000-000000000003"],
  ["30000000-0000-0000-0000-000000000002","30000000-0000-0000-0000-000000000004"]]}]}'::jsonb;
+$$;
+create function pg_temp.payload(score numeric default 51.25, substitutes boolean default false, last_score numeric default 54) returns jsonb language sql as $$
+ with inputs as (
+   select jsonb_build_object(
+     '30000000-0000-0000-0000-000000000001',score,
+     '30000000-0000-0000-0000-000000000002',52.50,
+     '30000000-0000-0000-0000-000000000003',53.75,
+     '30000000-0000-0000-0000-000000000004',last_score) rankings
+ )
+ select pg_temp.legacy_payload() || jsonb_build_object(
+   'rankings', rankings, 'play_with_substitute', substitutes,
+   'proposals', (select jsonb_agg(case when value ? '_meta' then value else value ||
+     jsonb_build_object('rankings',rankings,'play_with_substitute',substitutes) end)
+     from jsonb_array_elements(pg_temp.legacy_payload()->'proposals')))
+ from inputs;
 $$;
 create function pg_temp.accept(request uuid, target uuid default null, payload jsonb default pg_temp.payload())
  returns uuid language sql as $$
@@ -46,6 +61,8 @@ $$;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
+-- B differs from generation-time A before acceptance.
+update players set score = 90;
 do $$
 declare id uuid;
 begin
@@ -54,7 +71,10 @@ begin
  assert (select count(*) from teams) = 2, 'Two teams';
  assert (select count(*) from team_players) = 4, 'Complete roster';
  assert (select count(*) from ranking_history where change is null) = 4, 'Pending ranking snapshots';
- assert not exists (select 1 from ranking_history r join players p using(player_id) where r.ranking <> p.score), 'Snapshot ranking';
+ assert not exists (select 1 from ranking_history r where r.ranking <>
+   (pg_temp.payload()->'rankings'->>r.player_id::text)::numeric), 'Generation A survives current B';
+ assert (select bool_and(score = 90) from players), 'Acceptance does not update current score';
+ assert (select play_with_substitute from matches) = false, 'Explicit substitutes disabled';
  assert (select proposals_count from drafts) = 2, 'All proposals';
  assert (select proposals from draft_payloads) = pg_temp.payload()->'proposals', 'Payload including seed';
  assert (select home_win_prob from matches) is not null, 'Existing probability calculation';
@@ -85,7 +105,7 @@ end $$;
 reset role;
 drop trigger fail_payload on draft_payloads;
 set local role authenticated;
--- Retry the failed new acceptance, then accept a redraw without replacing rankings.
+-- Retry the failed new acceptance, then accept a transfer with the same inputs.
 select pg_temp.accept('40000000-0000-0000-0000-000000000002');
 select pg_temp.accept('40000000-0000-0000-0000-000000000003',current_setting('test.match_id')::uuid,
  jsonb_set(jsonb_set(pg_temp.payload(),'{home}',pg_temp.payload()->'away'),'{away}',pg_temp.payload()->'home'));
@@ -100,6 +120,33 @@ do $$ begin
  assert (select count(*) from drafts) = 2;
  assert (select count(*) from draft_payloads) = 2;
 end $$;
+-- A new generation replaces existing snapshots; retries preserve that generation.
+select pg_temp.accept(gen_random_uuid(), current_setting('test.match_id')::uuid, pg_temp.payload(41.125, true));
+select pg_temp.accept(gen_random_uuid(), current_setting('test.match_id')::uuid, pg_temp.payload(41.125, true));
+do $$ begin
+ assert (select ranking from ranking_history where match_id = current_setting('test.match_id')::uuid
+   and player_id = '30000000-0000-0000-0000-000000000001') = 41.125, 'Redraft replaces A';
+ assert (select play_with_substitute from matches where match_id = current_setting('test.match_id')::uuid), 'Redraft replaces option';
+ assert (select count(*) from ranking_history where match_id = current_setting('test.match_id')::uuid) = 4, 'No duplicate on retry';
+end $$;
+-- A removed player loses its old snapshot; re-add uses the new generation input.
+select pg_temp.accept(gen_random_uuid(), current_setting('test.match_id')::uuid,
+ replace(pg_temp.payload()::text, '30000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000006')::jsonb);
+do $$ begin
+ assert not exists (select 1 from ranking_history where match_id = current_setting('test.match_id')::uuid
+   and player_id = '30000000-0000-0000-0000-000000000004'), 'Removed input deleted';
+end $$;
+select pg_temp.accept(gen_random_uuid(), current_setting('test.match_id')::uuid, pg_temp.payload(31.5, false, 44.875));
+do $$ begin
+ assert (select ranking from ranking_history where match_id = current_setting('test.match_id')::uuid
+   and player_id = '30000000-0000-0000-0000-000000000004') = 44.875, 'Re-add uses new payload input';
+ assert not exists (select 1 from ranking_history where match_id = current_setting('test.match_id')::uuid
+   and player_id = '30000000-0000-0000-0000-000000000006'), 'Replaced input deleted';
+end $$;
+-- Missing and inconsistent input scores fail, rather than read current rankings.
+select pg_temp.reject($q$select pg_temp.accept(gen_random_uuid(),null,pg_temp.legacy_payload())$q$, 'Generation rankings');
+select pg_temp.reject($q$select pg_temp.accept(gen_random_uuid(),null,jsonb_set(pg_temp.payload(),'{rankings}','{}'))$q$, 'every player');
+select pg_temp.reject($q$select pg_temp.accept(gen_random_uuid(),null,jsonb_set(pg_temp.payload(),'{proposals,1,rankings}','{}'))$q$, 'same generation inputs');
 -- Malformed rosters/proposals and foreign-squad data cannot be accepted.
 select pg_temp.reject($q$select pg_temp.accept(gen_random_uuid(),null,jsonb_set(pg_temp.payload(),'{home}',pg_temp.payload()->'away'))$q$, 'exactly once');
 select pg_temp.reject($q$select pg_temp.accept(gen_random_uuid(),null,jsonb_set(pg_temp.payload(),'{proposals}','[]'))$q$, 'Invalid proposal selection');

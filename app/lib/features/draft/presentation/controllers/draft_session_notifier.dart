@@ -575,8 +575,12 @@ List<Draft> _restoreDraftsFromPayload({
           continue;
         }
 
-        players.add(player);
-        totalRanking += player.ranking;
+        final ranking = proposal.rankings[playerId];
+        if (ranking == null || !ranking.isFinite) {
+          throw StateError('Missing preserved draft ranking for $playerId');
+        }
+        players.add(player.copyWith(ranking: ranking));
+        totalRanking += ranking;
       }
 
       teams.add(
@@ -589,7 +593,9 @@ List<Draft> _restoreDraftsFromPayload({
     }
 
     if (teams.isNotEmpty) {
-      drafts.add(Draft(teams: teams));
+      drafts.add(
+        Draft(teams: teams, playWithSubstitute: proposal.playWithSubstitute),
+      );
     }
   }
 

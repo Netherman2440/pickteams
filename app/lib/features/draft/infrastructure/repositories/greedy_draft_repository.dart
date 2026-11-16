@@ -365,7 +365,7 @@ DraftProposal? _buildGreedyProposal({
   final signature = _buildSignature(teams);
 
   return DraftProposal(
-    draft: Draft(teams: teams),
+    draft: Draft(teams: teams, playWithSubstitute: playWithSubstitute),
     score: 0.0,
     deviationScore: deviationScore,
     penaltyScore: penaltyScore,

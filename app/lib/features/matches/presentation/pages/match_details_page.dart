@@ -896,7 +896,12 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
     for (final p in players) {
       totalRanking += p.ranking;
     }
-    final playWithSubstitute = players.length != opponentCount;
+    final playWithSubstitute =
+        ref
+            .read(matchDetailsProvider(widget.matchId))
+            .value
+            ?.playWithSubstitute ??
+        (players.length != opponentCount);
     return effectiveTeamRanking(
       totalRanking: totalRanking,
       teamSize: players.length,

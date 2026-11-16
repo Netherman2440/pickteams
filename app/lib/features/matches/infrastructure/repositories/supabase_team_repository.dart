@@ -70,7 +70,7 @@ class SupabaseTeamRepository implements TeamRepository {
         // Fetch ranking history for these players for this match to get snapshot ranking
         final rankingHistoryResponse = await _supabase
             .from('ranking_history')
-            .select('player_id, ranking, change')
+            .select('player_id, ranking')
             .eq('match_id', matchId)
             .inFilter('player_id', playerIds);
 
@@ -80,7 +80,7 @@ class SupabaseTeamRepository implements TeamRepository {
 
         // Map players to use historical ranking if available
         List<Map<String, dynamic>> tournamentRankingData = const [];
-        if (rankingHistoryData.isEmpty && tournamentId != null) {
+        if (tournamentId != null) {
           final tournamentRankingResponse = await _supabase
               .from('ranking_history')
               .select('player_id, ranking')
@@ -99,39 +99,11 @@ class SupabaseTeamRepository implements TeamRepository {
           );
 
           if (historyEntry.isNotEmpty) {
-            // The history entry contains the ranking AFTER the match (if match finished) or initial?
-            // "creates new ranking_history entry and updates player.ranking"
-            // "ranking" column in ranking_history is usually the result.
-            // But we want the ranking AT THE TIME of the match.
-            // If the match is new (no result), it's the current ranking.
-            // If the match has a result, the history entry has ranking + change.
-            // Wait, if we look at `ranking_history` table:
-            // It stores `ranking` (the new ranking) and `change`.
-            // So ranking_before = ranking - change.
-            // Or `ranking` is the ranking *before*?
-            // Let's check `updatePlayerRanking` logic in ranking repo if possible.
-            // Assuming `ranking` in history is the ranking stored at that point.
-            // Usually history stores the snapshot.
-
-            // Requirement: in match details we display historical snapshot:
-            // ranking = ranking_entry.ranking + change
-
-            final double storedRanking = (historyEntry['ranking'] as num)
-                .toDouble();
-            final double? change = (historyEntry['change'] as num?)?.toDouble();
-
-            // If change is null, we treat storedRanking as snapshot ranking.
-
-            if (change != null) {
-              return player.copyWith(ranking: storedRanking + change);
-            } else {
-              // If change is null, it might be an initial entry or manual adjustment?
-              // For a match, change is usually present if processed.
-              // If not processed yet, current player.ranking is fine, or the one in history is the snapshot?
-              // Let's assume the history ranking is the one valid for that entry.
-              // If it's a snapshot, we use it.
-              return player.copyWith(ranking: storedRanking);
-            }
+            // ranking is the preserved input. Result corrections change only
+            // the delta, not the input shown in this match.
+            return player.copyWith(
+              ranking: (historyEntry['ranking'] as num).toDouble(),
+            );
           }
 
           if (tournamentRankingData.isNotEmpty) {
@@ -146,7 +118,9 @@ class SupabaseTeamRepository implements TeamRepository {
               return player.copyWith(ranking: storedRanking);
             }
           }
-          return player;
+          throw StateError(
+            'Missing preserved ranking for match $matchId, player ${player.playerId}',
+          );
         }).toList();
 
         teamsWithPlayers.add(team.copyWith(players: playersWithHistory));

@@ -105,7 +105,20 @@ class SupabaseDraftPersistenceRepository implements DraftPersistenceRepository {
       final payloadData = payloadRow == null
           ? const <String, dynamic>{}
           : Map<String, dynamic>.from(payloadRow as Map);
-      final parsedProposals = _parseStoredProposals(payloadData['proposals']);
+      // Older payloads stored IDs only. Reuse the preserved match inputs,
+      // never today's players.score, when restoring those proposals.
+      final history = await _supabase
+          .from('ranking_history')
+          .select('player_id, ranking')
+          .eq('match_id', matchId);
+      final preservedRankings = <String, double>{
+        for (final row in history)
+          row['player_id'] as String: (row['ranking'] as num).toDouble(),
+      };
+      final parsedProposals = _parseStoredProposals(
+        payloadData['proposals'],
+        preservedRankings: preservedRankings,
+      );
 
       return StoredDraftPayload(
         draftId: draftId,
@@ -166,15 +179,7 @@ List<Map<String, dynamic>> _serializeProposals(
     });
   }
 
-  serialized.addAll(
-    proposals.map(
-      (draft) => {
-        'teams': draft.teams
-            .map((team) => team.players.map((p) => p.playerId).toList())
-            .toList(),
-      },
-    ),
-  );
+  serialized.addAll(proposals.map((draft) => draft.toStoredProposal()));
 
   return serialized;
 }
@@ -190,7 +195,10 @@ Map<String, dynamic> _serializeWinRateMatrix(
   );
 }
 
-_ParsedStoredProposals _parseStoredProposals(dynamic raw) {
+_ParsedStoredProposals _parseStoredProposals(
+  dynamic raw, {
+  required Map<String, double> preservedRankings,
+}) {
   if (raw is! List) {
     return const _ParsedStoredProposals(proposals: [], seed: null);
   }
@@ -236,7 +244,22 @@ _ParsedStoredProposals _parseStoredProposals(dynamic raw) {
     }
 
     if (teams.isNotEmpty) {
-      result.add(StoredDraftProposal(teams: teams));
+      final rankingsRaw = proposalMap['rankings'];
+      final rankings = <String, double>{
+        for (final id in teams.expand((team) => team))
+          if (rankingsRaw is Map && rankingsRaw[id] is num)
+            id: (rankingsRaw[id] as num).toDouble()
+          else if (rankingsRaw == null && preservedRankings.containsKey(id))
+            id: preservedRankings[id]!,
+      };
+      result.add(
+        StoredDraftProposal(
+          teams: teams,
+          rankings: rankings,
+          playWithSubstitute:
+              proposalMap['play_with_substitute'] as bool? ?? true,
+        ),
+      );
     }
   }
 

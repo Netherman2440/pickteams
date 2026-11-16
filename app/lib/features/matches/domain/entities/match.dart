@@ -15,6 +15,7 @@ class Match {
   @JsonKey(name: 'home_win_prob')
   final double? homeWinProbability;
   final Map<String, dynamic> scoreMeta;
+  final bool? playWithSubstitute;
   final DateTime createdAt;
 
   // Teams are nullable because when listing matches we might not load teams initially
@@ -34,6 +35,7 @@ class Match {
     this.awayScore,
     this.homeWinProbability,
     this.scoreMeta = const {},
+    this.playWithSubstitute,
     required this.createdAt,
     this.homeTeam,
     this.awayTeam,
@@ -51,6 +53,7 @@ class Match {
     int? awayScore,
     double? homeWinProbability,
     Map<String, dynamic>? scoreMeta,
+    bool? playWithSubstitute,
     DateTime? createdAt,
     Team? homeTeam,
     Team? awayTeam,
@@ -64,6 +67,7 @@ class Match {
       awayScore: awayScore ?? this.awayScore,
       homeWinProbability: homeWinProbability ?? this.homeWinProbability,
       scoreMeta: scoreMeta ?? this.scoreMeta,
+      playWithSubstitute: playWithSubstitute ?? this.playWithSubstitute,
       createdAt: createdAt ?? this.createdAt,
       homeTeam: homeTeam ?? this.homeTeam,
       awayTeam: awayTeam ?? this.awayTeam,

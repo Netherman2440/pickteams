@@ -11,6 +11,7 @@ class MatchDetailsDto {
   final int? awayScore;
   final double? homeWinProbability;
   final Map<String, dynamic> scoreMeta;
+  final bool? playWithSubstitute;
   final DateTime createdAt;
   final TeamDto? homeTeam;
   final TeamDto? awayTeam;
@@ -24,6 +25,7 @@ class MatchDetailsDto {
     this.awayScore,
     this.homeWinProbability,
     this.scoreMeta = const {},
+    this.playWithSubstitute,
     required this.createdAt,
     this.homeTeam,
     this.awayTeam,
@@ -43,6 +45,7 @@ class MatchDetailsDto {
       awayScore: match.awayScore,
       homeWinProbability: match.homeWinProbability,
       scoreMeta: match.scoreMeta,
+      playWithSubstitute: match.playWithSubstitute,
       createdAt: match.createdAt,
       homeTeam: homeTeam,
       awayTeam: awayTeam,

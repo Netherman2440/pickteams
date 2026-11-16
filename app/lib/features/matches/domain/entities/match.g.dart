@@ -15,6 +15,7 @@ Match _$MatchFromJson(Map<String, dynamic> json) => Match(
   awayScore: (json['away_score'] as num?)?.toInt(),
   homeWinProbability: (json['home_win_prob'] as num?)?.toDouble(),
   scoreMeta: json['score_meta'] as Map<String, dynamic>? ?? const {},
+  playWithSubstitute: json['play_with_substitute'] as bool?,
   createdAt: DateTime.parse(json['created_at'] as String),
   homeTeam: json['home_team'] == null
       ? null
@@ -33,6 +34,7 @@ Map<String, dynamic> _$MatchToJson(Match instance) => <String, dynamic>{
   'away_score': instance.awayScore,
   'home_win_prob': instance.homeWinProbability,
   'score_meta': instance.scoreMeta,
+  'play_with_substitute': instance.playWithSubstitute,
   'created_at': instance.createdAt.toIso8601String(),
   'home_team': instance.homeTeam,
   'away_team': instance.awayTeam,

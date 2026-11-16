@@ -1,7 +1,13 @@
 class StoredDraftProposal {
   final List<List<String>> teams;
+  final Map<String, double> rankings;
+  final bool playWithSubstitute;
 
-  const StoredDraftProposal({required this.teams});
+  const StoredDraftProposal({
+    required this.teams,
+    this.rankings = const {},
+    this.playWithSubstitute = true,
+  });
 }
 
 class StoredDraftPayload {

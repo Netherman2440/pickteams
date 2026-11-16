@@ -113,56 +113,70 @@ void main() {
     },
   );
 
-  test('stored proposal lookup is read-only and does not regenerate', () async {
-    final fixture = _Fixture();
-    when(
-      () => fixture.persistence.getMatchDraft(matchId: 'existing'),
-    ).thenAnswer(
-      (_) async => const StoredDraftPayload(
-        draftId: 'draft',
-        matchId: 'existing',
-        teamCount: 2,
-        proposalsCount: 1,
-        seed: null,
-        errorMessage: null,
-        status: 'completed',
-        proposals: [
-          StoredDraftProposal(
-            teams: [
-              ['p0', 'p1'],
-              ['p2', 'p3'],
-            ],
-          ),
-        ],
-        winRateMatrix: {},
-      ),
-    );
-    final container = ProviderContainer(overrides: fixture.overrides);
-    addTearDown(container.dispose);
-    await container
-        .read(draftSessionNotifierProvider.notifier)
-        .load(
-          squadId: 'squad-1',
-          selectedPlayerIds: [],
-          algorithm: DraftAlgorithm.combinatory,
+  test(
+    'stored proposal reload preserves input A despite current B and transfer',
+    () async {
+      final fixture = _Fixture();
+      when(
+        () => fixture.persistence.getMatchDraft(matchId: 'existing'),
+      ).thenAnswer(
+        (_) async => const StoredDraftPayload(
+          draftId: 'draft',
           matchId: 'existing',
-        );
-    expect(
-      container.read(draftSessionNotifierProvider).requireValue.proposals,
-      hasLength(1),
-    );
-    final state = container.read(draftSessionNotifierProvider).requireValue;
-    expect(state.homeColor, '#1E88E5');
-    expect(state.awayColor, '#E53935');
-    verify(() => fixture.matches.getMatch(matchId: 'existing')).called(1);
-    verify(() => fixture.teams.getMatchTeams('existing')).called(1);
-    expect(fixture.generator.calls, 0);
-    verify(
-      () => fixture.persistence.getMatchDraft(matchId: 'existing'),
-    ).called(1);
-    verifyNoMoreInteractions(fixture.persistence);
-    fixture.expectNoWrites(checkPersistence: false);
-  });
+          teamCount: 2,
+          proposalsCount: 1,
+          seed: null,
+          errorMessage: null,
+          status: 'completed',
+          proposals: [
+            StoredDraftProposal(
+              rankings: {'p0': 11.25, 'p1': 22.5, 'p2': 33.75, 'p3': 44},
+              playWithSubstitute: false,
+              teams: [
+                ['p0', 'p1'],
+                ['p2', 'p3'],
+              ],
+            ),
+          ],
+          winRateMatrix: {},
+        ),
+      );
+      final container = ProviderContainer(overrides: fixture.overrides);
+      addTearDown(container.dispose);
+      await container
+          .read(draftSessionNotifierProvider.notifier)
+          .load(
+            squadId: 'squad-1',
+            selectedPlayerIds: [],
+            algorithm: DraftAlgorithm.combinatory,
+            matchId: 'existing',
+          );
+      expect(
+        container.read(draftSessionNotifierProvider).requireValue.proposals,
+        hasLength(1),
+      );
+      final state = container.read(draftSessionNotifierProvider).requireValue;
+      expect(state.homeColor, '#1E88E5');
+      expect(state.awayColor, '#E53935');
+      expect(state.home.map((p) => p.ranking), [11.25, 22.5]);
+      expect(state.away.map((p) => p.ranking), [33.75, 44]);
+      expect(state.proposals.single.playWithSubstitute, isFalse);
+      expect(state.proposals.single.homeTotalRanking, 33.75);
+      container
+          .read(draftSessionNotifierProvider.notifier)
+          .movePlayer(playerId: 'p0', toHome: false);
+      final moved = container.read(draftSessionNotifierProvider).requireValue;
+      expect(moved.away.last.ranking, 11.25);
+      verify(() => fixture.matches.getMatch(matchId: 'existing')).called(1);
+      verify(() => fixture.teams.getMatchTeams('existing')).called(1);
+      expect(fixture.generator.calls, 0);
+      verify(
+        () => fixture.persistence.getMatchDraft(matchId: 'existing'),
+      ).called(1);
+      verifyNoMoreInteractions(fixture.persistence);
+      fixture.expectNoWrites(checkPersistence: false);
+    },
+  );
 
   for (final relations in [false, true]) {
     for (final systemBack in [false, true]) {
@@ -464,6 +478,7 @@ class _Generator implements DraftRepository {
           awayPlayers: [players[2 - i], players[3]],
           homeTotalRanking: 80,
           awayTotalRanking: 80,
+          playWithSubstitute: playWithSubstitute,
         ),
     ];
   }

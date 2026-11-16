@@ -14,16 +14,30 @@ class DraftTeam {
 
 class Draft {
   final List<DraftTeam> teams;
+  final bool playWithSubstitute;
 
-  const Draft({required this.teams});
+  const Draft({required this.teams, this.playWithSubstitute = true});
+
+  Map<String, dynamic> toStoredProposal() => {
+    'teams': [
+      for (final team in teams) team.players.map((p) => p.playerId).toList(),
+    ],
+    'rankings': {
+      for (final team in teams)
+        for (final player in team.players) player.playerId: player.ranking,
+    },
+    'play_with_substitute': playWithSubstitute,
+  };
 
   factory Draft.twoTeams({
     required List<Player> homePlayers,
     required List<Player> awayPlayers,
     required double homeTotalRanking,
     required double awayTotalRanking,
+    bool playWithSubstitute = true,
   }) {
     return Draft(
+      playWithSubstitute: playWithSubstitute,
       teams: [
         DraftTeam(
           index: 0,

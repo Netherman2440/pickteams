@@ -321,9 +321,9 @@ class _DraftResultsPageState extends ConsumerState<DraftResultsPage> {
                           awayColor: _teamColor(data.awayColor),
                           stackedIdentity: true,
                           homeRanking:
-                              'Ranking: ${_uiTeamScore(players: data.home, opponentCount: data.away.length, playWithSubstitute: _playWithSubstitute).toStringAsFixed(1)}',
+                              'Ranking: ${_uiTeamScore(players: data.home, opponentCount: data.away.length, playWithSubstitute: data.proposals[data.selectedIndex].playWithSubstitute).toStringAsFixed(1)}',
                           awayRanking:
-                              'Ranking: ${_uiTeamScore(players: data.away, opponentCount: data.home.length, playWithSubstitute: _playWithSubstitute).toStringAsFixed(1)}',
+                              'Ranking: ${_uiTeamScore(players: data.away, opponentCount: data.home.length, playWithSubstitute: data.proposals[data.selectedIndex].playWithSubstitute).toStringAsFixed(1)}',
                         ),
                         LineupBody(
                           collapseExtent: 96,

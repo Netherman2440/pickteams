@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:app/features/draft/application/accept_match_draft_use_case.dart';
 import 'package:app/features/draft/domain/entities/draft.dart';
 import 'package:app/features/draft/domain/repositories/draft_acceptance_repository.dart';
+import 'package:app/features/players/domain/entities/player.dart';
 
 void main() {
   test('double submit shares one RPC and completed submit is cached', () async {
@@ -36,6 +37,8 @@ void main() {
       expect(repository.requestId, request);
       expect(repository.payload, payload);
       expect(repository.payload!['home'], ['home']);
+      expect(repository.payload!['rankings'], {'home': 41.25, 'away': 63.75});
+      expect(repository.payload!['play_with_substitute'], isFalse);
       repository.reply.complete('accepted-match');
       expect(await retry, 'accepted-match');
     },
@@ -49,10 +52,27 @@ Future<String> _accept(
   squadId: 'squad',
   homePlayerIds: home,
   awayPlayerIds: ['away'],
-  proposals: const <Draft>[],
+  proposals: [
+    Draft.twoTeams(
+      homePlayers: [_player('home', 41.25)],
+      awayPlayers: [_player('away', 63.75)],
+      homeTotalRanking: 41.25,
+      awayTotalRanking: 63.75,
+      playWithSubstitute: false,
+    ),
+  ],
   selectedIndex: 0,
   winRateMatrix: {},
   seed: 123,
+);
+
+Player _player(String id, double ranking) => Player(
+  playerId: id,
+  squadId: 'squad',
+  name: id,
+  baseRanking: 50,
+  ranking: ranking,
+  createdAt: DateTime(2026),
 );
 
 class _Repository implements DraftAcceptanceRepository {

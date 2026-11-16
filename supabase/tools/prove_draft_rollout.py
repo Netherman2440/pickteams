@@ -190,6 +190,11 @@ class Proof:
             self.reject_unchanged("security_failure", weakened, "Draft acceptance metadata checks failed")
             self.passed("all wrapper checks complete; no hosted/cache/JWT assertion")
 
+            # The RPC regression suite targets the latest schema; wrapper
+            # compatibility above still proves the original rollout unchanged.
+            for path in sorted(rollout.SOURCE.parent.glob("*.sql")):
+                if path.name > rollout.SOURCE.name:
+                    self.sql("standard", path.read_text())
             before = self.snapshot("standard")
             output, _ = self.sql("standard", (rollout.ROOT / "supabase/tests/accept_match_draft_test.sql").read_text())
             assert "transaction, retry, role and constraint checks passed" in output, output

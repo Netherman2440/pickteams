@@ -33,18 +33,14 @@ class AcceptMatchDraftUseCase {
       'home': List<String>.of(homePlayerIds),
       'away': List<String>.of(awayPlayerIds),
       'selected_index': selectedIndex,
+      'rankings': proposals[selectedIndex].toStoredProposal()['rankings'],
+      'play_with_substitute': proposals[selectedIndex].playWithSubstitute,
       'proposals': [
         if (seed != null)
           {
             '_meta': {'seed': seed},
           },
-        for (final proposal in proposals)
-          {
-            'teams': [
-              for (final team in proposal.teams)
-                team.players.map((p) => p.playerId).toList(),
-            ],
-          },
+        for (final proposal in proposals) proposal.toStoredProposal(),
       ],
       'win_rate_matrix': winRateMatrix.map(
         (id, rates) => MapEntry(id, Map<String, double>.of(rates)),
