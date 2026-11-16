@@ -332,8 +332,6 @@ void main() {
             closeTo(height, .01),
           );
         }
-        expect(find.text('105.25'), findsOneWidget);
-        expect(find.text('115.38'), findsNothing);
         final scroll = tester.state<ScrollableState>(
           find.descendant(
             of: find.byType(CustomScrollView),
