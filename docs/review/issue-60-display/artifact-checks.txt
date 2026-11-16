@@ -1,0 +1,23 @@
+Exact candidate, clean reviewer tree, capture source hash: PASS
+All prior capture assertions retained by AST comparison: PASS
+equal-0.png: SHA-256 and 1440x1000 PASS
+equal-1.png: SHA-256 and 1440x1000 PASS
+equal-2.png: SHA-256 and 1440x1000 PASS
+equal-3.png: SHA-256 and 1440x1000 PASS
+unequal-0.png: SHA-256 and 1440x1000 PASS
+unequal-1.png: SHA-256 and 1440x1000 PASS
+unequal-2.png: SHA-256 and 1440x1000 PASS
+unequal-3.png: SHA-256 and 1440x1000 PASS
+Fixture build index.html: SHA-256 PASS
+Fixture build main.dart.js: SHA-256 PASS
+Eight browser records: exact stages, rendered banners/results, current, panel order/ranks, totals, no page errors PASS
+Supplied locked-deps-f128155.log: exact SHA header and EXIT=0
+Supplied format-f128155.log: exact SHA header and EXIT=0
+Supplied analyze-f128155.log: exact SHA header and EXIT=0
+Supplied full-tests-f128155.log: exact SHA header and EXIT=0
+Supplied python-tests-f128155.log: exact SHA header and EXIT=0
+Supplied chrome-auth-f128155.log: exact SHA header and EXIT=0
+Supplied fixture-build-f128155.log: exact SHA header and EXIT=0
+Supplied capture-f128155.log: exact SHA header and EXIT=0
+Artifact inspection only. No suite, dependency install, build or capture was run.
+EXIT=0
