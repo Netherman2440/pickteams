@@ -1,5 +1,9 @@
 // Credential-free harness for the real profile and its existing dialogs.
 import 'package:app/core/app_theme.dart';
+import 'package:app/features/players/application/player_goal_comparison_provider.dart';
+import 'package:app/features/players/domain/repositories/goal_comparison_repository.dart';
+import 'package:app/features/players/domain/services/player_goal_comparison.dart';
+import 'goal_comparison_data.dart';
 import 'package:app/core/root_shell.dart';
 import 'package:app/features/auth/domain/entities/auth_entity.dart';
 import 'package:app/features/auth/presentation/providers/auth_notifier.dart';
@@ -18,18 +22,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfileFixtureData {
-  ProfileFixtureData({this.fail = false, bool longName = false})
-    : player = Player(
-        playerId: 'player',
-        squadId: 'fixture',
-        name: longName
-            ? 'Aleksander Konstanty Wiśniewski-Kowalski'
-            : 'Jan Testowy',
-        ranking: 59.36,
-        baseRanking: 54,
-        createdAt: DateTime(2026),
-      );
+  ProfileFixtureData({
+    this.fail = false,
+    bool longName = false,
+    this.comparison = 'positive',
+  }) : player = Player(
+         playerId: 'player',
+         squadId: 'fixture',
+         name: longName
+             ? 'Aleksander Konstanty Wiśniewski-Kowalski'
+             : 'Jan Testowy',
+         ranking: 59.36,
+         baseRanking: 54,
+         createdAt: DateTime(2026),
+       );
   Player player;
+  final String comparison;
   bool fail;
   int reads = 0;
   final List<String> writes = [];
@@ -100,6 +108,9 @@ class _PlayerDetailsFixtureState extends State<PlayerDetailsFixture> {
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
       authStateProvider.overrideWith(_ProfileAuth.new),
+      goalComparisonRepositoryProvider.overrideWithValue(
+        _ProfileGoalHistory(widget.data.comparison),
+      ),
       squadDetailProvider.overrideWith(
         (ref, id) async => Squad(
           squadId: id,
@@ -155,6 +166,16 @@ class _PlayerDetailsFixtureState extends State<PlayerDetailsFixture> {
       ),
     ),
   );
+}
+
+class _ProfileGoalHistory implements GoalComparisonRepository {
+  _ProfileGoalHistory(this.scenario);
+  final String scenario;
+  @override
+  Future<List<GoalComparisonMatch>> getSquadHistory(String squadId) async {
+    if (scenario == 'error') throw StateError('Synthetic history read failure');
+    return comparisonFixture(scenario);
+  }
 }
 
 class _ProfileAuth extends AuthNotifier {

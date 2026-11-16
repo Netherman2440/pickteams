@@ -13,6 +13,7 @@ import 'package:app/features/squads/presentation/state/squad_detail_notifier.dar
 
 import '../controllers/player_details_controller.dart';
 import '../widgets/edit_player_position_dialog.dart';
+import '../widgets/player_goal_comparison_section.dart';
 import '../widgets/ranking_history_graph_widget.dart';
 import '../widgets/edit_player_name_dialog.dart';
 import '../widgets/edit_player_ranking_dialog.dart';
@@ -259,6 +260,11 @@ class _PlayerDetailsPageState extends ConsumerState<PlayerDetailsPage> {
                       baseRanking: player.baseRanking.toDouble(),
                     ),
                   ),
+                ),
+                const SizedBox(height: 24),
+                PlayerGoalComparisonSection(
+                  squadId: squadId,
+                  playerId: playerId,
                 ),
                 const SizedBox(height: 32),
                 _PlayerTabs(squadId: squadId, playerId: playerId),

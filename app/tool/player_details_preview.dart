@@ -13,6 +13,7 @@ void main() {
       data: ProfileFixtureData(
         longName: params['long'] == 'true',
         fail: params['fail'] == 'true',
+        comparison: params['comparison'] ?? 'positive',
       ),
       role: params['role'] == 'viewer' ? SquadRole.none : SquadRole.owner,
       textScale: double.tryParse(params['scale'] ?? '') ?? 1,
