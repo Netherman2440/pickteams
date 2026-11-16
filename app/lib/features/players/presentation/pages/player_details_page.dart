@@ -6,6 +6,7 @@ import 'package:app/core/app_config.dart';
 import 'package:app/core/error/failure.dart';
 import 'package:app/core/app_router.dart';
 import 'package:app/features/players/application/usecases/delete_player_usecase.dart';
+import 'package:app/features/players/application/player_goal_comparison_provider.dart';
 import 'package:app/features/players/domain/entities/player_position.dart';
 import 'package:app/features/players/presentation/controllers/players_notifier.dart';
 import 'package:app/features/squads/domain/entities/user_squad_role.dart';
@@ -13,6 +14,7 @@ import 'package:app/features/squads/presentation/state/squad_detail_notifier.dar
 
 import '../controllers/player_details_controller.dart';
 import '../widgets/edit_player_position_dialog.dart';
+import '../widgets/player_goal_comparison_section.dart';
 import '../widgets/ranking_history_graph_widget.dart';
 import '../widgets/edit_player_name_dialog.dart';
 import '../widgets/edit_player_ranking_dialog.dart';
@@ -260,6 +262,11 @@ class _PlayerDetailsPageState extends ConsumerState<PlayerDetailsPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+                PlayerGoalComparisonSection(
+                  squadId: squadId,
+                  playerId: playerId,
+                ),
                 const SizedBox(height: 32),
                 _PlayerTabs(squadId: squadId, playerId: playerId),
               ],
@@ -404,14 +411,24 @@ class _RankingDifferenceIndicator extends StatelessWidget {
   }
 }
 
-class _PlayerTabs extends StatelessWidget {
+class _PlayerTabs extends ConsumerWidget {
   final String squadId;
   final String playerId;
 
   const _PlayerTabs({required this.squadId, required this.playerId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    Future<void> openMatchHistory(AppRoute route) async {
+      await context.pushNamed(
+        route.name,
+        pathParameters: {'squadId': squadId, 'playerId': playerId},
+      );
+      // Pushed routes keep the profile alive. Re-read even after failed edits:
+      // a multi-step save can persist part of a change before reporting failure.
+      if (context.mounted) ref.invalidate(squadGoalHistoryProvider(squadId));
+    }
+
     return Column(
       children: [
         const Divider(),
@@ -424,18 +441,12 @@ class _PlayerTabs extends StatelessWidget {
             _TabButton(
               label: 'Mecze',
               icon: Icons.sports_soccer,
-              onPressed: () => context.pushNamed(
-                AppRoute.playerMatches.name,
-                pathParameters: {'squadId': squadId, 'playerId': playerId},
-              ),
+              onPressed: () => openMatchHistory(AppRoute.playerMatches),
             ),
             _TabButton(
               label: 'Turnieje',
               icon: Icons.emoji_events,
-              onPressed: () => context.pushNamed(
-                AppRoute.playerTournaments.name,
-                pathParameters: {'squadId': squadId, 'playerId': playerId},
-              ),
+              onPressed: () => openMatchHistory(AppRoute.playerTournaments),
             ),
             _TabButton(
               label: 'Statystyki',

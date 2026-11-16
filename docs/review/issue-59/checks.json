@@ -1,0 +1,202 @@
+{
+  "sourceSha": "c054ded9b8cd3ab8fa22f3dc888d8979e9df3e08",
+  "appTree": "f0d5be3ef70588d58ba431241a4504240a289d8e",
+  "data": "synthetic fixtures; no production data",
+  "platform": "Chromium headless CSS viewport emulation; not physical phones",
+  "sectionFramesCaptured": 36,
+  "profileFramesCaptured": 4,
+  "selectedImages": [
+    "missing-color-320-1.6-section.png",
+    "negative-320-1.6-section.png",
+    "positive-390-1-profile.png",
+    "positive-390-1-section.png",
+    "rounded-zero-320-1.6-section.png",
+    "tournament-390-1-section.png"
+  ],
+  "selectedSectionChecks": [
+    {
+      "scenario": "positive",
+      "width": 390,
+      "height": 844,
+      "textScale": 1,
+      "image": "positive-390-1-section.png",
+      "data": "synthetic squad match fixtures",
+      "device": "Chromium browser viewport emulation; not a physical phone",
+      "widgets": "production PlayerDetailsPage and PlayerGoalComparisonSection",
+      "expectedLabels": [
+        "+3,00",
+        "−0,50",
+        "więcej strzelonych",
+        "mniej straconych"
+      ],
+      "pageErrors": [],
+      "console": [
+        "Injecting <script> tag. Using callback."
+      ],
+      "blockedExternalRequests": [],
+      "fulfilledUnusedHtmlCss": [
+        "https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap"
+      ],
+      "bundledFontAssets": [
+        {
+          "url": "http://127.0.0.1:18859/assets/fonts/fallback/Roboto-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/Nunito-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/OpenSans-Regular.ttf",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "scenario": "tournament",
+      "width": 390,
+      "height": 844,
+      "textScale": 1,
+      "image": "tournament-390-1-section.png",
+      "data": "synthetic squad match fixtures",
+      "device": "Chromium browser viewport emulation; not a physical phone",
+      "widgets": "production PlayerDetailsPage and PlayerGoalComparisonSection",
+      "expectedLabels": [
+        "+4,00",
+        "−1,00",
+        "więcej strzelonych",
+        "mniej straconych"
+      ],
+      "pageErrors": [],
+      "console": [
+        "Injecting <script> tag. Using callback."
+      ],
+      "blockedExternalRequests": [],
+      "fulfilledUnusedHtmlCss": [
+        "https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap"
+      ],
+      "bundledFontAssets": [
+        {
+          "url": "http://127.0.0.1:18859/assets/fonts/fallback/Roboto-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/OpenSans-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/Nunito-Regular.ttf",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "scenario": "negative",
+      "width": 320,
+      "height": 900,
+      "textScale": 1.6,
+      "image": "negative-320-1.6-section.png",
+      "data": "synthetic squad match fixtures",
+      "device": "Chromium browser viewport emulation; not a physical phone",
+      "widgets": "production PlayerDetailsPage and PlayerGoalComparisonSection",
+      "expectedLabels": [
+        "−2,00",
+        "+3,00",
+        "mniej strzelonych",
+        "więcej straconych"
+      ],
+      "pageErrors": [],
+      "console": [
+        "Injecting <script> tag. Using callback."
+      ],
+      "blockedExternalRequests": [],
+      "fulfilledUnusedHtmlCss": [
+        "https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap"
+      ],
+      "bundledFontAssets": [
+        {
+          "url": "http://127.0.0.1:18859/assets/fonts/fallback/Roboto-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/OpenSans-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/Nunito-Regular.ttf",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "scenario": "rounded-zero",
+      "width": 320,
+      "height": 900,
+      "textScale": 1.6,
+      "image": "rounded-zero-320-1.6-section.png",
+      "data": "synthetic squad match fixtures",
+      "device": "Chromium browser viewport emulation; not a physical phone",
+      "widgets": "production PlayerDetailsPage and PlayerGoalComparisonSection",
+      "expectedLabels": [
+        "Brak różnicy"
+      ],
+      "pageErrors": [],
+      "console": [
+        "Injecting <script> tag. Using callback."
+      ],
+      "blockedExternalRequests": [],
+      "fulfilledUnusedHtmlCss": [
+        "https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap"
+      ],
+      "bundledFontAssets": [
+        {
+          "url": "http://127.0.0.1:18859/assets/fonts/fallback/Roboto-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/OpenSans-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/Nunito-Regular.ttf",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "scenario": "missing-color",
+      "width": 320,
+      "height": 900,
+      "textScale": 1.6,
+      "image": "missing-color-320-1.6-section.png",
+      "data": "synthetic squad match fixtures",
+      "device": "Chromium browser viewport emulation; not a physical phone",
+      "widgets": "production PlayerDetailsPage and PlayerGoalComparisonSection",
+      "expectedLabels": [
+        "Brak kompletnych danych porównawczych."
+      ],
+      "pageErrors": [],
+      "console": [
+        "Injecting <script> tag. Using callback."
+      ],
+      "blockedExternalRequests": [],
+      "fulfilledUnusedHtmlCss": [
+        "https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap"
+      ],
+      "bundledFontAssets": [
+        {
+          "url": "http://127.0.0.1:18859/assets/fonts/fallback/Roboto-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/OpenSans-Regular.ttf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:18859/assets/assets/fonts/Nunito-Regular.ttf",
+          "status": 200
+        }
+      ]
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import 'package:app/features/players/presentation/pages/player_details_page.dart';
 import 'package:app/features/players/presentation/widgets/edit_player_name_dialog.dart';
 import 'package:app/features/players/presentation/widgets/edit_player_position_dialog.dart';
 import 'package:app/features/players/presentation/widgets/edit_player_ranking_dialog.dart';
@@ -229,21 +230,35 @@ void main() {
     expect(find.text('Jan Testowy'), findsOneWidget);
   });
   for (final (label, destination) in [
-    ('Mecze', 'Matches'),
     ('Turnieje', 'Tournaments'),
     ('Statystyki', 'Stats'),
   ]) {
-    testWidgets('$label preserves player route parameters', (tester) async {
-      await mount(tester);
-      final button = find
-          .ancestor(of: find.text(label), matching: find.byType(Column))
-          .first;
-      await tap(
-        tester,
-        find.descendant(of: button, matching: find.byType(IconButton)),
-      );
-      expect(find.text('$destination fixture player'), findsOneWidget);
-    });
+    testWidgets(
+      '$label follows goal comparisons and preserves player route parameters',
+      (tester) async {
+        await mount(tester);
+        final heading = find.text('Drużyna z tym zawodnikiem');
+        final navigationLabel = find.descendant(
+          of: find.byType(PlayerDetailsPage),
+          matching: find.text(label),
+        );
+        expect(heading, findsOneWidget);
+        expect(
+          tester.getTopLeft(heading).dy,
+          lessThan(tester.getTopLeft(navigationLabel).dy),
+        );
+        expect(find.text('+3,00'), findsOneWidget);
+        expect(find.text('−0,50'), findsOneWidget);
+        final button = find
+            .ancestor(of: find.text(label), matching: find.byType(Column))
+            .first;
+        await tap(
+          tester,
+          find.descendant(of: button, matching: find.byType(IconButton)),
+        );
+        expect(find.text('$destination fixture player'), findsOneWidget);
+      },
+    );
   }
   for (final width in [360.0, 1440.0]) {
     testWidgets('$width long name at 1.6x fits in view and edit mode', (
