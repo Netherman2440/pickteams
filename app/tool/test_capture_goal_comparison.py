@@ -1,7 +1,8 @@
 import unittest
 from urllib.parse import parse_qs, urlparse
 
-from capture_goal_comparison import SCENARIOS, VIEWPORTS, check_diagnostics, fixture_url
+from capture_goal_comparison import (HTML_FONT_CSS, SCENARIOS, VIEWPORTS,
+                                     check_diagnostics, fixture_url, request_action)
 
 
 class CaptureContractTest(unittest.TestCase):
@@ -23,6 +24,14 @@ class CaptureContractTest(unittest.TestCase):
                 fixture_url(base, 'positive', 1)
         with self.assertRaises(ValueError):
             fixture_url('http://localhost:18859', 'unknown', 1)
+
+    def test_only_exact_unused_stylesheet_is_fulfilled(self):
+        base = 'http://127.0.0.1:18859'
+        self.assertEqual(request_action(base + '/assets/fonts/a.ttf', 'font', base), 'local')
+        self.assertEqual(request_action(HTML_FONT_CSS, 'stylesheet', base), 'unused-html-css')
+        self.assertEqual(request_action(HTML_FONT_CSS, 'script', base), 'blocked')
+        self.assertEqual(request_action(HTML_FONT_CSS + '&extra=true', 'stylesheet', base), 'blocked')
+        self.assertEqual(request_action('https://www.gstatic.com/flutter-canvaskit/a.js', 'script', base), 'blocked')
 
     def test_render_errors_and_document_overflow_fail_capture(self):
         check_diagnostics([], ['Flutter initialized'], 320, 320)

@@ -41,7 +41,15 @@ for number, arrow, description and color; rounded zero is neutral.
 - Tests: domain, application and infrastructure under `test/features/players/`;
   signs, unavailable states and 320/360/390/1440 widths at 1.6 text scale under
   `test/widgets/players/player_goal_comparison_test.dart`. Existing profile editing
-  tests still cover real navigation and dialogs.
+  tests still cover real navigation and dialogs. The former route-only checks now
+  also verify that the calculated tiles precede each navigation destination.
+
+The tiles have natural heights, not a shared intrinsic height. Their signed numbers
+stay on one line and scale down only when necessary; descriptions retain text
+scaling. Missing-data tiles say `Brak danych`, with the specific reason once below
+both tiles. Each tile has its own semantics group. Visual review at 320 px / 1.6x
+must reject split numbers, text outside cards, and explanation overlap; VM widget
+layout checks alone did not detect the earlier browser-only failure.
 
 ## Validation constraints
 
@@ -54,7 +62,7 @@ Only format changed Dart files. Restore the known SDK-only platform exclusions i
 `analysis_options.yaml` after validation; do not commit them.
 
 Capture the real profile using `flutter build web --release --no-pub
---target tool/player_details_preview.dart`. The fixture replaces only data sources;
+--no-web-resources-cdn --no-wasm-dry-run --target tool/player_details_preview.dart`. The fixture replaces only data sources;
 production profile, theme, section and calculation stay real. Query parameter
 `comparison` selects `positive`, `negative`, `zero`, `rounded-zero`, `missing-color`,
 `empty`, `no-absences` or `error`. The rounded-zero fixture computes +0.004 scored
@@ -68,6 +76,11 @@ under the shared lock and memory gate. The tool asserts expected rendered labels
 checks browser diagnostics and captures 32 section frames plus four profile frames.
 Its unit checks run with
 `python3 -m unittest discover -s tool -p test_capture_goal_comparison.py -v`.
+Only the exact unused Google Fonts host-page stylesheet is fulfilled with empty
+CSS. All Flutter fonts must load from unchanged bundled TTF assets. Other external
+requests fail the capture. The no-CDN build serves CanvasKit locally. Omitting
+`--no-web-resources-cdn` causes the capture's network guard to reject CanvasKit
+before the app starts; this is a capture configuration error, not UI evidence.
 Open the generated images before claiming visual evidence. The proof entry point
 adds a synthetic-data banner; the production profile does not.
 

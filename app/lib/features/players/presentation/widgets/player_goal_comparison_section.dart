@@ -30,36 +30,47 @@ class PlayerGoalComparisonSection extends ConsumerWidget {
               'Brak kompletnych danych porównawczych.',
             null => null,
           };
+    final tileMessage = message == null
+        ? null
+        : state.isLoading
+        ? 'Wczytywanie…'
+        : 'Brak danych';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Drużyna z tym zawodnikiem',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 12),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: _GoalTile(
-                  scored: true,
-                  delta: comparison?.scored,
-                  message: message,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _GoalTile(
-                  scored: false,
-                  delta: comparison?.conceded,
-                  message: message,
-                ),
-              ),
-            ],
+        Semantics(
+          header: true,
+          child: Text(
+            'Drużyna z tym zawodnikiem',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
         ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _GoalTile(
+                scored: true,
+                delta: comparison?.scored,
+                message: tileMessage,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _GoalTile(
+                scored: false,
+                delta: comparison?.conceded,
+                message: tileMessage,
+              ),
+            ),
+          ],
+        ),
+        if (message != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(message, style: Theme.of(context).textTheme.bodySmall),
+          ),
         if (state.hasError)
           TextButton.icon(
             onPressed: () => ref.invalidate(squadGoalHistoryProvider(squadId)),
@@ -107,49 +118,68 @@ class _GoalTile extends StatelessWidget {
             : positive
             ? '+'
             : '−'}${rounded.abs().toStringAsFixed(2).replaceAll('.', ',')}';
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              scored ? 'BRAMKI STRZELONE' : 'BRAMKI STRACONE',
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-            const SizedBox(height: 12),
-            if (message != null) ...[
-              Text('—', style: Theme.of(context).textTheme.headlineMedium),
-              Text(message!),
-            ] else ...[
-              Wrap(
-                spacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    number,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (!zero)
-                    Icon(
-                      positive ? Icons.arrow_upward : Icons.arrow_downward,
-                      color: color,
-                      size: 24,
-                    ),
-                ],
-              ),
-              Text(description, style: TextStyle(color: color)),
-              const SizedBox(height: 4),
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                'średnio na mecz',
-                style: Theme.of(context).textTheme.bodySmall,
+                scored ? 'BRAMKI STRZELONE' : 'BRAMKI STRACONE',
+                style: Theme.of(context).textTheme.labelMedium,
               ),
+              const SizedBox(height: 12),
+              if (message != null) ...[
+                Text('—', style: Theme.of(context).textTheme.headlineMedium),
+                Text(message!, style: Theme.of(context).textTheme.bodySmall),
+              ] else ...[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          number,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                color: color,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                    ),
+                    if (!zero) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        positive ? Icons.arrow_upward : Icons.arrow_downward,
+                        color: color,
+                        size: 24,
+                      ),
+                    ],
+                  ],
+                ),
+                Text(
+                  description,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: color),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'średnio na mecz',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
