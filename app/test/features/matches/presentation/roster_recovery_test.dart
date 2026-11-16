@@ -52,8 +52,9 @@ void main() {
   Future<MatchDetailsNotifier> loaded() async {
     final ready = Completer<void>();
     final sub = container.listen(provider, (_, value) {
-      if (!ready.isCompleted && value.hasValue && !value.isLoading)
+      if (!ready.isCompleted && value.hasValue && !value.isLoading) {
         ready.complete();
+      }
     }, fireImmediately: true);
     addTearDown(sub.close);
     await ready.future.timeout(const Duration(seconds: 5));
@@ -62,6 +63,17 @@ void main() {
 
   Future<void> submit(MatchDetailsNotifier notifier) =>
       notifier.updateTeams(['p0', 'p1'], ['p2', 'p3', 'p4']);
+  test(
+    'read-only details reload does not create an editor or pending operation',
+    () async {
+      expect(container.exists(updateMatchTeamsUseCaseProvider), isFalse);
+      final notifier = await loaded();
+      await notifier.refresh();
+      expect(container.exists(updateMatchTeamsUseCaseProvider), isFalse);
+      expect(notifier.hasPendingRosterEdit, isFalse);
+    },
+  );
+
   void conflict() {
     backend.beforeRpc = () {
       backend.beforeRpc = null;

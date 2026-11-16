@@ -44,8 +44,9 @@ class AtomicRosterBackend extends SnapshotBackend {
     };
     final previous = meta['_roster_operation'] as Map?;
     if (previous?['id'] == input['p_request_id']) {
-      if (jsonEncode(previous) != jsonEncode(receipt))
+      if (jsonEncode(previous) != jsonEncode(receipt)) {
         return _failure(request, code: 'P0001');
+      }
       return _response(null, request);
     }
     if (match['home_score'] != null || match['away_score'] != null) {
@@ -80,7 +81,12 @@ class AtomicRosterBackend extends SnapshotBackend {
     http.BaseRequest request, {
     String code = 'fixture_failure',
   }) => _response(
-    {'code': code, 'message': 'Injected atomic RPC failure'},
+    {
+      'code': code,
+      'message': code == '40001'
+          ? 'Roster changed; reload before a different edit'
+          : 'Injected atomic RPC failure',
+    },
     request,
     status: 400,
   );

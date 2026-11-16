@@ -12,7 +12,10 @@ part 'match_details_notifier.g.dart';
 
 @riverpod
 class MatchDetailsNotifier extends _$MatchDetailsNotifier {
-  UpdateMatchTeamsUseCase? _rosterEdits;
+  UpdateMatchTeamsUseCase? get _rosterEdits =>
+      ref.exists(updateMatchTeamsUseCaseProvider)
+      ? ref.read(updateMatchTeamsUseCaseProvider)
+      : null;
   bool get hasPendingRosterEdit =>
       _rosterEdits?.hasPendingEdit(matchId) ?? false;
   bool get hasRejectedRosterEdit =>
@@ -20,7 +23,6 @@ class MatchDetailsNotifier extends _$MatchDetailsNotifier {
 
   @override
   AsyncValue<MatchDetailsDto> build(String matchId) {
-    _rosterEdits = ref.read(updateMatchTeamsUseCaseProvider);
     _loadMatch();
     return const AsyncValue.loading();
   }
@@ -33,14 +35,15 @@ class MatchDetailsNotifier extends _$MatchDetailsNotifier {
   }
 
   Future<void> refresh() async {
-    final UpdateMatchTeamsUseCase edits =
-        _rosterEdits ?? ref.read(updateMatchTeamsUseCaseProvider);
-    _rosterEdits = edits;
-    final rejectedId = edits.rejectedRequestId(matchId);
+    final edits = _rosterEdits;
+    final rejectedId = edits?.rejectedRequestId(matchId);
     await _loadMatch();
     // A successful explicit reload acknowledges only the rejected operation
     // captured before that read. Never discard an unknown or newer outcome.
-    if (state.hasValue && !state.hasError && rejectedId != null) {
+    if (state.hasValue &&
+        !state.hasError &&
+        rejectedId != null &&
+        edits != null) {
       edits.discardRejected(matchId, requestId: rejectedId);
     }
   }

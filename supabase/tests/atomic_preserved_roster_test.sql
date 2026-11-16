@@ -146,8 +146,10 @@ do $$ begin
 end $$;
 select pg_temp.edit(7,pg_temp.ids(1),'[]',pg_temp.ranks(array[1],array[0]),6);
 select pg_temp.edit(8,pg_temp.ids(1),pg_temp.ids(5),pg_temp.ranks(array[1,5],array[0,-1.7976931348623157e308]),7);
+select pg_temp.edit(9,pg_temp.ids(1),pg_temp.ids(4,5),pg_temp.ranks(array[1,4,5],array[0,1e-400,-1.7976931348623157e308]),8);
 do $$ begin
- assert (select count(*) from team_players)=2;
+ assert (select count(*) from team_players)=3;
+ assert (select (score_meta->'draft_rankings'->>'30000000-0000-0000-0000-000000000004')::numeric from matches)='1e-400'::numeric;
  assert not exists(select 1 from ranking_history);
 end $$;
 rollback;

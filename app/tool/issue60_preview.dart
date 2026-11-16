@@ -13,6 +13,7 @@ import 'package:app/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:app/features/matches/presentation/controllers/match_details_notifier.dart';
 import 'package:app/features/matches/presentation/pages/match_details_page.dart';
 import '../test/fixtures/snapshot_backend.dart';
+import '../test/fixtures/atomic_roster_backend.dart';
 
 late final SemanticsHandle semantics;
 void main() {
@@ -20,10 +21,40 @@ void main() {
   semantics = SemanticsBinding.instance.ensureSemantics();
   GoogleFonts.config.allowRuntimeFetching = false;
   final query = Uri.base.queryParameters;
-  final backend = SnapshotBackend(
-    substitutes: query['substitutes'] == 'on',
-    count: query['equal'] == '1' ? 4 : 5,
-  );
+  final recovery = query['recovery'];
+  final SnapshotBackend backend = ['conflict', 'uncertain'].contains(recovery)
+      ? AtomicRosterBackend()
+      : SnapshotBackend(
+          substitutes: query['substitutes'] == 'on',
+          count: query['equal'] == '1' ? 4 : 5,
+        );
+  if (backend is AtomicRosterBackend) {
+    final match = backend.tables['matches']!.single;
+    match['tournament_id'] = 'synthetic-tournament';
+    match['score_meta'] = {
+      'draft_rankings': {
+        for (final p in backend.tables['players']!) p['player_id']: p['score'],
+      },
+    };
+    backend.tables['ranking_history']!.clear();
+    if (recovery == 'conflict') {
+      backend.beforeRpc = () {
+        backend.beforeRpc = null;
+        for (final row in backend.tables['team_players']!) {
+          if (row['player_id'] == 'p0') row['team_id'] = 'away';
+        }
+        match['score_meta']['_roster_operation'] = {
+          'id': 'synthetic-other-operation',
+          'home': ['p1'],
+          'away': ['p0', 'p2', 'p3', 'p4'],
+          'rankings': match['score_meta']['draft_rankings'],
+          'base': null,
+        };
+      };
+    } else {
+      backend.loseReply = true;
+    }
+  }
   // A stored generation proposal and the accepted fixture match share A.
   // Current players then move to B. Both real pages must still display A.
   backend.tables['drafts']!.add({
@@ -93,13 +124,60 @@ class _PreviewState extends ConsumerState<_Preview> {
           matchId: 'match',
         ),
       ),
-      GoRoute(
-        path: '/',
-        builder: (_, _) =>
-            const MatchDetailsPage(squadId: 'fixture', matchId: 'match'),
-      ),
+      GoRoute(path: '/', builder: (_, _) => _matchPage()),
     ],
   );
+  Widget _matchPage() {
+    final backend = widget.backend;
+    if (backend is! AtomicRosterBackend) {
+      return const MatchDetailsPage(squadId: 'fixture', matchId: 'match');
+    }
+    return Consumer(
+      builder: (context, ref, _) {
+        final state = ref.watch(matchDetailsProvider('match'));
+        final controller = ref.read(matchDetailsProvider('match').notifier);
+        final last = backend.commands.isEmpty ? null : backend.commands.last;
+        return Column(
+          children: [
+            Material(
+              color: const Color(0xFFE0F2F1),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  children: [
+                    Text(
+                      'SYNTHETIC roster fixture / RPC ${backend.commands.length} '
+                      'id=${last?['p_request_id'] ?? 'none'} '
+                      'base=${last?['p_expected_version'] ?? 'initial'} '
+                      'pending=${controller.hasPendingRosterEdit} '
+                      'state=${state.isLoading
+                          ? 'loading'
+                          : state.hasError
+                          ? 'error'
+                          : 'loaded'}',
+                    ),
+                    TextButton(
+                      onPressed: state.isLoading
+                          ? null
+                          : () => controller.updateTeams(
+                              ['p0', 'p2'],
+                              ['p1', 'p3', 'p4'],
+                            ),
+                      child: const Text('Synthetic roster save'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Expanded(
+              child: MatchDetailsPage(squadId: 'fixture', matchId: 'match'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -145,8 +223,9 @@ class _PreviewState extends ConsumerState<_Preview> {
                     child: const Text('Match'),
                   ),
                   TextButton(
-                    onPressed: () =>
-                        ref.invalidate(matchDetailsProvider('match')),
+                    onPressed: () => ref
+                        .read(matchDetailsProvider('match').notifier)
+                        .refresh(),
                     child: const Text('Reload match'),
                   ),
                 ],
