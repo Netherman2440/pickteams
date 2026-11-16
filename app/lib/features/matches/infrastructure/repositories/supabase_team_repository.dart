@@ -1,6 +1,7 @@
 import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'preserved_rankings.dart';
 import 'package:app/core/error/supabase_error_extension.dart';
 import 'package:app/features/matches/domain/entities/team.dart';
 import 'package:app/features/matches/domain/repositories/team_repository.dart';
@@ -15,14 +16,10 @@ class SupabaseTeamRepository implements TeamRepository {
   @override
   Future<List<Team>> getMatchTeams(String matchId) async {
     try {
-      final matchResponse = await _supabase
-          .from('matches')
-          .select('tournament_id')
-          .eq('match_id', matchId)
-          .maybeSingle();
-      final tournamentId = matchResponse == null
-          ? null
-          : (matchResponse as Map)['tournament_id'] as String?;
+      final preservedRankings = await loadPreservedRankings(
+        _supabase,
+        matchId: matchId,
+      );
 
       // 1. Fetch Teams
       final teamsResponse = await _supabase
@@ -67,60 +64,14 @@ class SupabaseTeamRepository implements TeamRepository {
             .map((row) => Player.fromMap(Map<String, dynamic>.from(row as Map)))
             .toList();
 
-        // Fetch ranking history for these players for this match to get snapshot ranking
-        final rankingHistoryResponse = await _supabase
-            .from('ranking_history')
-            .select('player_id, ranking')
-            .eq('match_id', matchId)
-            .inFilter('player_id', playerIds);
-
-        final rankingHistoryData = (rankingHistoryResponse as List<dynamic>)
-            .map((row) => Map<String, dynamic>.from(row as Map))
-            .toList(growable: false);
-
-        // Map players to use historical ranking if available
-        List<Map<String, dynamic>> tournamentRankingData = const [];
-        if (tournamentId != null) {
-          final tournamentRankingResponse = await _supabase
-              .from('ranking_history')
-              .select('player_id, ranking')
-              .eq('tournament_id', tournamentId)
-              .inFilter('player_id', playerIds);
-
-          tournamentRankingData = (tournamentRankingResponse as List<dynamic>)
-              .map((row) => Map<String, dynamic>.from(row as Map))
-              .toList(growable: false);
-        }
-
         final playersWithHistory = players.map((player) {
-          final historyEntry = rankingHistoryData.firstWhere(
-            (entry) => entry['player_id'] == player.playerId,
-            orElse: () => const <String, dynamic>{},
-          );
-
-          if (historyEntry.isNotEmpty) {
-            // ranking is the preserved input. Result corrections change only
-            // the delta, not the input shown in this match.
-            return player.copyWith(
-              ranking: (historyEntry['ranking'] as num).toDouble(),
+          final ranking = preservedRankings[player.playerId];
+          if (ranking == null || !ranking.isFinite) {
+            throw StateError(
+              'Missing preserved ranking for match $matchId, player ${player.playerId}',
             );
           }
-
-          if (tournamentRankingData.isNotEmpty) {
-            final tournamentEntry = tournamentRankingData.firstWhere(
-              (entry) => entry['player_id'] == player.playerId,
-              orElse: () => const <String, dynamic>{},
-            );
-
-            if (tournamentEntry.isNotEmpty) {
-              final storedRanking = (tournamentEntry['ranking'] as num)
-                  .toDouble();
-              return player.copyWith(ranking: storedRanking);
-            }
-          }
-          throw StateError(
-            'Missing preserved ranking for match $matchId, player ${player.playerId}',
-          );
+          return player.copyWith(ranking: ranking);
         }).toList();
 
         teamsWithPlayers.add(team.copyWith(players: playersWithHistory));

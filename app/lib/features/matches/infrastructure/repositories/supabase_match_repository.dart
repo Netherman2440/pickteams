@@ -96,6 +96,7 @@ class SupabaseMatchRepository implements MatchRepository {
     required String squadId,
     String? tournamentId,
     Map<String, dynamic>? scoreMeta,
+    bool? playWithSubstitute,
     required Team homeTeam,
     required Team awayTeam,
   }) async {
@@ -117,6 +118,7 @@ class SupabaseMatchRepository implements MatchRepository {
         'tournament_id': tournamentId,
         'created_at': now.toIso8601String(),
         'score_meta': scoreMeta ?? <String, dynamic>{},
+        'play_with_substitute': playWithSubstitute,
       };
 
       await _supabase.from('matches').insert(matchData);
@@ -126,6 +128,7 @@ class SupabaseMatchRepository implements MatchRepository {
         matchId: matchId,
         squadId: squadId,
         tournamentId: tournamentId,
+        playWithSubstitute: playWithSubstitute,
         createdAt: now,
       );
     } catch (e, stack) {

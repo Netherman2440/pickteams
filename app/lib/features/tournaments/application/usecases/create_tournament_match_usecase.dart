@@ -5,15 +5,18 @@ import 'package:app/features/matches/application/usecases/create_match_usecase.d
 import 'package:app/features/matches/domain/entities/match.dart';
 import 'package:app/features/tournaments/domain/entities/tournament_status.dart';
 import 'package:app/features/tournaments/domain/repositories/tournament_repository.dart';
+import 'package:app/features/tournaments/domain/repositories/tournament_draft_repository.dart';
 import 'package:app/features/tournaments/tournaments_providers.dart';
 
 class CreateTournamentMatchUseCase {
   final TournamentRepository _tournamentRepository;
   final CreateMatchUseCase _createMatchUseCase;
+  final TournamentDraftRepository _draftRepository;
 
   const CreateTournamentMatchUseCase(
     this._tournamentRepository,
     this._createMatchUseCase,
+    this._draftRepository,
   );
 
   Future<Match> execute({
@@ -53,6 +56,24 @@ class CreateTournamentMatchUseCase {
       );
     }
 
+    final acceptedId = tournament.acceptedTournamentDraftId;
+    final draft = acceptedId == null
+        ? null
+        : await _draftRepository.getTournamentDraft(
+            tournamentDraftId: acceptedId,
+          );
+    if (acceptedId != null &&
+        (draft == null || draft.tournamentId != tournamentId)) {
+      throw StateError('Missing preserved tournament draft');
+    }
+    final inputs = draft?.inputs;
+    final rankings =
+        inputs?.rankings ??
+        {
+          for (final player in [...homeTeam.players, ...awayTeam.players])
+            player.playerId: player.ranking,
+        };
+
     return _createMatchUseCase.execute(
       squadId: tournament.squadId,
       tournamentId: tournamentId,
@@ -66,7 +87,9 @@ class CreateTournamentMatchUseCase {
         'tournament_home_team_id': homeTournamentTeamId,
         'tournament_away_team_id': awayTournamentTeamId,
       },
-      createRankingEntries: false,
+      preservedRankings: rankings,
+      playWithSubstitute: inputs?.playWithSubstitute,
+      createRankingEntries: true,
     );
   }
 }
@@ -76,5 +99,6 @@ final createTournamentMatchUseCaseProvider =
       return CreateTournamentMatchUseCase(
         ref.read(tournamentRepositoryProvider),
         ref.read(createMatchUseCaseProvider),
+        ref.read(tournamentDraftRepositoryProvider),
       );
     });

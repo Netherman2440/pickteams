@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:app/core/error/supabase_error_extension.dart';
 import 'package:app/features/draft/domain/entities/draft.dart';
+import 'package:app/features/matches/infrastructure/repositories/preserved_rankings.dart';
 import 'package:app/features/draft/domain/entities/draft_rule.dart';
 import 'package:app/features/tournaments/domain/entities/tournament_draft.dart';
 import 'package:app/features/tournaments/domain/repositories/tournament_draft_repository.dart';
@@ -154,6 +155,9 @@ class SupabaseTournamentDraftRepository implements TournamentDraftRepository {
 
       return _draftFromRows(
         draftRow: Map<String, dynamic>.from(draftRow as Map),
+        preservedRankings: await _loadTournamentRankings(
+          draftRow['tournament_id'] as String,
+        ),
         payloadRow: payloadRow == null
             ? null
             : Map<String, dynamic>.from(payloadRow as Map),
@@ -198,6 +202,7 @@ class SupabaseTournamentDraftRepository implements TournamentDraftRepository {
 
       return _draftFromRows(
         draftRow: draftMap,
+        preservedRankings: await _loadTournamentRankings(tournamentId),
         payloadRow: payloadRow == null
             ? null
             : Map<String, dynamic>.from(payloadRow as Map),
@@ -211,13 +216,31 @@ class SupabaseTournamentDraftRepository implements TournamentDraftRepository {
       throw e.toFailure();
     }
   }
+
+  Future<Map<String, double>> _loadTournamentRankings(
+    String tournamentId,
+  ) async {
+    final rows = await _supabase
+        .from('ranking_history')
+        .select('player_id, ranking')
+        .eq('tournament_id', tournamentId)
+        .isFilter('match_id', null);
+    return {
+      for (final row in rows)
+        row['player_id'] as String: (row['ranking'] as num).toDouble(),
+    };
+  }
 }
 
 TournamentDraft _draftFromRows({
   required Map<String, dynamic> draftRow,
   Map<String, dynamic>? payloadRow,
+  Map<String, double> preservedRankings = const {},
 }) {
-  final parsedProposals = _parseStoredProposals(payloadRow?['proposals']);
+  final parsedProposals = _parseStoredProposals(
+    payloadRow?['proposals'],
+    preservedRankings,
+  );
 
   return TournamentDraft(
     tournamentDraftId: draftRow['tournament_draft_id'] as String,
@@ -253,17 +276,7 @@ List<Map<String, dynamic>> _serializeProposals(
     });
   }
 
-  serialized.addAll(
-    proposals.map(
-      (draft) => {
-        'teams': draft.teams
-            .map(
-              (team) => team.players.map((player) => player.playerId).toList(),
-            )
-            .toList(),
-      },
-    ),
-  );
+  serialized.addAll(proposals.map((draft) => draft.toStoredProposal()));
 
   return serialized;
 }
@@ -286,7 +299,10 @@ List<Map<String, dynamic>> _serializeRules(List<DraftRule> rules) {
   ];
 }
 
-_ParsedStoredProposals _parseStoredProposals(dynamic raw) {
+_ParsedStoredProposals _parseStoredProposals(
+  dynamic raw,
+  Map<String, double> preservedRankings,
+) {
   if (raw is! List) {
     return const _ParsedStoredProposals(proposals: [], seed: null);
   }
@@ -326,7 +342,18 @@ _ParsedStoredProposals _parseStoredProposals(dynamic raw) {
     }
 
     if (teams.isNotEmpty) {
-      proposals.add(TournamentDraftProposal(teams: teams));
+      proposals.add(
+        TournamentDraftProposal(
+          teams: teams,
+          rankings: resolveProposalRankings(
+            proposal: proposalMap,
+            playerIds: teams.expand((team) => team),
+            preservedRankings: preservedRankings,
+          ),
+          playWithSubstitute:
+              proposalMap['play_with_substitute'] as bool? ?? true,
+        ),
+      );
     }
   }
 

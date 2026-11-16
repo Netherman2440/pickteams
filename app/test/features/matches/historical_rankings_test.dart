@@ -6,6 +6,7 @@ import 'package:app/core/utils/team_ranking.dart';
 import 'package:app/features/auth/domain/entities/auth_entity.dart';
 import 'package:app/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:app/features/draft/domain/entities/draft.dart';
+import 'package:app/features/draft/presentation/controllers/draft_session_notifier.dart';
 import 'package:app/features/draft/infrastructure/repositories/supabase_draft_persistence_repository.dart';
 import 'package:app/features/matches/application/usecases/get_match_usecase.dart';
 import 'package:app/features/matches/application/usecases/update_match_score_usecase.dart';
@@ -215,9 +216,20 @@ void main() {
     },
   );
   test(
-    'legacy ID-only proposal reload uses the preserved input, not current score',
+    'legacy proposal and details share per-player match/tournament inputs, not current score',
     () async {
       final backend = SnapshotBackend()..changeCurrentScores();
+      backend.tables['matches']!.single['tournament_id'] = 'tournament';
+      backend.tables['ranking_history']!.last
+        ..['match_id'] = null
+        ..['tournament_id'] = 'tournament';
+      // A match input must override an older tournament input for p0.
+      backend.tables['ranking_history']!.add({
+        'player_id': 'p0',
+        'match_id': null,
+        'tournament_id': 'tournament',
+        'ranking': 1.0,
+      });
       backend.tables['drafts']!.add({
         'draft_id': 'draft',
         'match_id': 'match',
@@ -249,31 +261,25 @@ void main() {
           .getMatchDraft(matchId: 'match'))!;
       expect(payload.proposals.single.rankings['p0'], 41.25);
       expect(payload.proposals.single.rankings['p3'], 72.25);
-    },
-  );
-
-  test(
-    'partial match history resolves each preserved tournament input separately',
-    () async {
-      final backend = SnapshotBackend()..changeCurrentScores();
-      backend.tables['matches']!.single['tournament_id'] = 'tournament';
-      final input = backend.tables['ranking_history']!.last;
-      input['match_id'] = null;
-      input['tournament_id'] = 'tournament';
-      final container = ProviderContainer(
-        overrides: [supabaseProvider.overrideWithValue(backend.client)],
-      );
-      addTearDown(() async {
-        container.dispose();
-        await backend.client.dispose();
-      });
+      expect(payload.proposals.single.rankings['p4'], 56.5);
+      await container
+          .read(draftSessionNotifierProvider.notifier)
+          .load(
+            squadId: 'fixture',
+            selectedPlayerIds: [],
+            algorithm: DraftAlgorithm.combinatory,
+            matchId: 'match',
+          );
+      final state = container.read(draftSessionNotifierProvider);
+      expect(state.hasError, isFalse);
+      expect(state.requireValue.away.last.ranking, 56.5);
       final teams = await container
           .read(teamRepositoryProvider)
           .getMatchTeams('match');
-      expect(
-        teams.last.players.singleWhere((p) => p.playerId == 'p4').ranking,
-        56.5,
-      );
+      expect({
+        for (final p in teams.expand((team) => team.players))
+          p.playerId: p.ranking,
+      }, payload.proposals.single.rankings);
     },
   );
 

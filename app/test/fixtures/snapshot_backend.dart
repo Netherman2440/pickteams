@@ -101,12 +101,20 @@ class SnapshotBackend extends http.BaseClient {
 
   bool _matches(Map<String, dynamic> row, Map<String, String> query) {
     for (final entry in query.entries) {
-      if (['select', 'order', 'limit', 'on_conflict'].contains(entry.key)) {
+      if ([
+        'select',
+        'order',
+        'limit',
+        'on_conflict',
+        'columns',
+      ].contains(entry.key)) {
         continue;
       }
       final value = row[entry.key];
       final filter = entry.value;
-      if (filter.startsWith('eq.')) {
+      if (filter == 'is.null') {
+        if (value != null) return false;
+      } else if (filter.startsWith('eq.')) {
         if (value.toString() != filter.substring(3)) return false;
       } else if (filter.startsWith('in.(')) {
         if (!filter
@@ -151,7 +159,12 @@ class SnapshotBackend extends http.BaseClient {
           row.addAll(Map<String, dynamic>.from(jsonDecode(body) as Map));
         }
         onWrite?.call();
-        return _response(found, request);
+        return _response(
+          request.headers['Accept']?.contains('vnd.pgrst.object') == true
+              ? found.single
+              : found,
+          request,
+        );
       case 'DELETE':
         rows.removeWhere((row) => found.contains(row));
         return _response(null, request);
@@ -170,6 +183,11 @@ class SnapshotBackend extends http.BaseClient {
             result.add(prior.single);
           } else {
             if (name == 'drafts') row['draft_id'] = 'draft';
+            if (name == 'tournament_drafts') {
+              row['tournament_draft_id'] = 'tdraft';
+              row['created_at'] = date;
+            }
+            if (name == 'teams') row['created_at'] = date;
             if (name == 'ranking_history') {
               row['ranking_history_id'] = 'r-${row['player_id']}';
               row['created_at'] = date;

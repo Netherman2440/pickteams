@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app/core/error/supabase_error_extension.dart';
 import 'package:app/core/global_dependencies.dart';
 import 'package:app/features/draft/domain/entities/draft.dart';
+import 'package:app/features/matches/infrastructure/repositories/preserved_rankings.dart';
 import 'package:app/features/draft/domain/entities/stored_draft_payload.dart';
 import 'package:app/features/draft/domain/repositories/draft_persistence_repository.dart';
 
@@ -107,14 +108,10 @@ class SupabaseDraftPersistenceRepository implements DraftPersistenceRepository {
           : Map<String, dynamic>.from(payloadRow as Map);
       // Older payloads stored IDs only. Reuse the preserved match inputs,
       // never today's players.score, when restoring those proposals.
-      final history = await _supabase
-          .from('ranking_history')
-          .select('player_id, ranking')
-          .eq('match_id', matchId);
-      final preservedRankings = <String, double>{
-        for (final row in history)
-          row['player_id'] as String: (row['ranking'] as num).toDouble(),
-      };
+      final preservedRankings = await loadPreservedRankings(
+        _supabase,
+        matchId: matchId,
+      );
       final parsedProposals = _parseStoredProposals(
         payloadData['proposals'],
         preservedRankings: preservedRankings,
@@ -244,14 +241,11 @@ _ParsedStoredProposals _parseStoredProposals(
     }
 
     if (teams.isNotEmpty) {
-      final rankingsRaw = proposalMap['rankings'];
-      final rankings = <String, double>{
-        for (final id in teams.expand((team) => team))
-          if (rankingsRaw is Map && rankingsRaw[id] is num)
-            id: (rankingsRaw[id] as num).toDouble()
-          else if (rankingsRaw == null && preservedRankings.containsKey(id))
-            id: preservedRankings[id]!,
-      };
+      final rankings = resolveProposalRankings(
+        proposal: proposalMap,
+        playerIds: teams.expand((team) => team),
+        preservedRankings: preservedRankings,
+      );
       result.add(
         StoredDraftProposal(
           teams: teams,

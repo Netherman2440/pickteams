@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:app/core/utils/team_ranking.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +24,7 @@ import 'package:app/features/tournaments/application/usecases/accept_tournament_
 import 'package:app/features/tournaments/application/usecases/get_tournament_draft_usecase.dart';
 import 'package:app/features/tournaments/application/usecases/save_tournament_draft_usecase.dart';
 import 'package:app/features/tournaments/application/usecases/update_tournament_teams_usecase.dart';
-import 'package:app/features/tournaments/domain/entities/tournament_draft.dart';
+import 'package:app/features/tournaments/application/restore_tournament_drafts.dart';
 import 'package:app/features/tournaments/domain/entities/tournament_team.dart';
 import 'package:app/features/tournaments/presentation/state/tournament_providers.dart';
 import 'package:app/features/tournaments/tournaments_providers.dart';
@@ -121,7 +122,7 @@ class _TournamentDraftPageState extends ConsumerState<TournamentDraftPage> {
         .execute(squadId: widget.squadId);
 
     final playersById = {for (final player in players) player.playerId: player};
-    final proposals = _restoreDraftsFromPayload(
+    final proposals = restoreTournamentDrafts(
       proposals: draft.proposals,
       playersById: playersById,
     );
@@ -455,6 +456,8 @@ class _TournamentDraftPageState extends ConsumerState<TournamentDraftPage> {
                 Expanded(
                   child: _ProposalTeamsView(
                     teams: _currentTeams,
+                    playWithSubstitute:
+                        _proposals[_selectedIndex].playWithSubstitute,
                     onMovePlayer: canManage
                         ? (playerId, teamIndex) {
                             _movePlayer(
@@ -498,8 +501,13 @@ class _ProposalNavigator extends StatelessWidget {
 }
 
 class _ProposalTeamsView extends StatelessWidget {
-  const _ProposalTeamsView({required this.teams, required this.onMovePlayer});
+  const _ProposalTeamsView({
+    required this.teams,
+    required this.onMovePlayer,
+    required this.playWithSubstitute,
+  });
 
+  final bool playWithSubstitute;
   final List<List<Player>> teams;
   final void Function(String playerId, int teamIndex)? onMovePlayer;
 
@@ -534,6 +542,8 @@ class _ProposalTeamsView extends StatelessWidget {
                 teamIndex: i,
                 players: teams[i],
                 compact: isCompact,
+                playWithSubstitute: playWithSubstitute,
+                opponentSize: teams.map((team) => team.length).reduce(min),
                 onAcceptPlayerId: onMovePlayer == null
                     ? null
                     : (playerId) => onMovePlayer!(playerId, i),
@@ -564,12 +574,16 @@ class _TeamProposalCard extends StatelessWidget {
     required this.teamIndex,
     required this.players,
     required this.compact,
+    required this.playWithSubstitute,
+    required this.opponentSize,
     required this.onAcceptPlayerId,
   });
 
   final int teamIndex;
   final List<Player> players;
   final bool compact;
+  final bool playWithSubstitute;
+  final int opponentSize;
   final ValueChanged<String>? onAcceptPlayerId;
 
   @override
@@ -621,7 +635,7 @@ class _TeamProposalCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text('Gracze: ${players.length}'),
                 Text(
-                  'Suma rankingu: ${NumberFormat.decimalPattern('pl').format(_teamTotalRanking(players))}',
+                  'Suma rankingu: ${NumberFormat.decimalPattern('pl').format(effectiveTeamRanking(totalRanking: _teamTotalRanking(players), teamSize: players.length, opponentTeamSize: opponentSize, playWithSubstitute: playWithSubstitute))}',
                 ),
                 const Divider(height: 18),
                 if (sortedPlayers.isEmpty)
@@ -656,52 +670,6 @@ class _TeamProposalCard extends StatelessWidget {
       },
     );
   }
-}
-
-List<Draft> _restoreDraftsFromPayload({
-  required List<TournamentDraftProposal> proposals,
-  required Map<String, Player> playersById,
-}) {
-  final drafts = <Draft>[];
-
-  for (final proposal in proposals) {
-    final teams = <DraftTeam>[];
-    final usedPlayerIds = <String>{};
-
-    for (var teamIndex = 0; teamIndex < proposal.teams.length; teamIndex++) {
-      final teamPlayerIds = proposal.teams[teamIndex];
-      final players = <Player>[];
-      var totalRanking = 0.0;
-
-      for (final playerId in teamPlayerIds) {
-        if (!usedPlayerIds.add(playerId)) {
-          continue;
-        }
-
-        final player = playersById[playerId];
-        if (player == null) {
-          continue;
-        }
-
-        players.add(player);
-        totalRanking += player.ranking;
-      }
-
-      teams.add(
-        DraftTeam(
-          index: teamIndex,
-          players: players,
-          totalRanking: totalRanking,
-        ),
-      );
-    }
-
-    if (teams.isNotEmpty) {
-      drafts.add(Draft(teams: teams));
-    }
-  }
-
-  return drafts;
 }
 
 Map<String, Map<String, double>> _buildWinRateMatrix(

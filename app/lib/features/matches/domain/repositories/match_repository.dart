@@ -13,6 +13,7 @@ abstract class MatchRepository {
     required String squadId,
     String? tournamentId,
     Map<String, dynamic>? scoreMeta,
+    bool? playWithSubstitute,
     required Team homeTeam,
     required Team awayTeam,
   });

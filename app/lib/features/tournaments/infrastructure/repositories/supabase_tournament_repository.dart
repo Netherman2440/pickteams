@@ -1,6 +1,7 @@
 import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'supabase_tournament_draft_repository.dart';
 
 import 'package:app/core/error/supabase_error_extension.dart';
 import 'package:app/features/matches/domain/entities/match.dart';
@@ -200,6 +201,7 @@ class SupabaseTournamentRepository implements TournamentRepository {
           .from('ranking_history')
           .select('player_id, ranking')
           .eq('tournament_id', tournamentId)
+          .isFilter('match_id', null)
           .inFilter('player_id', playerIds);
 
       final rankingByPlayerId = <String, double>{
@@ -208,12 +210,30 @@ class SupabaseTournamentRepository implements TournamentRepository {
             row['player_id'] as String: (row['ranking'] as num).toDouble(),
       };
 
-      final playersById = <String, Player>{
-        for (final player in players)
-          player.playerId: rankingByPlayerId.containsKey(player.playerId)
-              ? player.copyWith(ranking: rankingByPlayerId[player.playerId])
-              : player,
-      };
+      final tournament = await getTournament(tournamentId: tournamentId);
+      final acceptedId = tournament.acceptedTournamentDraftId;
+      if (acceptedId != null) {
+        final draft = await SupabaseTournamentDraftRepository(
+          _supabase,
+        ).getTournamentDraft(tournamentDraftId: acceptedId);
+        if (draft == null || draft.tournamentId != tournamentId) {
+          throw StateError('Missing preserved tournament draft');
+        }
+        // Accepted generation inputs supersede the earlier creation snapshot.
+        rankingByPlayerId
+          ..clear()
+          ..addAll(draft.inputs.rankings);
+      }
+      final playersById = <String, Player>{};
+      for (final player in players) {
+        final ranking = rankingByPlayerId[player.playerId];
+        if (ranking == null || !ranking.isFinite) {
+          throw StateError(
+            'Missing preserved tournament ranking for ${player.playerId}',
+          );
+        }
+        playersById[player.playerId] = player.copyWith(ranking: ranking);
+      }
 
       final playersByTeam = <String, List<Player>>{};
       for (final row in teamPlayerRows) {
