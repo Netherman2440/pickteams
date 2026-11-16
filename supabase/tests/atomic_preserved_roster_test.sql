@@ -2,6 +2,14 @@
 \set ON_ERROR_STOP on
 begin;
 \ir fixtures/preserved_roster.sql
+do $$ declare fn regprocedure := 'public.update_preserved_match_roster(uuid,uuid,jsonb,jsonb,jsonb,text)'::regprocedure;
+begin
+ assert not (select prosecdef from pg_proc where oid=fn), 'SECURITY INVOKER';
+ assert not has_function_privilege('anon',fn,'EXECUTE'), 'Anonymous RPC execution revoked';
+ assert has_function_privilege('authenticated',fn,'EXECUTE'), 'Authenticated RPC execution granted';
+ assert not exists(select 1 from pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+   where p.oid=fn and a.grantee=0 and a.privilege_type='EXECUTE'), 'No PUBLIC execution';
+end $$;
 create function pg_temp.ids(variadic n integer[]) returns jsonb language sql as $$
  select coalesce(jsonb_agg('30000000-0000-0000-0000-' || lpad(i::text,12,'0')), '[]') from unnest(n) i;
 $$;
@@ -41,13 +49,19 @@ select pg_temp.reject('select pg_temp.edit(1)', 'Only squad owners and admins');
 reset role;
 set local role anon;
 select set_config('request.jwt.claim.sub','',true);
-select pg_temp.reject('select pg_temp.edit(1)', 'Not authenticated');
+select pg_temp.reject('select pg_temp.edit(1)', 'permission denied for function update_preserved_match_roster');
+select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
+select pg_temp.reject('select pg_temp.edit(1)', 'permission denied for function update_preserved_match_roster');
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','',true);
 select pg_temp.reject('select pg_temp.edit(1)', 'Not authenticated');
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
 select set_config('test.before',pg_temp.state()::text,true);
+-- Overflow is valid JSONB numeric syntax but cannot be read as a finite double.
+select pg_temp.reject('select pg_temp.edit(1,ranks=>pg_temp.ranks(array[1,2,3,4],array[1e400,52,53,94]))', 'finite double');
+select pg_temp.reject('select pg_temp.edit(1,ranks=>pg_temp.ranks(array[1,2,3,4],array[-1e400,52,53,94]))', 'finite double');
+do $$ begin assert pg_temp.state()=current_setting('test.before')::jsonb, 'Overflow rejects without any mutation'; end $$;
 -- Fail the authoritative metadata update AFTER roster additions have executed.
 reset role;
 create function pg_temp.fail_vector() returns trigger language plpgsql as $$
@@ -117,5 +131,23 @@ select pg_temp.edit(4,pg_temp.ids(1,3),pg_temp.ids(2),pg_temp.ranks(array[1,2,3]
 do $$ begin
  assert pg_temp.state()=current_setting('test.before')::jsonb, 'Scored guard / replay leaves all state unchanged';
  assert not exists(select 1 from ranking_history), 'No history events after all operations';
+end $$;
+-- Finite-double extrema stay readable; no unrelated minimum team size is added.
+update matches set home_score=null;
+select pg_temp.edit(5,pg_temp.ids(1,3),pg_temp.ids(2,4),pg_temp.ranks(array[1,2,3,4],array[70,52,53,1.7976931348623157e308]),4);
+do $$ begin
+ assert (select (score_meta->'draft_rankings'->>'30000000-0000-0000-0000-000000000004')::numeric from matches)='1.7976931348623157e308'::numeric;
+end $$;
+select pg_temp.edit(6,'[]','[]','{}',5);
+do $$ begin
+ assert not exists(select 1 from team_players), 'Empty teams retain existing editing semantics';
+ assert (select score_meta->'draft_rankings' from matches)='{}'::jsonb;
+ assert (select count(*) from teams)=2;
+end $$;
+select pg_temp.edit(7,pg_temp.ids(1),'[]',pg_temp.ranks(array[1],array[0]),6);
+select pg_temp.edit(8,pg_temp.ids(1),pg_temp.ids(5),pg_temp.ranks(array[1,5],array[0,-1.7976931348623157e308]),7);
+do $$ begin
+ assert (select count(*) from team_players)=2;
+ assert not exists(select 1 from ranking_history);
 end $$;
 rollback;

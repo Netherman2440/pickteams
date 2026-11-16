@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:app/features/matches/domain/repositories/match_repository.dart';
+import 'package:app/features/matches/domain/exceptions/roster_edit_rejected.dart';
 import 'package:app/features/matches/domain/repositories/team_repository.dart';
 import 'package:app/features/matches/matches_providers.dart';
 import 'package:app/features/players/domain/repositories/player_repository.dart';
@@ -14,6 +15,7 @@ class UpdateMatchTeamsUseCase {
   final RankingRepository _rankingRepository;
   final PlayerRepository _playerRepository;
   final _pending = <String, _PreservedRosterEdit>{};
+  final _rejected = <String, _PreservedRosterEdit>{};
   final _active = <String, ({String key, Future<void> result})>{};
 
   UpdateMatchTeamsUseCase(
@@ -22,6 +24,39 @@ class UpdateMatchTeamsUseCase {
     this._rankingRepository,
     this._playerRepository,
   );
+
+  bool hasPendingEdit(String matchId) => _pending.containsKey(matchId);
+  bool hasRejectedEdit(String matchId) => _rejected.containsKey(matchId);
+
+  Future<void> retryPending(String matchId) {
+    final edit = _pending[matchId];
+    if (edit == null) return Future.error(StateError('No pending roster edit'));
+    return execute(
+      matchId: matchId,
+      homePlayerIds: edit.home,
+      awayPlayerIds: edit.away,
+    );
+  }
+
+  /// Capture the rejected operation before an explicit reload/cancel. Unknown
+  /// outcomes have no discard token and must retain their exact retry payload.
+  String? rejectedRequestId(String matchId) {
+    if (_active.containsKey(matchId)) {
+      throw StateError('Cannot recover a roster edit while it is in progress');
+    }
+    return _rejected[matchId]?.requestId;
+  }
+
+  void discardRejected(String matchId, {required String requestId}) {
+    if (_active.containsKey(matchId)) {
+      throw StateError('Cannot discard a roster edit while it is in progress');
+    }
+    final edit = _rejected[matchId];
+    if (edit?.requestId == requestId && identical(_pending[matchId], edit)) {
+      _pending.remove(matchId);
+      _rejected.remove(matchId);
+    }
+  }
 
   Future<void> execute({
     required String matchId,
@@ -62,7 +97,12 @@ class UpdateMatchTeamsUseCase {
     final away = [...awayPlayerIds]..sort();
     final key = jsonEncode([home, away]);
     final pending = _pending[matchId];
-    if (pending != null && pending.key == key) {
+    if (pending != null) {
+      if (pending.key != key) {
+        throw StateError(
+          'Resolve the pending roster edit before starting a different edit',
+        );
+      }
       await _submitPreserved(matchId, pending);
       return;
     }
@@ -174,15 +214,24 @@ class UpdateMatchTeamsUseCase {
     String matchId,
     _PreservedRosterEdit edit,
   ) async {
-    await _teamRepository.updatePreservedMatchRoster(
-      matchId: matchId,
-      requestId: edit.requestId,
-      homePlayerIds: edit.home,
-      awayPlayerIds: edit.away,
-      rankings: edit.rankings,
-      expectedVersion: edit.expectedVersion,
-    );
-    if (identical(_pending[matchId], edit)) _pending.remove(matchId);
+    _rejected.remove(matchId);
+    try {
+      await _teamRepository.updatePreservedMatchRoster(
+        matchId: matchId,
+        requestId: edit.requestId,
+        homePlayerIds: edit.home,
+        awayPlayerIds: edit.away,
+        rankings: edit.rankings,
+        expectedVersion: edit.expectedVersion,
+      );
+    } on RosterEditRejected {
+      if (identical(_pending[matchId], edit)) _rejected[matchId] = edit;
+      rethrow;
+    }
+    if (identical(_pending[matchId], edit)) {
+      _pending.remove(matchId);
+      _rejected.remove(matchId);
+    }
   }
 }
 

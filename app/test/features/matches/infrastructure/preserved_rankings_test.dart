@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app/core/global_dependencies.dart';
@@ -9,6 +10,37 @@ import '../../../fixtures/snapshot_backend.dart';
 import '../../../fixtures/atomic_roster_backend.dart';
 
 void main() {
+  test('stored JSON numeric inputs share the finite-double RPC contract', () {
+    for (final value in ['1e400', '-1e400']) {
+      final proposal =
+          jsonDecode('{"rankings":{"p":$value}}') as Map<String, dynamic>;
+      expect(
+        () => resolveProposalRankings(
+          proposal: proposal,
+          playerIds: ['p'],
+          preservedRankings: {'p': 41.25},
+        ),
+        throwsStateError,
+      );
+    }
+    for (final value in [
+      '1.7976931348623157e308',
+      '-1.7976931348623157e308',
+      '1e-400',
+      '0',
+    ]) {
+      final proposal =
+          jsonDecode('{"rankings":{"p":$value}}') as Map<String, dynamic>;
+      expect(
+        resolveProposalRankings(
+          proposal: proposal,
+          playerIds: ['p'],
+          preservedRankings: {},
+        )['p']!.isFinite,
+        isTrue,
+      );
+    }
+  });
   test(
     'new substitute metadata is required; legacy default stays explicit in the contract',
     () {

@@ -52,6 +52,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
   List<PlayerDto> _homePlayers = [];
   List<PlayerDto> _awayPlayers = [];
   bool _isDraggingPlayer = false;
+  bool _recoveringRoster = false;
   String? _homeTeamColorHex;
   String? _awayTeamColorHex;
   String? _initialHomeTeamName;
@@ -138,7 +139,44 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
     });
   }
 
-  void _cancelEdit() {
+  Future<void> _cancelEdit() async {
+    if (_isTeamEditing &&
+        ref
+            .read(matchDetailsProvider(widget.matchId).notifier)
+            .hasPendingRosterEdit) {
+      await _recoverRoster(cancel: true);
+    } else {
+      _clearEditState();
+    }
+  }
+
+  Future<void> _recoverRoster({bool cancel = false, bool retry = false}) async {
+    if (_recoveringRoster) return;
+    setState(() => _recoveringRoster = true);
+    try {
+      final notifier = ref.read(matchDetailsProvider(widget.matchId).notifier);
+      if (retry) {
+        await notifier.retryRosterEdit();
+      } else if (cancel) {
+        await notifier.cancelRosterEdit();
+      } else {
+        await notifier.refresh();
+      }
+      if (mounted && ref.read(matchDetailsProvider(widget.matchId)).hasValue) {
+        _clearEditState();
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    } finally {
+      if (mounted) setState(() => _recoveringRoster = false);
+    }
+  }
+
+  void _clearEditState() {
     setState(() {
       _editMode = _MatchDetailsEditMode.none;
       _homePlayers.clear();
@@ -214,7 +252,7 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
           .updateTeams(homeIds, awayIds);
     }
 
-    if (mounted) {
+    if (mounted && !ref.read(matchDetailsProvider(widget.matchId)).hasError) {
       setState(() {
         _editMode = _MatchDetailsEditMode.none;
       });
@@ -487,6 +525,9 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
   Widget build(BuildContext context) {
     final matchAsync = ref.watch(matchDetailsProvider(widget.matchId));
     final squadAsync = ref.watch(squadDetailProvider(widget.squadId));
+    final controller = ref.read(matchDetailsProvider(widget.matchId).notifier);
+    final pendingRoster = controller.hasPendingRosterEdit;
+    final rejectedRoster = controller.hasRejectedRosterEdit;
 
     final canManage =
         squadAsync.asData?.value.role == SquadRole.owner ||
@@ -541,15 +582,29 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                 : MediaQuery.textScalerOf(context).scale(56),
             actions: [
               if (canManage && matchAsync.hasValue) ...[
+                if (pendingRoster)
+                  IconButton(
+                    tooltip: rejectedRoster
+                        ? 'Wczytaj ponownie'
+                        : 'Ponów zapis składów',
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _recoveringRoster || matchAsync.isLoading
+                        ? null
+                        : () => _recoverRoster(retry: !rejectedRoster),
+                  ),
                 if (_isEditing) ...[
                   IconButton(
                     icon: const Icon(Icons.save),
-                    onPressed: () => _saveChanges(matchAsync.value!),
+                    onPressed: _recoveringRoster || matchAsync.isLoading
+                        ? null
+                        : () => _saveChanges(matchAsync.value!),
                     tooltip: 'Zapisz',
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: _cancelEdit,
+                    onPressed: _recoveringRoster || matchAsync.isLoading
+                        ? null
+                        : _cancelEdit,
                     tooltip: 'Anuluj',
                   ),
                 ] else ...[
@@ -591,11 +646,35 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => Center(
-              child: SelectableText.rich(
-                TextSpan(
-                  text: 'Błąd: $error',
-                  style: const TextStyle(color: Colors.red),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SelectableText(
+                    'Błąd: $error',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  if (pendingRoster) ...[
+                    if (!rejectedRoster)
+                      TextButton(
+                        onPressed: _recoveringRoster
+                            ? null
+                            : () => _recoverRoster(retry: true),
+                        child: const Text('Ponów zapis składów'),
+                      ),
+                    TextButton(
+                      onPressed: _recoveringRoster
+                          ? null
+                          : () => _recoverRoster(),
+                      child: const Text('Wczytaj ponownie'),
+                    ),
+                    TextButton(
+                      onPressed: _recoveringRoster
+                          ? null
+                          : () => _recoverRoster(cancel: true),
+                      child: const Text('Anuluj edycję składów'),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),

@@ -6,11 +6,21 @@ import 'snapshot_backend.dart';
 class AtomicRosterBackend extends SnapshotBackend {
   bool failBeforeCommit = false;
   bool loseReply = false;
+  bool failNextMatchRead = false;
   void Function()? beforeRpc;
+  Future<void> Function()? waitBeforeRpc;
   final commands = <Map<String, dynamic>>[];
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (failNextMatchRead &&
+        request.method == 'GET' &&
+        request.url.pathSegments.last == 'matches') {
+      failNextMatchRead = false;
+      requests.add('${request.method} ${request.url.path}');
+      await request.finalize().drain<void>();
+      return _failure(request);
+    }
     if (!request.url.path.endsWith('/rpc/update_preserved_match_roster')) {
       return super.send(request);
     }
@@ -19,6 +29,7 @@ class AtomicRosterBackend extends SnapshotBackend {
       jsonDecode(await request.finalize().bytesToString()) as Map,
     );
     commands.add(input);
+    await waitBeforeRpc?.call();
     beforeRpc?.call();
     final match = tables['matches']!.singleWhere(
       (m) => m['match_id'] == input['p_match_id'],
@@ -33,13 +44,15 @@ class AtomicRosterBackend extends SnapshotBackend {
     };
     final previous = meta['_roster_operation'] as Map?;
     if (previous?['id'] == input['p_request_id']) {
-      if (jsonEncode(previous) != jsonEncode(receipt)) return _failure(request);
+      if (jsonEncode(previous) != jsonEncode(receipt))
+        return _failure(request, code: 'P0001');
       return _response(null, request);
     }
-    if (match['home_score'] != null ||
-        match['away_score'] != null ||
-        previous?['id'] != input['p_expected_version']) {
-      return _failure(request);
+    if (match['home_score'] != null || match['away_score'] != null) {
+      return _failure(request, code: 'P0001');
+    }
+    if (previous?['id'] != input['p_expected_version']) {
+      return _failure(request, code: '40001');
     }
     final roster = <Map<String, dynamic>>[
       for (final side in ['home', 'away'])
@@ -63,8 +76,11 @@ class AtomicRosterBackend extends SnapshotBackend {
     return _response(null, request);
   }
 
-  http.StreamedResponse _failure(http.BaseRequest request) => _response(
-    {'code': 'fixture_failure', 'message': 'Injected atomic RPC failure'},
+  http.StreamedResponse _failure(
+    http.BaseRequest request, {
+    String code = 'fixture_failure',
+  }) => _response(
+    {'code': code, 'message': 'Injected atomic RPC failure'},
     request,
     status: 400,
   );

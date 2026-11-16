@@ -2,6 +2,7 @@ import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'preserved_rankings.dart';
+import 'package:app/features/matches/domain/exceptions/roster_edit_rejected.dart';
 import 'package:app/core/error/supabase_error_extension.dart';
 import 'package:app/features/matches/domain/entities/team.dart';
 import 'package:app/features/matches/domain/repositories/team_repository.dart';
@@ -223,6 +224,21 @@ class SupabaseTeamRepository implements TeamRepository {
       );
     } catch (e, stack) {
       _logger.severe('Failed to update preserved match roster', e, stack);
+      // These PostgreSQL errors confirm rollback of the atomic RPC. Do not
+      // classify transport, proxy, or unknown PostgREST errors as a rejection.
+      if (e is PostgrestException &&
+          const {
+            '40001',
+            'P0001',
+            '42501',
+            '22003',
+            '22P02',
+            '23503',
+            '23505',
+            '23514',
+          }.contains(e.code)) {
+        throw RosterEditRejected(e.message, e.code);
+      }
       throw e.toFailure();
     }
   }

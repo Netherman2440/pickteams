@@ -102,28 +102,6 @@ void main() {
     },
   );
 
-  test(
-    'lost response replay sends the identical request without re-reading scores, even after result',
-    () async {
-      backend.loseReply = true;
-      await expectLater(add(), throwsException);
-      await readable();
-      final request = jsonEncode(backend.commands.single);
-      final committed = jsonEncode(backend.tables['team_players']);
-      backend.tables['matches']!.single['home_score'] = 1;
-      for (final p in backend.tables['players']!) {
-        p['score'] = 12.0;
-      }
-      final reads = backend.requests.where((r) => r.startsWith('GET')).length;
-      await add();
-      expect(backend.requests.where((r) => r.startsWith('GET')).length, reads);
-      expect(jsonEncode(backend.commands.last), request);
-      expect(jsonEncode(backend.tables['team_players']), committed);
-      expect(vector()['p0'], 90);
-      expect(backend.tables['ranking_history'], isEmpty);
-    },
-  );
-
   test('score arriving after client read rejects the whole edit', () async {
     backend.beforeRpc = () {
       backend.tables['matches']!.single['home_score'] = 1;

@@ -1,7 +1,7 @@
 -- Issue #60: one transaction for tournament-match roster/vector edits.
 -- SECURITY INVOKER keeps existing table RLS; explicit owner/admin authorization
--- and a match row lock also protect score races. No grants, history events,
--- current-score reads, backfill, or ranking-formula changes.
+-- and a match row lock also protect score races. Execute is authenticated-only.
+-- No history events, current-score reads, backfill, or ranking-formula changes.
 -- The last successful operation is a bounded receipt/version in score_meta.
 -- Exact replay is read-only; older operations conflict after a later edit.
 create function public.update_preserved_match_roster(
@@ -71,6 +71,12 @@ begin
         where jsonb_typeof(p_rankings->id::text) is distinct from 'number') then
     raise exception 'Exact numeric input vector required';
   end if;
+  -- JSONB numbers can exceed double precision, while Flutter's strict reader
+  -- cannot display infinities. Validate before any roster/vector mutation.
+  if exists (select 1 from jsonb_each(p_rankings) input
+      where abs(input.value::numeric) > '1.7976931348623157e308'::numeric) then
+    raise exception 'Preserved inputs must fit a finite double' using errcode = '22003';
+  end if;
   -- Retained players cannot be silently reranked. Additions use the frozen
   -- operation input, not a new read of players.score at retry/commit time.
   if exists (
@@ -99,4 +105,6 @@ end;
 $$;
 comment on function public.update_preserved_match_roster(uuid, uuid, jsonb, jsonb, jsonb, text) is
   'Atomic preserved tournament roster edit; existing RLS and owner/admin membership required. Exact last-operation replay is a no-op.';
+revoke all on function public.update_preserved_match_roster(uuid, uuid, jsonb, jsonb, jsonb, text) from public, anon;
+grant execute on function public.update_preserved_match_roster(uuid, uuid, jsonb, jsonb, jsonb, text) to authenticated;
 notify pgrst, 'reload schema';

@@ -12,8 +12,15 @@ part 'match_details_notifier.g.dart';
 
 @riverpod
 class MatchDetailsNotifier extends _$MatchDetailsNotifier {
+  UpdateMatchTeamsUseCase? _rosterEdits;
+  bool get hasPendingRosterEdit =>
+      _rosterEdits?.hasPendingEdit(matchId) ?? false;
+  bool get hasRejectedRosterEdit =>
+      _rosterEdits?.hasRejectedEdit(matchId) ?? false;
+
   @override
   AsyncValue<MatchDetailsDto> build(String matchId) {
+    _rosterEdits = ref.read(updateMatchTeamsUseCaseProvider);
     _loadMatch();
     return const AsyncValue.loading();
   }
@@ -26,7 +33,26 @@ class MatchDetailsNotifier extends _$MatchDetailsNotifier {
   }
 
   Future<void> refresh() async {
+    final UpdateMatchTeamsUseCase edits =
+        _rosterEdits ?? ref.read(updateMatchTeamsUseCaseProvider);
+    _rosterEdits = edits;
+    final rejectedId = edits.rejectedRequestId(matchId);
     await _loadMatch();
+    // A successful explicit reload acknowledges only the rejected operation
+    // captured before that read. Never discard an unknown or newer outcome.
+    if (state.hasValue && !state.hasError && rejectedId != null) {
+      edits.discardRejected(matchId, requestId: rejectedId);
+    }
+  }
+
+  Future<void> cancelRosterEdit() => refresh();
+
+  Future<void> retryRosterEdit() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(updateMatchTeamsUseCaseProvider).retryPending(matchId);
+      return ref.read(getMatchUseCaseProvider).execute(matchId: matchId);
+    });
   }
 
   Future<void> updateScore(String squadId, int homeScore, int awayScore) async {
