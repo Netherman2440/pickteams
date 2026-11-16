@@ -121,15 +121,23 @@ def same_json(left, right):
 
 
 @contextmanager
-def source_file(root, parts):
-    """Open a regular source file without following any path component's links."""
+def source_directory(root, parts):
     directory = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
-        for part in parts[:-1]:
+        for part in parts:
             child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
                             dir_fd=directory)
             os.close(directory)
             directory = child
+        yield directory
+    finally:
+        os.close(directory)
+
+
+@contextmanager
+def source_file(root, parts):
+    """Open a regular source file without following any path component's links."""
+    with source_directory(root, parts[:-1]) as directory:
         fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
                      dir_fd=directory)
         try:
@@ -137,8 +145,6 @@ def source_file(root, parts):
             yield fd
         finally:
             os.close(fd)
-    finally:
-        os.close(directory)
 
 
 def read_web_control(root, parts):
@@ -162,6 +168,8 @@ def checked_web_controls(root, env):
     app = parse_control(committed_web_config(root, 'app/vercel.json'))
     projected = parse_control(read_web_control(root, ('vercel.json',)))
     assert same_json(projected, app), 'Web root projection differs from immutable app config'
+    with source_directory(root, ('.vercel',)) as directory:
+        assert set(os.listdir(directory)) == {'project.json'}, 'Unknown web control files'
     metadata = parse_control(read_web_control(root, ('.vercel', 'project.json')))
     required = {'projectId', 'orgId', 'settings'}
     assert required <= metadata.keys() <= required | {'projectName'}, 'Unknown or missing project fields'
@@ -220,8 +228,11 @@ def verify_web_source(root, env):
     elif metadata_present:
         # Root output is not used by the app-root CLI. Do not bless ignored
         # project settings (or a .vercel directory symlink) in a clean checkout.
-        assert not os.path.islink(root / '.vercel'), 'Unsafe web metadata directory'
-        assert not os.path.lexists(root / '.vercel/project.json'), 'Unchecked web metadata'
+        with source_directory(root, ('.vercel',)) as directory:
+            assert not os.listdir(directory), 'Unchecked web metadata'
+    if os.path.lexists(root / 'app/.vercel'):
+        with source_directory(root, ('app', '.vercel')) as directory:
+            assert set(os.listdir(directory)) <= {'output'}, 'Unchecked app web controls'
 
     # Git status alone misses assume-unchanged/skip-worktree and core.fileMode.
     # Compare all HEAD blobs and physical modes independently of Git's cache.

@@ -10,6 +10,8 @@ import os
 import unittest
 from unittest.mock import patch
 
+import build_native_candidate as native
+import release_contract as contract
 from release_contract import ANALYSIS_MIGRATION, VERSION, VERSION_CODE, verify_source
 
 RELEASE_VERSION = f'{VERSION}+{VERSION_CODE}'
@@ -346,14 +348,35 @@ class WebReleaseTest(unittest.TestCase):
 
 
 class WebSourceBoundaryTest(unittest.TestCase):
-    """SYNTHETIC CLI data in real-source clones. Not hosted success evidence."""
+    """Real-source clones with SYNTHETIC history/CLI data, not hosted evidence.
+
+    CI's tool-test checkout is shallow. Build a local accepted ancestor from the
+    real tracked tree, not a network fetch or a mock Git/status/config response.
+    Actual pinned-source admission is also required on the candidate itself.
+    """
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name) / 'source'
-        subprocess.run(['git', 'clone', '-q', '--no-hardlinks', '--local',
-                        str(release.APP.parent), str(self.root)], check=True)
+        subprocess.run(['git', 'clone', '-q', '--depth=1',
+                        release.APP.parent.as_uri(), str(self.root)], check=True)
+        self.assertEqual(self.git('rev-parse', '--is-shallow-repository'), b'true\n')
         self.git('remote', 'set-url', 'origin', 'https://github.com/Netherman2440/pickteams')
+        pubspec = self.git('show', 'HEAD:app/pubspec.yaml')
+        ignore = self.git('show', 'HEAD:app/.gitignore')
+        self.git('checkout', '-q', '--orphan', 'synthetic-accepted')
+        self.put('app/pubspec.yaml', pubspec.replace(RELEASE_VERSION.encode(), b'1.0.5+2026111501'))
+        self.assertTrue(ignore.endswith(contract.WEB_OUTPUT_IGNORE))
+        self.put('app/.gitignore', ignore[:-len(contract.WEB_OUTPUT_IGNORE)])
+        self.fixture_commit()
+        accepted = self.git('rev-parse', 'HEAD').decode().strip()
+        for module in (contract, release):
+            pin = patch.object(module, 'ACCEPTED_SOURCE', accepted)
+            pin.start()
+            self.addCleanup(pin.stop)
+        self.put('app/pubspec.yaml', pubspec)
+        self.put('app/.gitignore', ignore)
+        self.fixture_commit()
         self.head = self.git('rev-parse', 'HEAD').decode().strip()
         self.app = json.loads(self.git('show', 'HEAD:app/vercel.json'))
         self.env = {'VERCEL': '1', 'VERCEL_ENV': 'preview', 'VERCEL_GIT_COMMIT_SHA': self.head,
@@ -388,11 +411,14 @@ class WebSourceBoundaryTest(unittest.TestCase):
     def reset_fixture(self):
         # This reset/clean is confined to a disposable test-owned clone.
         self.git('reset', '--hard', self.head)
-        self.git('clean', '-fdq')
+        self.git('clean', '-fdxq')
 
-    def commit(self):
+    def fixture_commit(self):
         self.git('add', '.')
         self.git('-c', 'user.name=Synthetic', '-c', 'user.email=test@invalid', 'commit', '-qm', 'fixture')
+
+    def commit(self):
+        self.fixture_commit()
         self.env['VERCEL_GIT_COMMIT_SHA'] = self.git('rev-parse', 'HEAD').decode().strip()
 
     def test_observed_projection_passes_all_web_stages_but_not_generic_or_native(self):
@@ -413,7 +439,6 @@ class WebSourceBoundaryTest(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, 'Source mutation'):
             verify_source(self.root)
         # The native builder imports this exact strict entry point.
-        import build_native_candidate as native
         self.assertIs(native.verify_source, verify_source)
         with self.assertRaisesRegex(AssertionError, 'Source mutation'):
             native.verify_source(self.root)
@@ -580,6 +605,13 @@ class WebSourceBoundaryTest(unittest.TestCase):
                     else:
                         target.write_text('{"settings":NaN}')
                     self.reject()
+        for hidden in ('.vercel/.env', 'app/.vercel/.env', 'app/.vercel/project.json'):
+            with self.subTest(ignored_control=hidden):
+                self.reset_fixture()
+                self.materialize()
+                self.put(hidden, 'SYNTHETIC_SECRET')
+                self.put('.git/info/exclude', '/' + hidden + '\n')
+                self.reject()
         self.reset_fixture()
         self.materialize()
         self.git('config', 'core.excludesFile', str(self.root / '.git/synthetic-ignore'))
@@ -611,4 +643,3 @@ class WebSourceBoundaryTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
