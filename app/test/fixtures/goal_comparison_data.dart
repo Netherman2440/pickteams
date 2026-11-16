@@ -51,7 +51,8 @@ List<GoalComparisonMatch> comparisonFixture(String scenario) {
       goalMatch(homePlayers: ['absent']),
     ],
     'rounded-zero' => [
-      for (var i = 0; i < 250; i++) goalMatch(homeScore: i == 0 ? 7 : 6),
+      for (var i = 0; i < 250; i++)
+        goalMatch(homeScore: i == 0 ? 7 : 6, awayScore: i == 0 ? 1 : 2),
       goalMatch(homePlayers: ['absent']),
     ],
     'negative' => [

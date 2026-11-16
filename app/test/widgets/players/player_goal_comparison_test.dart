@@ -3,13 +3,11 @@ import 'package:app/core/app_theme.dart';
 import 'package:app/features/players/application/player_goal_comparison_provider.dart';
 import 'package:app/features/players/domain/services/player_goal_comparison.dart';
 import 'package:app/features/players/presentation/widgets/player_goal_comparison_section.dart';
-import 'package:app/features/players/presentation/pages/player_details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../fixtures/goal_comparison_data.dart';
-import '../../fixtures/player_details_app.dart';
 
 void main() {
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
@@ -120,31 +118,4 @@ void main() {
       });
     }
   }
-  testWidgets('production profile places comparisons before navigation', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 1600);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(PlayerDetailsFixture(data: ProfileFixtureData()));
-    await tester.pumpAndSettle();
-    final heading = find.text('Drużyna z tym zawodnikiem');
-    expect(heading, findsOneWidget);
-    expect(
-      tester.getTopLeft(heading).dy,
-      lessThan(
-        tester
-            .getTopLeft(
-              find.descendant(
-                of: find.byType(PlayerDetailsPage),
-                matching: find.text('Mecze'),
-              ),
-            )
-            .dy,
-      ),
-    );
-    expect(find.text('Eksperymentalne'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
 }

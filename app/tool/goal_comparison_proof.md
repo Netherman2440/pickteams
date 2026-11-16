@@ -57,8 +57,19 @@ Capture the real profile using `flutter build web --release --no-pub
 --target tool/player_details_preview.dart`. The fixture replaces only data sources;
 production profile, theme, section and calculation stay real. Query parameter
 `comparison` selects `positive`, `negative`, `zero`, `rounded-zero`, `missing-color`,
-`empty`, `no-absences` or `error`. These are synthetic data, not production data;
-browser mobile viewports are emulation, not physical device checks.
+`empty`, `no-absences` or `error`. The rounded-zero fixture computes +0.004 scored
+and -0.004 conceded: both must show neutral zero, not favorable arrows.
+These are synthetic data, not production data; browser mobile viewports are
+emulation, not physical device checks.
+
+Serve only the built fixture directory on loopback. Capture with
+`playwright-local python tool/capture_goal_comparison.py http://127.0.0.1:18859 <proof>/frames`
+under the shared lock and memory gate. The tool asserts expected rendered labels,
+checks browser diagnostics and captures 32 section frames plus four profile frames.
+Its unit checks run with
+`python3 -m unittest discover -s tool -p test_capture_goal_comparison.py -v`.
+Open the generated images before claiming visual evidence. The proof entry point
+adds a synthetic-data banner; the production profile does not.
 
 Preserve logs, the source SHA, captures and the built fixture outside the disposable
 worktree under `/home/agents/dev/pickteams/.limen/proof/issue-59/<candidate-sha>/`.
