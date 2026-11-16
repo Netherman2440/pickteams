@@ -69,8 +69,11 @@ def run(build, output):
                         assert not errors, errors
                         records.append({'case': case, 'stage': stage, 'image': image.name, **metrics, 'pageErrors': list(errors)})
                         if stage < 3:
-                            page.get_by_role('button', name='Next state', exact=True).click()
-                    page.get_by_role('button', name='Reload', exact=True).click()
+                            # Banner controls sit outside Navigator semantics.
+                            # At the fixed 1440x1000 viewport these are the visible
+                            # button centers; use real mouse input, not state mutation.
+                            page.mouse.click(1325, 16)  # Next state
+                    page.mouse.click(1405, 16)  # Reload
                     page.wait_for_function('JSON.parse(historicalMatchMetrics()).panels.length > 0')
                     assert page.evaluate('JSON.parse(historicalMatchMetrics()).panels') == baseline[0]
                     page.close()
