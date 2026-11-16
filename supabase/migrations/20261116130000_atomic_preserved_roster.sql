@@ -99,3 +99,4 @@ end;
 $$;
 comment on function public.update_preserved_match_roster(uuid, uuid, jsonb, jsonb, jsonb, text) is
   'Atomic preserved tournament roster edit; existing RLS and owner/admin membership required. Exact last-operation replay is a no-op.';
+notify pgrst, 'reload schema';

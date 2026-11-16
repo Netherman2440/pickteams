@@ -167,7 +167,8 @@ def main():
         # Run the repository's native SQL/RLS lane only on this local cluster.
         sql('delete from matches; delete from tournament_draft_payloads; delete from tournaments; delete from drafts; delete from user_squads; delete from squads; delete from auth.users;')
         for path in sorted((ROOT / 'supabase/tests').glob('*.sql')):
-            sql(path.read_text())
+            # -f preserves each SQL test's relative fixture include directory.
+            run('psql', '-X', '-v', 'ON_ERROR_STOP=1', '-A', '-t', '-f', path)
             passed(path.name)
     finally:
         if started:

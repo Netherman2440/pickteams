@@ -38,8 +38,9 @@ class AtomicRosterBackend extends SnapshotBackend {
     }
     if (match['home_score'] != null ||
         match['away_score'] != null ||
-        previous?['id'] != input['p_expected_version'])
+        previous?['id'] != input['p_expected_version']) {
       return _failure(request);
+    }
     final roster = <Map<String, dynamic>>[
       for (final side in ['home', 'away'])
         for (final id in input['p_$side'] as List)

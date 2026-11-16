@@ -20,6 +20,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pg-bin', type=Path, required=True)
     parser.add_argument('--proof-dir', type=Path, required=True)
+    parser.add_argument('--full', action='store_true', help='Run every native SQL regression before the score race')
     args = parser.parse_args()
     directory = args.proof_dir.resolve()
     directory.mkdir(parents=True, exist_ok=False, mode=0o700)
@@ -62,8 +63,10 @@ def main():
         sql((ROOT / 'supabase/tests/fixtures/local_auth.sql').read_text())
         for path in sorted((ROOT / 'supabase/migrations').glob('*.sql')):
             sql(path.read_text())
-        run('psql', '-X', '-v', 'ON_ERROR_STOP=1', '-f', ROOT / 'supabase/tests/atomic_preserved_roster_test.sql')
-        passed('RPC rollback, partial addition, RLS, owner/admin, transfer/removal/re-addition, drift/replay, score guard')
+        tests = sorted((ROOT / 'supabase/tests').glob('*.sql')) if args.full else [ROOT / 'supabase/tests/atomic_preserved_roster_test.sql']
+        for path in tests:
+            run('psql', '-X', '-v', 'ON_ERROR_STOP=1', '-f', path)
+            passed(path.name)
         sql((ROOT / 'supabase/tests/fixtures/preserved_roster.sql').read_text())
         uid = '10000000-0000-0000-0000-000000000001'
         match = '40000000-0000-0000-0000-000000000001'
@@ -83,7 +86,7 @@ def main():
             return p
 
         scorer = session('scorer')
-        scorer.stdin.write(f"begin; update matches set home_score=1 where match_id='{match}';\n\\echo SCORE_LOCKED\n")
+        scorer.stdin.write(f"begin; set local role authenticated; set local request.jwt.claim.sub='{uid}'; update matches set home_score=1 where match_id='{match}';\n\\echo SCORE_LOCKED\n")
         scorer.stdin.flush()
         selector = selectors.DefaultSelector()
         selector.register(scorer.stdout, selectors.EVENT_READ)

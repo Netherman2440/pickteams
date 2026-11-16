@@ -14,6 +14,7 @@ class UpdateMatchTeamsUseCase {
   final RankingRepository _rankingRepository;
   final PlayerRepository _playerRepository;
   final _pending = <String, _PreservedRosterEdit>{};
+  final _active = <String, ({String key, Future<void> result})>{};
 
   UpdateMatchTeamsUseCase(
     this._matchRepository,
@@ -23,6 +24,34 @@ class UpdateMatchTeamsUseCase {
   );
 
   Future<void> execute({
+    required String matchId,
+    required List<String> homePlayerIds,
+    required List<String> awayPlayerIds,
+  }) {
+    final home = [...homePlayerIds]..sort();
+    final away = [...awayPlayerIds]..sort();
+    final key = jsonEncode([home, away]);
+    final active = _active[matchId];
+    if (active != null) {
+      if (active.key == key) return active.result;
+      return Future.error(StateError('A roster edit is already in progress'));
+    }
+    late final Future<void> result;
+    result =
+        _execute(
+          matchId: matchId,
+          homePlayerIds: List.unmodifiable(homePlayerIds),
+          awayPlayerIds: List.unmodifiable(awayPlayerIds),
+        ).whenComplete(() {
+          if (identical(_active[matchId]?.result, result)) {
+            _active.remove(matchId);
+          }
+        });
+    _active[matchId] = (key: key, result: result);
+    return result;
+  }
+
+  Future<void> _execute({
     required String matchId,
     required List<String> homePlayerIds,
     required List<String> awayPlayerIds,

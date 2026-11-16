@@ -58,7 +58,20 @@ void main() {
     () async {
       backend.failBeforeCommit = true;
       final before = jsonEncode(backend.tables['team_players']);
-      await expectLater(add(), throwsException);
+      final home = ['p0', 'p1'];
+      final first = update.execute(
+        matchId: 'match',
+        homePlayerIds: home,
+        awayPlayerIds: ['p2', 'p3', 'p4'],
+      );
+      expect(
+        identical(first, add()),
+        isTrue,
+        reason: 'Duplicate submission shares preparation and request ID',
+      );
+      home.clear(); // Caller mutation must not change the chosen operation.
+      await expectLater(first, throwsException);
+      expect(backend.commands.single['p_home'], ['p0', 'p1']);
       expect(jsonEncode(backend.tables['team_players']), before);
       expect(vector().containsKey('p0'), isFalse);
       await readable();
