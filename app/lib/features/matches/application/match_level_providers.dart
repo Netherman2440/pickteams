@@ -13,6 +13,9 @@ final starThresholdsProvider = FutureProvider.autoDispose
     .family<MatchLevelThresholds?, String>(
       (ref, squadId) =>
           ref.watch(matchLevelRepositoryProvider).loadThresholds(squadId),
+      // The settings page owns an explicit retry. Do not mask failures behind
+      // Riverpod's delayed retry/loading state in the browser.
+      retry: (retryCount, error) => null,
     );
 
 final squadMatchLevelsProvider = FutureProvider.autoDispose

@@ -7,6 +7,7 @@ import functools
 import hashlib
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import sys
 from threading import Thread
@@ -36,6 +37,8 @@ def run(build, output):
                     ('load-failure', {'screen': 'stars', 'failLoad': 'true'}, 'Nie udało się wczytać progów.'),
                 ]
                 for name, query, ready in cases:
+                    if os.environ.get('MATCH_LEVEL_CASE') not in (None, name):
+                        continue
                     page = browser.new_page(viewport={'width': 390, 'height': 1000}, device_scale_factor=1)
                     errors = []
                     page.on('pageerror', lambda e: errors.append(str(e)))
@@ -49,7 +52,12 @@ def run(build, output):
                             route.abort()
                     page.route('**/*', local_only)
                     page.goto(f'http://127.0.0.1:{server.server_port}/?{urlencode(query)}')
-                    page.wait_for_function('(text) => window.matchLevelMetrics && JSON.parse(matchLevelMetrics()).labels.some(s => s.includes(text))', arg=ready)
+                    try:
+                        page.wait_for_function('(text) => window.matchLevelMetrics && JSON.parse(matchLevelMetrics()).labels.some(s => s.includes(text))', arg=ready)
+                    except Exception:
+                        page.screenshot(path=str(out / f'{name}-failed.png'))
+                        (out / f'{name}-failed.json').write_text(json.dumps(page.evaluate('JSON.parse(matchLevelMetrics())'), indent=2, ensure_ascii=False))
+                        raise
                     # Wait for the actual loaded provider rather than only match text.
                     if name == 'hidden-25':
                         page.wait_for_function('JSON.parse(matchLevelMetrics()).requests.includes("GET matches")')

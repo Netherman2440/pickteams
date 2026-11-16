@@ -75,7 +75,7 @@ void main() {
       );
       await tester.enterText(find.byType(TextField).at(0), '12,5');
       await tester.pump();
-      expect(find.text('1,5 ★: 16,25'), findsOneWidget);
+      expect(find.text('1,5: 16,25'), findsOneWidget);
       await tester.ensureVisible(find.text('Zapisz'));
       await tester.tap(find.text('Zapisz'));
       await tester.pumpAndSettle();
@@ -90,6 +90,9 @@ void main() {
     (tester) async {
       final data = await mount(tester, 'stars', failLoad: true);
       expect(find.text('Nie udało się wczytać progów.'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 10));
+      expect(find.text('Nie udało się wczytać progów.'), findsOneWidget);
+      expect(data.requests.where((r) => r == 'GET squads').length, 1);
       data.failLoad = false;
       await tester.tap(find.text('Spróbuj ponownie'));
       await tester.pumpAndSettle();
