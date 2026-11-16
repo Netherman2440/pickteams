@@ -22,7 +22,7 @@ select count(*) as roster_rows,
       where r.player_id = tp.player_id and r.tournament_id = m.tournament_id)) as tournament_input_only,
   count(*) filter (where not exists (select 1 from public.ranking_history r
     where r.player_id = tp.player_id and (r.match_id = tp.match_id
-      or (m.tournament_id is not null and r.tournament_id = m.tournament_id))))) as no_preserved_input
+      or (m.tournament_id is not null and r.tournament_id = m.tournament_id)))) as no_preserved_input
 from public.team_players tp join public.matches m using (match_id);
 select count(*) as visible_proposals,
   count(*) filter (where jsonb_typeof(p->'rankings') = 'object') as proposals_with_scores,

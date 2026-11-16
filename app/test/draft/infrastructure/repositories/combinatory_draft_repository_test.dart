@@ -157,6 +157,8 @@ void main() {
 
       final noSubFirst = noSubstitute.first;
       final withSubFirst = withSubstitute.first;
+      expect(noSubFirst.playWithSubstitute, isFalse);
+      expect(withSubFirst.playWithSubstitute, isTrue);
 
       expect(noSubFirst.homePlayers.length, 3);
       expect(withSubFirst.homePlayers.length, 3);

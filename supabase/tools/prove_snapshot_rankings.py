@@ -35,6 +35,8 @@ def main():
         assert 'Generation A survives current B' in error, error
         proof.passed('baseline reproduces generation A replaced with acceptance B')
         proof.sql('postgres', (ROOT / 'supabase/migrations' / NEW).read_text())
+        proof.sql('postgres', (ROOT / 'supabase/tools/audit_historical_rankings.sql').read_text())
+        proof.passed('read-only audit syntax on the disposable fixture (not production inventory)')
         for path in sorted((ROOT / 'supabase/tests').glob('*.sql')):
             proof.sql('postgres', path.read_text())
             proof.passed(path.name)

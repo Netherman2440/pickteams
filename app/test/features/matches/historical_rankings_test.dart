@@ -214,6 +214,140 @@ void main() {
       );
     },
   );
+  test(
+    'legacy ID-only proposal reload uses the preserved input, not current score',
+    () async {
+      final backend = SnapshotBackend()..changeCurrentScores();
+      backend.tables['drafts']!.add({
+        'draft_id': 'draft',
+        'match_id': 'match',
+        'status': 'completed',
+        'team_count': 2,
+        'proposals_count': 1,
+      });
+      backend.tables['draft_payloads']!.add({
+        'draft_id': 'draft',
+        'proposals': [
+          {
+            'teams': [
+              ['p0', 'p1'],
+              ['p2', 'p3', 'p4'],
+            ],
+          },
+        ],
+        'win_rate_matrix': {},
+      });
+      final container = ProviderContainer(
+        overrides: [supabaseProvider.overrideWithValue(backend.client)],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await backend.client.dispose();
+      });
+      final payload = (await container
+          .read(draftPersistenceRepositoryProvider)
+          .getMatchDraft(matchId: 'match'))!;
+      expect(payload.proposals.single.rankings['p0'], 41.25);
+      expect(payload.proposals.single.rankings['p3'], 72.25);
+    },
+  );
+
+  test(
+    'partial match history resolves each preserved tournament input separately',
+    () async {
+      final backend = SnapshotBackend()..changeCurrentScores();
+      backend.tables['matches']!.single['tournament_id'] = 'tournament';
+      final input = backend.tables['ranking_history']!.last;
+      input['match_id'] = null;
+      input['tournament_id'] = 'tournament';
+      final container = ProviderContainer(
+        overrides: [supabaseProvider.overrideWithValue(backend.client)],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await backend.client.dispose();
+      });
+      final teams = await container
+          .read(teamRepositoryProvider)
+          .getMatchTeams('match');
+      expect(
+        teams.last.players.singleWhere((p) => p.playerId == 'p4').ranking,
+        56.5,
+      );
+    },
+  );
+
+  test('no preserved input cannot silently use current score', () async {
+    final backend = SnapshotBackend()..changeCurrentScores();
+    backend.tables['ranking_history']!.removeAt(0);
+    final container = ProviderContainer(
+      overrides: [supabaseProvider.overrideWithValue(backend.client)],
+    );
+    addTearDown(() async {
+      container.dispose();
+      await backend.client.dispose();
+    });
+    await expectLater(
+      container.read(teamRepositoryProvider).getMatchTeams('match'),
+      throwsException,
+    );
+  });
+
+  test(
+    'current-ranking clamps, repeated result and experience factor remain unchanged',
+    () async {
+      final backend = SnapshotBackend();
+      backend.tables['players']!.first['score'] = 99.0;
+      backend.tables['players']![2]['score'] = 1.0;
+      backend.tables['squads']!.single['use_experience_factor'] = true;
+      backend.tables['ranking_history']!.add({
+        'ranking_history_id': 'older-p0',
+        'match_id': 'older',
+        'player_id': 'p0',
+        'ranking': 90,
+        'change': 1,
+        'created_at': SnapshotBackend.date,
+      });
+      final container = ProviderContainer(
+        overrides: [
+          supabaseProvider.overrideWithValue(backend.client),
+          authStateProvider.overrideWith(SnapshotAuth.new),
+        ],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await backend.client.dispose();
+      });
+      final score = container.read(updateMatchScoreUseCaseProvider);
+      await score.execute(
+        matchId: 'match',
+        squadId: 'fixture',
+        homeScore: 1,
+        awayScore: 0,
+      );
+      expect(backend.tables['players']!.first['score'], 100);
+      expect(backend.tables['players']![2]['score'], 0);
+      expect(backend.tables['ranking_history']!.first['change'], 1);
+      expect(backend.tables['ranking_history']![2]['change'], -1);
+      expect(backend.tables['ranking_history']!.first['ranking'], 41.25);
+      await score.execute(
+        matchId: 'match',
+        squadId: 'fixture',
+        homeScore: 1,
+        awayScore: 0,
+      );
+      expect(backend.tables['players']!.first['score'], 100);
+      await score.execute(
+        matchId: 'match',
+        squadId: 'fixture',
+        homeScore: 0,
+        awayScore: 1,
+      );
+      expect(backend.tables['players']!.first['score'], 96.5);
+      expect(backend.tables['players']![2]['score'], 6);
+      expect(backend.tables['ranking_history']!.first['ranking'], 41.25);
+    },
+  );
 }
 
 class SnapshotAuth extends AuthNotifier {
