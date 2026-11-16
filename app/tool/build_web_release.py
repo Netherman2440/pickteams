@@ -195,9 +195,13 @@ def checked_web_controls(root, env):
     assert 'ignoreCommand' not in app, 'Unexpected ignore command'
     # These fields are not commands. Bound their types and syntax, not guessed
     # private values. nodeVersion is CLI runtime metadata; it never selects our
-    # checksum/revision-pinned Flutter SDK or Python build command.
+    # checksum/revision-pinned Flutter SDK or Python build command. CLI 65.15
+    # preserves project.nodeVersion in settings and supports null (default).
+    # This scalar type union does not normalize any command or source config.
     assert type(settings['createdAt']) is int and 0 <= settings['createdAt'] <= 9007199254740991, 'Invalid creation timestamp'
-    assert isinstance(settings['nodeVersion'], str) and re.fullmatch(r'[1-9][0-9]?\.x', settings['nodeVersion']), 'Invalid node metadata'
+    assert settings['nodeVersion'] is None or (
+        isinstance(settings['nodeVersion'], str) and re.fullmatch(r'[1-9][0-9]?\.x', settings['nodeVersion'])
+    ), 'Invalid node metadata'
 
 
 def verify_web_source(root, env):

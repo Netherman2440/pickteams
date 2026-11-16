@@ -475,6 +475,56 @@ class WebSourceBoundaryTest(unittest.TestCase):
                 self.put('vercel.json', json.dumps({key: value for key, value in self.app.items() if key != field}))
                 self.reject()
 
+    def test_vendor_node_metadata_null_and_bounded_strings_pass_all_web_stages_only(self):
+        for node in (None, '1.x', '24.x', '99.x'):
+            with self.subTest(node=node):
+                self.metadata['settings']['nodeVersion'] = node
+                self.materialize()
+                with patch.dict(os.environ, self.env, clear=True), redirect_stdout(StringIO()):
+                    for stage in ('before-sdk', 'after-sdk-before-pub-get',
+                                  'after-pub-get-and-checked-analysis-restore',
+                                  'after-compiler-and-checked-analysis-restore'):
+                        self.assertEqual(release.verify_source_stage(self.root, stage), self.head)
+                for strict in (verify_source, native.verify_source):
+                    with self.assertRaisesRegex(AssertionError, 'Source mutation'):
+                        strict(self.root)
+
+    def test_vendor_node_metadata_rejects_other_types_commands_and_invalid_strings(self):
+        for node in (False, True, 0, 24, -1, 24.0, [], {}, '', '0.x', '01.x', '100.x',
+                     '24', '24.0.0', 'v24.x', '24.X', ' 24.x', '24.x ', '24.x\n',
+                     '\u0662\u0664.x', '>=24.x', '24.x; SYNTHETIC_SECRET', '24.x||true', '9' * 1024 + '.x'):
+            with self.subTest(node=node):
+                self.metadata['settings']['nodeVersion'] = node
+                self.materialize()
+                with self.assertRaisesRegex(AssertionError, 'Invalid node metadata'):
+                    self.check()
+
+    def test_null_node_metadata_does_not_relax_controls_schema_context_or_index(self):
+        self.metadata['settings']['nodeVersion'] = None
+        baseline = json.dumps(self.metadata)
+        for field, value in (
+            ('buildCommand', 'SYNTHETIC_SECRET'), ('outputDirectory', 'elsewhere'),
+            ('rootDirectory', '.'), ('framework', False), ('installCommand', None),
+            ('devCommand', ''), ('ignoreCommand', None), ('commandForIgnoringBuildStep', None),
+            ('createdAt', None), ('env', {}), ('headers', []), ('unknown', True),
+        ):
+            with self.subTest(setting=field):
+                metadata = json.loads(baseline)
+                metadata['settings'][field] = value
+                self.materialize()
+                self.put('.vercel/project.json', json.dumps(metadata))
+                self.reject()
+        self.materialize()
+        self.put('.vercel/project.json', json.dumps(dict(self.metadata, env={})))
+        self.reject()
+        self.materialize()
+        for variable in ('VERCEL', 'VERCEL_ENV', 'VERCEL_GIT_COMMIT_SHA', 'VERCEL_ORG_ID'):
+            with self.subTest(context=variable):
+                self.reject({key: value for key, value in self.env.items() if key != variable})
+        self.git('add', 'vercel.json')
+        with self.assertRaisesRegex(AssertionError, 'Staged source mutation'):
+            self.check()
+
     def test_metadata_schema_controls_and_bounded_nonexecution_fields(self):
         self.materialize()
         baseline = json.dumps(self.metadata)
@@ -496,13 +546,14 @@ class WebSourceBoundaryTest(unittest.TestCase):
                 del metadata['settings'][field]
                 self.put('.vercel/project.json', json.dumps(metadata))
                 self.reject()
-        for field in ('createdAt', 'nodeVersion'):
-            for value in (None, False, [], {}, '', -1, 1.5, 9007199254740992):
-                with self.subTest(field=field, invalid=value):
-                    metadata = json.loads(baseline)
-                    metadata['settings'][field] = value
-                    self.put('.vercel/project.json', json.dumps(metadata))
-                    self.reject()
+        # Node's nullable union has dedicated positive/negative tests above;
+        # createdAt retains its non-null bounded integer schema.
+        for value in (None, False, [], {}, '', -1, 1.5, 9007199254740992):
+            with self.subTest(createdAt=value):
+                metadata = json.loads(baseline)
+                metadata['settings']['createdAt'] = value
+                self.put('.vercel/project.json', json.dumps(metadata))
+                self.reject()
         for field in ('env', 'buildCommand', 'headers', 'routes', 'unknown'):
             with self.subTest(top=field):
                 self.put('.vercel/project.json', json.dumps(dict(self.metadata, **{field: {}})))
