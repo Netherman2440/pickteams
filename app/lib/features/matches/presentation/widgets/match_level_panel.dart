@@ -76,11 +76,12 @@ class MatchLevelRating extends StatelessWidget {
         ],
       ],
     );
-    if (!details)
+    if (!details) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [const Divider(height: 24), content],
       );
+    }
     return Container(
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(16),
