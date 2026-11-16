@@ -73,16 +73,18 @@ class HistoricalMatchData {
     Object? result;
     if (request.method == 'PATCH') {
       final body = jsonDecode(request.body) as Map<String, dynamic>;
-      if (table == 'players')
+      if (table == 'players') {
         scores[playerId!] = (body['score'] as num).toDouble();
+      }
       if (table == 'ranking_history') {
         final id = q['ranking_history_id']!.replaceFirst('eq.history-', '');
         deltas[id] = (body['change'] as num).toDouble();
       }
       return http.Response('', 204, request: request);
     }
-    if (request.method == 'POST')
+    if (request.method == 'POST') {
       return http.Response('', 201, request: request);
+    }
     switch (table) {
       case 'matches':
         result = {'tournament_id': tournamentId};
@@ -141,8 +143,9 @@ class HistoricalMatchData {
                   'created_at': '2026-01-01T00:00:00Z',
                 },
           ];
-          if (q['player_id']!.startsWith('eq.'))
+          if (q['player_id']!.startsWith('eq.')) {
             result = (result as List).first;
+          }
         }
       default:
         throw StateError('Unexpected synthetic request: ${request.url}');
