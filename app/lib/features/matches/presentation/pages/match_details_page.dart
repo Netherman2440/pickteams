@@ -18,6 +18,7 @@ import 'package:app/core/app_config.dart';
 import 'package:app/core/widgets/probability_slider.dart';
 import 'package:app/core/widgets/lineup_header.dart';
 import 'package:app/core/widgets/team_transfer_target.dart';
+import '../widgets/match_level_panel.dart';
 
 enum _MatchDetailsEditMode { none, teams, score }
 
@@ -807,6 +808,11 @@ class _MatchDetailsPageState extends ConsumerState<MatchDetailsPage> {
                           'Szacowane na podstawie historycznych wyników bezpośrednich pojedynków między '
                           'graczami w tym składzie.',
                     ),
+                  MatchLevelPanel(
+                    squadId: widget.squadId,
+                    matchId: widget.matchId,
+                    details: true,
+                  ),
                 ],
               ),
             ),

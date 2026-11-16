@@ -101,6 +101,21 @@ class _SquadSettingsPageState extends ConsumerState<SquadSettingsPage> {
                     const SizedBox(height: 24),
                     _InviteSection(squadId: widget.squadId),
                     const SizedBox(height: 24),
+                    Card(
+                      color: theme.colorScheme.primaryContainer,
+                      child: ListTile(
+                        title: const Text('Zmiana progów gwiazdek'),
+                        subtitle: const Text(
+                          'Ustaw poziom meczu dla tego składu. Połówki obliczamy automatycznie.',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.pushNamed(
+                          AppRoute.starThresholds.name,
+                          pathParameters: {'squadId': widget.squadId},
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     DangerZoneSection(
                       squadId: widget.squadId,
                       squadName: squad.name,
