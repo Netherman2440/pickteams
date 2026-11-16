@@ -51,7 +51,25 @@ def run(build, output):
                         page.wait_for_function('(stage) => JSON.parse(historicalMatchMetrics()).stage === stage', arg=stage)
                         # The provider reload finishes after the stage changes.
                         page.wait_for_function('JSON.parse(historicalMatchMetrics()).panels.length > 0')
+                        banner = (
+                            f'SYNTHETIC | {"3 vs 2 (x2/3)" if unequal else "2 vs 2"} | '
+                            f'{["before result", "after result", "correction", "later current score"][stage]} | '
+                            f'Current p0: {[40, 95, 15, 150][stage]:.2f}'
+                        )
+                        score = [['-', ':', '-'], ['3', ':', '1'], ['1', ':', '4'], ['1', ':', '4']][stage]
+                        # advance() changes its mutable stage before the async
+                        # writer and provider refresh finish. Wait for paragraphs
+                        # from the new rendered tree, not just those mutable data.
+                        page.wait_for_function('''({banner, score}) => {
+                            const {labels, panels} = JSON.parse(historicalMatchMetrics());
+                            const separator = labels.indexOf(':');
+                            return panels.length > 0 && labels.includes(banner) &&
+                                JSON.stringify(labels.slice(separator - 1, separator + 2)) === JSON.stringify(score);
+                        }''', arg={'banner': banner, 'score': score})
                         metrics = page.evaluate('JSON.parse(historicalMatchMetrics())')
+                        assert banner in metrics['labels'], metrics
+                        separator = metrics['labels'].index(':')
+                        assert metrics['labels'][separator - 1:separator + 2] == score, metrics
                         assert any('SYNTHETIC' in text for text in metrics['labels']), metrics
                         assert metrics['current'] == [40, 95, 15, 150][stage], metrics
                         panels = metrics['panels']
