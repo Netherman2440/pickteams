@@ -350,8 +350,7 @@ _ParsedStoredProposals _parseStoredProposals(
             playerIds: teams.expand((team) => team),
             preservedRankings: preservedRankings,
           ),
-          playWithSubstitute:
-              proposalMap['play_with_substitute'] as bool? ?? true,
+          playWithSubstitute: resolveProposalSubstitutes(proposalMap),
         ),
       );
     }

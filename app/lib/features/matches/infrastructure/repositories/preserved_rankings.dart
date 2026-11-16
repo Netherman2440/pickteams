@@ -46,6 +46,17 @@ Future<Map<String, double>> loadPreservedRankings(
   return rankings;
 }
 
+/// ID-only legacy proposals retain their old default; new metadata is strict.
+bool resolveProposalSubstitutes(Map<String, dynamic> proposal) {
+  final option = proposal['play_with_substitute'];
+  if (option is bool) return option;
+  if (proposal.containsKey('rankings') ||
+      proposal.containsKey('play_with_substitute')) {
+    throw StateError('Missing preserved draft substitute option');
+  }
+  return true;
+}
+
 /// A new score object is authoritative, never repaired from legacy history.
 Map<String, double> resolveProposalRankings({
   required Map<String, dynamic> proposal,

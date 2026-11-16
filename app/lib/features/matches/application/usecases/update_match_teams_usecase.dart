@@ -37,6 +37,37 @@ class UpdateMatchTeamsUseCase {
     final currentPlayers = [for (final team in currentTeams) ...team.players];
     final currentPlayerIds = currentPlayers.map((p) => p.playerId).toSet();
 
+    final newPlayerIds = {...homePlayerIds, ...awayPlayerIds};
+    if (match.scoreMeta.containsKey('draft_rankings')) {
+      // New tournament matches store inputs without ranking-history events.
+      // Transfers retain inputs. A removed/re-added player gets an addition
+      // input, just like the regular match history path below.
+      final rankings = <String, double>{
+        for (final player in currentPlayers)
+          if (newPlayerIds.contains(player.playerId))
+            player.playerId: player.ranking,
+      };
+      final addedPlayers = await Future.wait(
+        newPlayerIds
+            .difference(currentPlayerIds)
+            .map((id) => _playerRepository.getPlayer(playerId: id)),
+      );
+      for (final player in addedPlayers) {
+        rankings[player.playerId] = player.ranking;
+      }
+      await _teamRepository.updateMatchTeams(
+        matchId: matchId,
+        homePlayerIds: homePlayerIds,
+        awayPlayerIds: awayPlayerIds,
+      );
+      await _matchRepository.updateMatchScore(
+        matchId: matchId,
+        scoreMeta: {...match.scoreMeta, 'draft_rankings': rankings},
+      );
+      await _matchRepository.refreshMatchWinProbability(matchId: matchId);
+      return;
+    }
+
     // 3. Update teams
     await _teamRepository.updateMatchTeams(
       matchId: matchId,
@@ -45,8 +76,6 @@ class UpdateMatchTeamsUseCase {
     );
 
     await _matchRepository.refreshMatchWinProbability(matchId: matchId);
-
-    final newPlayerIds = {...homePlayerIds, ...awayPlayerIds};
 
     // Identify Added Players
     final addedIds = newPlayerIds.difference(currentPlayerIds);

@@ -250,8 +250,7 @@ _ParsedStoredProposals _parseStoredProposals(
         StoredDraftProposal(
           teams: teams,
           rankings: rankings,
-          playWithSubstitute:
-              proposalMap['play_with_substitute'] as bool? ?? true,
+          playWithSubstitute: resolveProposalSubstitutes(proposalMap),
         ),
       );
     }

@@ -1,10 +1,107 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:app/core/global_dependencies.dart';
+import 'package:app/features/matches/application/usecases/update_match_teams_usecase.dart';
 import 'package:app/features/matches/infrastructure/repositories/preserved_rankings.dart';
 import 'package:app/features/draft/infrastructure/repositories/supabase_draft_persistence_repository.dart';
 import 'package:app/features/matches/infrastructure/repositories/supabase_team_repository.dart';
 import '../../../fixtures/snapshot_backend.dart';
 
 void main() {
+  test(
+    'new substitute metadata is required; legacy default stays explicit in the contract',
+    () {
+      expect(resolveProposalSubstitutes({}), isTrue);
+      for (final option in [false, true]) {
+        expect(
+          resolveProposalSubstitutes({
+            'rankings': {'p': 41.25},
+            'play_with_substitute': option,
+          }),
+          option,
+        );
+      }
+      for (final proposal in <Map<String, dynamic>>[
+        {
+          'rankings': {'p': 41.25},
+        },
+        {
+          'rankings': {'p': 41.25},
+          'play_with_substitute': null,
+        },
+        {'play_with_substitute': 'false'},
+        {'play_with_substitute': null},
+      ]) {
+        expect(() => resolveProposalSubstitutes(proposal), throwsStateError);
+      }
+    },
+  );
+  test(
+    'tournament match transfer/remove/re-add updates the vector without history events',
+    () async {
+      final backend = SnapshotBackend();
+      final inputs = {
+        for (final row in backend.tables['players']!)
+          row['player_id'] as String: (row['score'] as num).toDouble(),
+      };
+      backend.tables['matches']!.single['score_meta'] = {
+        'draft_rankings': inputs,
+        'tournament_home_team_id': 't0',
+      };
+      backend.tables['matches']!.single['tournament_id'] = 'tournament';
+      backend.tables['ranking_history']!.clear();
+      backend.changeCurrentScores();
+      final container = ProviderContainer(
+        overrides: [supabaseProvider.overrideWithValue(backend.client)],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await backend.client.dispose();
+      });
+      final update = container.read(updateMatchTeamsUseCaseProvider);
+      Map<dynamic, dynamic> storedInputs() =>
+          backend.tables['matches']!.single['score_meta']['draft_rankings']
+              as Map;
+      await update.execute(
+        matchId: 'match',
+        homePlayerIds: ['p1'],
+        awayPlayerIds: ['p0', 'p2', 'p3', 'p4'],
+      );
+      expect(storedInputs()['p0'], 41.25);
+      await update.execute(
+        matchId: 'match',
+        homePlayerIds: ['p1'],
+        awayPlayerIds: ['p2', 'p3', 'p4'],
+      );
+      expect(storedInputs().containsKey('p0'), isFalse);
+      await update.execute(
+        matchId: 'match',
+        homePlayerIds: ['p0', 'p1'],
+        awayPlayerIds: ['p2', 'p3', 'p4'],
+      );
+      expect(storedInputs()['p0'], 90);
+      expect(
+        backend
+            .tables['matches']!
+            .single['score_meta']['tournament_home_team_id'],
+        't0',
+      );
+      expect(backend.tables['ranking_history'], isEmpty);
+      final teams = await SupabaseTeamRepository(
+        backend.client,
+      ).getMatchTeams('match');
+      expect(teams.first.players.first.ranking, 90);
+      backend.tables['matches']!.single['home_score'] = 1;
+      await expectLater(
+        update.execute(
+          matchId: 'match',
+          homePlayerIds: [],
+          awayPlayerIds: ['p0'],
+        ),
+        throwsException,
+      );
+    },
+  );
   test(
     'new match metadata is authoritative for details and legacy proposals',
     () async {
