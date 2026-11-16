@@ -39,6 +39,11 @@
 - Include direct links to each design variant, and label mockups and sample data clearly.
 - Serve only a dedicated public prototype directory on the Tailscale interface. Do not expose the repository, credentials, or production data. Keep an explicitly shared preview running until it is replaced or the owner asks to stop it.
 
+## Limen Coordination
+- Use the multi-coordinator workflow in `.agents/limen/coordination.md`.
+- The registered GitHub session handles intake; each independent feature has its own persistent Herdr/Pi coordinator. Coordinators are not Limen worker jobs.
+- Keep workers in separate worktrees, route PR feedback to the existing feature coordinator, and preserve explicit dependencies and publication limits.
+
 ## Codex Command: create_doc
 Use this command format in chat with Codex:
 
