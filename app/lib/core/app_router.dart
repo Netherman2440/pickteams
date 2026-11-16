@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:app/features/squads/presentation/pages/squad_star_thresholds_page.dart';
 
 import 'package:app/features/players/presentation/pages/player_details_page.dart';
 import 'package:app/features/players/presentation/pages/player_matches_page.dart';
@@ -44,6 +45,7 @@ enum AppRoute {
   squads,
   settings,
   rankingSettings,
+  starThresholds,
   squadStats,
   profile,
   squadDetails,
@@ -576,6 +578,15 @@ final appRouter = () {
                 child: SquadSettingsPage(squadId: squadId),
               );
             },
+          ),
+          GoRoute(
+            path: '/squads/:squadId/settings/stars',
+            name: AppRoute.starThresholds.name,
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: SquadStarThresholdsPage(
+                squadId: state.pathParameters['squadId'] ?? '',
+              ),
+            ),
           ),
           GoRoute(
             path: '/squads/:squadId/settings/ranking',
