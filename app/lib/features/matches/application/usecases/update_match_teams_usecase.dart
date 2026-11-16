@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:app/features/matches/domain/repositories/match_repository.dart';
 import 'package:app/features/matches/domain/repositories/team_repository.dart';
 import 'package:app/features/matches/matches_providers.dart';
@@ -11,6 +13,7 @@ class UpdateMatchTeamsUseCase {
   final TeamRepository _teamRepository;
   final RankingRepository _rankingRepository;
   final PlayerRepository _playerRepository;
+  final _pending = <String, _PreservedRosterEdit>{};
 
   UpdateMatchTeamsUseCase(
     this._matchRepository,
@@ -24,6 +27,17 @@ class UpdateMatchTeamsUseCase {
     required List<String> homePlayerIds,
     required List<String> awayPlayerIds,
   }) async {
+    // Freeze membership and inputs across a failed response/retry. A replay
+    // reaches the server directly, not a strict reader of a possible old state.
+    final home = [...homePlayerIds]..sort();
+    final away = [...awayPlayerIds]..sort();
+    final key = jsonEncode([home, away]);
+    final pending = _pending[matchId];
+    if (pending != null && pending.key == key) {
+      await _submitPreserved(matchId, pending);
+      return;
+    }
+
     // 1. Get current match
     final match = await _matchRepository.getMatch(matchId: matchId);
 
@@ -37,7 +51,7 @@ class UpdateMatchTeamsUseCase {
     final currentPlayers = [for (final team in currentTeams) ...team.players];
     final currentPlayerIds = currentPlayers.map((p) => p.playerId).toSet();
 
-    final newPlayerIds = {...homePlayerIds, ...awayPlayerIds};
+    final newPlayerIds = {...home, ...away};
     if (match.scoreMeta.containsKey('draft_rankings')) {
       // New tournament matches store inputs without ranking-history events.
       // Transfers retain inputs. A removed/re-added player gets an addition
@@ -55,16 +69,17 @@ class UpdateMatchTeamsUseCase {
       for (final player in addedPlayers) {
         rankings[player.playerId] = player.ranking;
       }
-      await _teamRepository.updateMatchTeams(
-        matchId: matchId,
-        homePlayerIds: homePlayerIds,
-        awayPlayerIds: awayPlayerIds,
+      final edit = _PreservedRosterEdit(
+        key: key,
+        requestId: const Uuid().v4(),
+        home: List.unmodifiable(home),
+        away: List.unmodifiable(away),
+        rankings: Map.unmodifiable(rankings),
+        expectedVersion:
+            (match.scoreMeta['_roster_operation'] as Map?)?['id'] as String?,
       );
-      await _matchRepository.updateMatchScore(
-        matchId: matchId,
-        scoreMeta: {...match.scoreMeta, 'draft_rankings': rankings},
-      );
-      await _matchRepository.refreshMatchWinProbability(matchId: matchId);
+      _pending[matchId] = edit;
+      await _submitPreserved(matchId, edit);
       return;
     }
 
@@ -125,6 +140,39 @@ class UpdateMatchTeamsUseCase {
       await Future.wait(removeEntryFutures);
     }
   }
+
+  Future<void> _submitPreserved(
+    String matchId,
+    _PreservedRosterEdit edit,
+  ) async {
+    await _teamRepository.updatePreservedMatchRoster(
+      matchId: matchId,
+      requestId: edit.requestId,
+      homePlayerIds: edit.home,
+      awayPlayerIds: edit.away,
+      rankings: edit.rankings,
+      expectedVersion: edit.expectedVersion,
+    );
+    if (identical(_pending[matchId], edit)) _pending.remove(matchId);
+  }
+}
+
+class _PreservedRosterEdit {
+  final String key;
+  final String requestId;
+  final List<String> home;
+  final List<String> away;
+  final Map<String, double> rankings;
+  final String? expectedVersion;
+
+  const _PreservedRosterEdit({
+    required this.key,
+    required this.requestId,
+    required this.home,
+    required this.away,
+    required this.rankings,
+    required this.expectedVersion,
+  });
 }
 
 final updateMatchTeamsUseCaseProvider = Provider<UpdateMatchTeamsUseCase>((

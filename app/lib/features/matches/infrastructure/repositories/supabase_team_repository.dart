@@ -201,6 +201,33 @@ class SupabaseTeamRepository implements TeamRepository {
   }
 
   @override
+  Future<void> updatePreservedMatchRoster({
+    required String matchId,
+    required String requestId,
+    required List<String> homePlayerIds,
+    required List<String> awayPlayerIds,
+    required Map<String, double> rankings,
+    required String? expectedVersion,
+  }) async {
+    try {
+      await _supabase.rpc(
+        'update_preserved_match_roster',
+        params: {
+          'p_match_id': matchId,
+          'p_request_id': requestId,
+          'p_home': homePlayerIds,
+          'p_away': awayPlayerIds,
+          'p_rankings': rankings,
+          'p_expected_version': expectedVersion,
+        },
+      );
+    } catch (e, stack) {
+      _logger.severe('Failed to update preserved match roster', e, stack);
+      throw e.toFailure();
+    }
+  }
+
+  @override
   Future<Team> updateTeam({
     required String matchId,
     required String teamId,

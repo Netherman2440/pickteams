@@ -6,6 +6,7 @@ import 'package:app/features/matches/infrastructure/repositories/preserved_ranki
 import 'package:app/features/draft/infrastructure/repositories/supabase_draft_persistence_repository.dart';
 import 'package:app/features/matches/infrastructure/repositories/supabase_team_repository.dart';
 import '../../../fixtures/snapshot_backend.dart';
+import '../../../fixtures/atomic_roster_backend.dart';
 
 void main() {
   test(
@@ -39,7 +40,7 @@ void main() {
   test(
     'tournament match transfer/remove/re-add updates the vector without history events',
     () async {
-      final backend = SnapshotBackend();
+      final backend = AtomicRosterBackend();
       final inputs = {
         for (final row in backend.tables['players']!)
           row['player_id'] as String: (row['score'] as num).toDouble(),

@@ -18,6 +18,15 @@ abstract class TeamRepository {
     required List<String> awayPlayerIds,
   });
 
+  Future<void> updatePreservedMatchRoster({
+    required String matchId,
+    required String requestId,
+    required List<String> homePlayerIds,
+    required List<String> awayPlayerIds,
+    required Map<String, double> rankings,
+    required String? expectedVersion,
+  });
+
   Future<Team> updateTeam({
     required String matchId,
     required String teamId,
