@@ -602,18 +602,18 @@ def _candidate_public_payload(app):
     allowed = {name: (kind, None) for name, kind in {
         'index.html': 'html', 'main.dart.js': 'code', 'flutter.js': 'code',
         'flutter_bootstrap.js': 'code', 'flutter_service_worker.js': 'code',
-        'version.json': 'json', '.last_build_id': 'text',
-        'assets/AssetManifest.bin': 'binary', 'assets/AssetManifest.bin.json': 'json',
-        'assets/FontManifest.json': 'json', 'assets/NOTICES': 'text',
+        'version.json': 'version', '.last_build_id': 'build-id',
+        'assets/AssetManifest.bin': 'asset-manifest', 'assets/AssetManifest.bin.json': 'asset-manifest-json',
+        'assets/FontManifest.json': 'font-manifest', 'assets/NOTICES': 'notices',
         'assets/fonts/MaterialIcons-Regular.otf': 'font',
         'assets/fonts/fallback/Roboto-Regular.ttf': 'font',
         'assets/packages/cupertino_icons/assets/CupertinoIcons.ttf': 'font',
-        'assets/shaders/ink_sparkle.frag': 'binary',
-        'assets/shaders/stretch_effect.frag': 'binary',
+        'assets/shaders/ink_sparkle.frag': 'shader',
+        'assets/shaders/stretch_effect.frag': 'shader',
     }.items()}
     for stem in ('canvaskit', 'chromium/canvaskit', 'webparagraph/canvaskit',
                  'skwasm', 'skwasm_heavy', 'wimp'):
-        for suffix, kind in (('.js', 'code'), ('.js.symbols', 'text'), ('.wasm', 'wasm')):
+        for suffix, kind in (('.js', 'code'), ('.js.symbols', 'symbols'), ('.wasm', 'wasm')):
             allowed['canvaskit/' + stem + suffix] = (kind, None)
 
     def safe_path(value):
@@ -779,21 +779,131 @@ def _candidate_private_content(raw, code=False):
     inspect(raw)
 
 
-def _candidate_public_type(raw, kind):
-    """Small positive type contract for the closed public-payload roles."""
-    if kind in ('code', 'html', 'text', 'json', 'svg'):
+def _candidate_asset_manifest(raw, asset_keys):
+    """Bounded StandardMessageCodec subset used by Flutter's asset manifest.
+
+    No extensions, binary blobs, archives or trailing data. Every string which
+    may name a payload must point to the closed authorized public asset set.
+    """
+    import struct
+
+    assert len(raw) <= 1048576, 'Asset manifest too large'
+    position = 0
+    nodes = 0
+
+    def take(length):
+        nonlocal position
+        assert 0 <= length <= 1048576 and position + length <= len(raw), 'Truncated asset manifest'
+        result = raw[position:position + length]
+        position += length
+        return result
+
+    def number(length):
+        return int.from_bytes(take(length), 'little')
+
+    def read(depth=0):
+        nonlocal nodes
+        nodes += 1
+        assert nodes <= 32768 and depth <= 16, 'Asset manifest structure limit'
+        tag = number(1)
+        if tag in (3, 4):
+            return int.from_bytes(take(4 if tag == 3 else 8), 'little', signed=True)
+        if tag == 6:
+            assert not any(take((-position) % 8)), 'Invalid asset float alignment'
+            return struct.unpack('<d', take(8))[0]
+        assert tag in (7, 12, 13), 'Unknown asset manifest type'
+        size = number(1)
+        length = number(2 if size == 254 else 4) if size >= 254 else size
+        assert length <= 2048, 'Asset manifest collection/string limit'
+        if tag == 7:
+            return take(length).decode('utf-8')
+        if tag == 12:
+            return [read(depth + 1) for _ in range(length)]
+        result = {}
+        for _ in range(length):
+            key = read(depth + 1)
+            assert isinstance(key, str) and key not in result, 'Invalid asset manifest key'
+            result[key] = read(depth + 1)
+        return result
+
+    value = read()
+    assert position == len(raw) and isinstance(value, dict), 'Invalid asset manifest envelope'
+    references = set()
+    for key, variants in value.items():
+        assert key in asset_keys and isinstance(variants, list) and variants, 'Unknown asset manifest reference'
+        for variant in variants:
+            assert isinstance(variant, dict) and {'asset'} <= variant.keys() <= {'asset', 'dpr'}, 'Invalid asset variant'
+            assert isinstance(variant['asset'], str) and variant['asset'] in asset_keys, 'Unknown asset variant reference'
+            references.add(variant['asset'])
+            if 'dpr' in variant:
+                assert type(variant['dpr']) in (int, float) and 0 < variant['dpr'] <= 64, 'Invalid asset pixel ratio'
+    return references
+
+
+def _candidate_public_type(raw, kind, asset_keys=()):
+    """Positive types/schemas, including generated metadata, not opaque slots."""
+    if kind == 'asset-manifest':
+        return raw, _candidate_asset_manifest(raw, asset_keys)
+    json_kinds = ('json', 'version', 'font-manifest', 'shader', 'asset-manifest-json')
+    if kind in ('code', 'html', 'text', 'svg', 'symbols', 'notices', 'build-id') + json_kinds:
         text = raw.decode('utf-8-sig')
         assert '\0' not in text, 'Binary content in public text'
-        if kind == 'json':
+        if kind in json_kinds:
             assert len(raw) <= 1048576, 'Generated/public JSON too large'
 
             def invalid_constant(value):
                 raise ValueError('Non-JSON public constant')
 
             try:
-                json.loads(text, parse_constant=invalid_constant)
+                value = json.loads(text, parse_constant=invalid_constant)
             except (ValueError, RecursionError):
                 raise AssertionError('Invalid public JSON') from None
+            if kind == 'asset-manifest-json':
+                assert isinstance(value, str), 'Invalid JSON asset manifest'
+                try:
+                    data = base64.b64decode(value, validate=True)
+                except ValueError:
+                    raise AssertionError('Invalid JSON asset encoding') from None
+                return data, _candidate_asset_manifest(data, asset_keys)
+            if kind == 'version':
+                assert isinstance(value, dict) and set(value) == {'app_name', 'version', 'build_number', 'package_name'}, 'Invalid compiler version metadata'
+                assert all(isinstance(item, str) for item in value.values()), 'Invalid version metadata type'
+                assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', value['version']), 'Invalid compiler version'
+                assert re.fullmatch(r'[0-9]{1,20}', value['build_number']), 'Invalid compiler build number'
+                assert all(re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,127}', value[key]) for key in ('app_name', 'package_name')), 'Invalid compiler package name'
+            elif kind == 'font-manifest':
+                assert isinstance(value, list) and len(value) <= 256, 'Invalid font manifest'
+                references = set()
+                for family in value:
+                    assert isinstance(family, dict) and set(family) == {'family', 'fonts'}, 'Invalid font family metadata'
+                    assert isinstance(family['family'], str) and re.fullmatch(r'[\w ./-]{1,128}', family['family']), 'Invalid font family'
+                    assert isinstance(family['fonts'], list) and len(family['fonts']) <= 256, 'Invalid font variants'
+                    for font in family['fonts']:
+                        assert isinstance(font, dict) and {'asset'} <= font.keys() <= {'asset', 'weight', 'style'}, 'Invalid font variant'
+                        assert isinstance(font['asset'], str) and font['asset'] in asset_keys, 'Unknown font asset'
+                        references.add(font['asset'])
+                        assert 'weight' not in font or (type(font['weight']) is int and 1 <= font['weight'] <= 1000), 'Invalid font weight'
+                        assert 'style' not in font or font['style'] in ('normal', 'italic'), 'Invalid font style'
+                return None, references
+            elif kind == 'shader':
+                assert isinstance(value, dict) and set(value) == {'format_version', 'sksl'}, 'Invalid shader envelope'
+                assert type(value['format_version']) is int and value['format_version'] == 2, 'Invalid shader version'
+                shader = value['sksl']
+                assert isinstance(shader, dict) and set(shader) == {'entrypoint', 'shader', 'stage', 'uniforms'}, 'Invalid shader metadata'
+                assert isinstance(shader['entrypoint'], str) and re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', shader['entrypoint']), 'Invalid shader entrypoint'
+                assert isinstance(shader['shader'], str) and shader['shader'].startswith('// This SkSL shader is autogenerated by spirv-cross.'), 'Invalid compiled shader'
+                assert type(shader['stage']) is int and shader['stage'] == 1, 'Invalid shader stage'
+                assert isinstance(shader['uniforms'], list) and len(shader['uniforms']) <= 256, 'Invalid shader uniforms'
+                for uniform in shader['uniforms']:
+                    assert isinstance(uniform, dict) and set(uniform) == {'array_elements', 'bit_width', 'columns', 'location', 'name', 'rows', 'type'}, 'Invalid shader uniform'
+                    assert isinstance(uniform['name'], str) and re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', uniform['name']), 'Invalid uniform name'
+                    assert all(type(item) is int and 0 <= item <= 65536 for key, item in uniform.items() if key != 'name'), 'Invalid uniform type'
+        elif kind == 'symbols':
+            assert all(re.fullmatch(r'[0-9]+:.{1,65536}', line) for line in text.splitlines()), 'Invalid SDK symbol metadata'
+        elif kind == 'notices':
+            assert '\n\n' in text and re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,127}', text.splitlines()[0]), 'Invalid compiler license metadata'
+        elif kind == 'build-id':
+            assert re.fullmatch(r'[a-f0-9-]{16,64}', text.strip()), 'Invalid compiler build identifier'
         elif kind == 'html':
             assert re.match(r'\s*(?:<!doctype html|<html)', text, re.I), 'Invalid public HTML'
         elif kind == 'svg':
@@ -815,7 +925,7 @@ def _candidate_public_type(raw, kind):
     elif kind == 'ico':
         assert raw.startswith(b'\0\0\x01\0'), 'Invalid public icon'
     else:
-        assert kind == 'binary', 'Unknown public payload role'
+        raise AssertionError('Unknown public payload role')
 
 
 def build_candidate(app, env, flutter):
@@ -827,6 +937,9 @@ def build_candidate(app, env, flutter):
     assert public_revision == source.identity['checkoutCommit'], 'Public input source context changed'
     files = {}
     total = 0
+    asset_keys = frozenset(path[7:] for path in allowed if path.startswith('assets/'))
+    asset_manifests = {}
+    references = set()
     for directory, directories, names in os.walk(output, followlinks=False):
         assert all(not (Path(directory) / name).is_symlink() for name in directories), 'Linked candidate output directory'
         for name in directories:
@@ -856,9 +969,16 @@ def build_candidate(app, env, flutter):
             assert digest not in source_hashes, 'Renamed non-public source/control input'
             assert source_digest is None or digest == source_digest, 'Public source payload differs from immutable input'
             _candidate_private_content(raw, code=kind == 'code')
-            _candidate_public_type(raw, kind)
+            metadata = _candidate_public_type(raw, kind, asset_keys)
+            if metadata is not None:
+                asset_manifest, refs = metadata
+                if asset_manifest is not None:
+                    asset_manifests[kind] = hashlib.sha256(asset_manifest).hexdigest()
+                references.update('web/assets/' + ref for ref in refs)
             files['web/' + relative] = digest
     assert {'web/index.html', 'web/main.dart.js'} <= files.keys(), 'Missing runnable candidate entrypoint'
+    assert len(set(asset_manifests.values())) <= 1, 'Asset manifest representations differ'
+    assert references <= files.keys(), 'Public metadata references a missing payload'
     source.verify_stage(app.parent, 'after-compiler-and-checked-analysis-restore')
     manifest = {'schemaVersion': 1, 'kind': 'pickteams-unaccepted-web-candidate',
                 'payloadPolicy': 'flutter-3.47.9-dart2js-public-v1',
