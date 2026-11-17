@@ -1009,7 +1009,7 @@ class CandidatePolicyTest(unittest.TestCase):
                 self.config_bytes = temporary.read_bytes()
                 self.put('app/build/web/index.html', '<html>synthetic runnable fixture</html>')
                 self.put('app/build/web/main.dart.js', 'synthetic compiled public client')
-                self.put('app/build/web/assets/manifest.json', '{"synthetic":true}')
+                self.put('app/build/web/assets/FontManifest.json', '[]')
                 if extra:
                     extra()
         return execute
@@ -1088,6 +1088,175 @@ class CandidatePolicyTest(unittest.TestCase):
                     with self.assertRaises(AssertionError):
                         release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
                 self.assertFalse((self.root / 'app/build/candidate-web/candidate.json').exists())
+
+    def declare_public_inputs(self, inputs, declarations=('assets/public/',)):
+        # Real tracked public input and new synthetic PR head/merge, no source
+        # admission override. Never modify the actual worktree or SDK.
+        self._public_source_base_head = getattr(self, '_public_source_base_head', self.head)
+        self.git('checkout', '-q', '--detach', self._public_source_base_head)
+        self.git('clean', '-fdxq')
+        for path, raw in inputs.items():
+            self.put('app/' + path, raw)
+        pubspec = (self.root / 'app/pubspec.yaml').read_text()
+        self.put('app/pubspec.yaml', pubspec + 'flutter:\n  assets:\n' + ''.join('    - ' + item + '\n' for item in declarations))
+        self.commit()
+        self.head = self.sha()
+        self.git('checkout', '-q', '--detach', self.base)
+        self.git('merge', '-q', '--no-ff', '--no-edit', self.head)
+        self.checkout = self.sha()
+        self.event['pull_request']['head']['sha'] = self.head
+        self.event['pull_request']['merge_commit_sha'] = self.checkout
+        self.env['GITHUB_SHA'] = self.checkout
+        self.event_path.write_text(json.dumps(self.event))
+
+    def test_normal_closed_compiler_layout_and_source_bound_public_assets(self):
+        inputs = {'assets/public/logo.png': b'\x89PNG\r\n\x1a\nSYNTHETIC',
+                  'assets/public/font.ttf': b'\0\x01\0\0SYNTHETIC_FONT',
+                  'assets/public/data.json': b'{"label":"public"}',
+                  'assets/public/logo.svg': b'<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+                  'assets/public/photo.jpg': b'\xff\xd8\xffSYNTHETIC',
+                  'assets/public/image.gif': b'GIF89aSYNTHETIC',
+                  'assets/public/image.webp': b'RIFF1234WEBPSYNTHETIC',
+                  'assets/public/icon.ico': b'\0\0\x01\0SYNTHETIC',
+                  'assets/public/other.otf': b'OTTOSYNTHETIC',
+                  'assets/public/web.woff': b'wOFFSYNTHETIC',
+                  'assets/public/web.woff2': b'wOF2SYNTHETIC',
+                  'assets/public/license.txt': b'Synthetic public font license.',
+                  'web/manifest.json': b'{"name":"synthetic app"}',
+                  'web/icons/app.png': b'\x89PNG\r\n\x1a\nSYNTHETIC_ICON'}
+        self.declare_public_inputs(inputs)
+        allowed, source_hashes, revision = release._candidate_public_payload(self.root / 'app')
+        self.assertTrue(source_hashes)
+        self.assertEqual(revision, self.checkout)
+        values = {'code': b'const publicValue = "synthetic";', 'html': b'<html>synthetic</html>',
+                  'text': b'Synthetic public metadata.', 'json': b'[]',
+                  'font': b'\0\x01\0\0SYNTHETIC_FONT', 'binary': b'\x81\xa5fonts\x90',
+                  'wasm': b'\0asm\x01\0\0\0', 'png': b'\x89PNG\r\n\x1a\nSYNTHETIC'}
+
+        def extra():
+            for path, (kind, digest) in allowed.items():
+                if digest:
+                    source = path[7:] if path.startswith('assets/assets/') else 'web/' + path
+                    self.put('app/build/web/' + path, inputs[source])
+                else:
+                    self.put('app/build/web/' + path, values[kind])
+            # Compiled public defines may contain both names AND their public
+            # values. This is JS, not a retained raw configuration asset.
+            self.put('app/build/web/main.dart.js', 'const defines = ' + json.dumps(release.client_config(self.env)) + ';')
+        with patch.object(release, 'run', side_effect=self.fake_compile(extra)), redirect_stdout(StringIO()):
+            manifest = release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.assertEqual(set(manifest['files']), {'web/' + path for path in allowed})
+        self.assertEqual(manifest['payloadPolicy'], 'flutter-3.47.9-dart2js-public-v1')
+        self.assertFalse(self.config_path.exists())
+
+    def test_unknown_payload_and_declared_source_mismatch_reject(self):
+        self.declare_public_inputs({'assets/public/data.json': b'{"label":"public"}'})
+        for path, raw in (('assets/unlisted.json', b'{}'), ('canvaskit/not-a-compiler-file.wasm', b'\0asm\x01\0\0\0'),
+                          ('.hidden', b'private'), ('assets/assets/public/data.json', b'{"changed":true}')):
+            with self.subTest(path=path):
+                self.reset_fixture()
+                with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/' + path, raw))), redirect_stdout(StringIO()):
+                    with self.assertRaisesRegex(AssertionError, 'Unexpected candidate payload|differs from immutable'):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_reviewer_representations_and_key_magic_reject_in_authorized_payload_roles(self):
+        cfg = release.client_config(self.env)
+        pretty = json.dumps(cfg, indent=2)
+        escaped = pretty.replace('SUPABASE', r'\u0053UPABASE')
+        cases = [json.dumps({'payload': escaped}).encode(),
+                 json.dumps({'payload': base64.urlsafe_b64encode(escaped.encode()).decode().rstrip('=')}).encode(),
+                 base64.b64encode(pretty.encode()), json.dumps({'payload': pretty}).encode(),
+                 json.dumps(pretty).encode(), '\n'.join(k + '=' + v for k, v in cfg.items()).encode(),
+                 b'-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY\n-----END PRIVATE KEY-----',
+                 b'\xfe\xed\xfe\xedSYNTHETIC_NOT_A_KEYSTORE',
+                 b'\xce\xce\xce\xceSYNTHETIC_NOT_A_KEYSTORE',
+                 b'storeFile=SYNTHETIC.jks\nstorePassword=SYNTHETIC\n',
+                 json.dumps({'settings': {'storePassword': 'SYNTHETIC'}}).encode(),
+                 json.dumps({'payload': base64.b64encode(pretty.encode()).decode()}).encode()]
+        for raw in cases:
+            with self.subTest(case=cases.index(raw)):
+                with self.assertRaises(AssertionError):
+                    release._candidate_private_content(raw, code=True)
+                self.reset_fixture()
+                # A real generated, authorized opaque payload name: content,
+                # not just the rejection of the reviewer's eight filenames.
+                with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/assets/AssetManifest.bin', raw))), redirect_stdout(StringIO()):
+                    with self.assertRaises(AssertionError):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_source_and_signing_inputs_cannot_be_declared_public_by_suffix(self):
+        for path, raw in (('assets/public/infrastructure.py', b'# source, not executed'),
+                          ('assets/public/signing.keystore', b'\xfe\xed\xfe\xedSYNTHETIC'),
+                          ('assets/public/private.key', b'SYNTHETIC_NOT_A_KEY')):
+            with self.subTest(path=path):
+                # Each variant is committed/declared, not an untracked file.
+                self.declare_public_inputs({path: raw})
+                with self.assertRaisesRegex(AssertionError, 'Unsupported public payload type'):
+                    release._candidate_public_payload(self.root / 'app')
+
+    def test_public_source_text_and_generated_output_content_are_not_privacy_exempt(self):
+        raw = base64.b64encode(json.dumps(release.client_config(self.env), indent=2).encode())
+        self.declare_public_inputs({'assets/public/document.txt': raw})
+        with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/assets/assets/public/document.txt', raw))), redirect_stdout(StringIO()):
+            with self.assertRaises(AssertionError):
+                release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.reset_fixture()
+        # Renaming actual non-public source into an authorized SDK file also
+        # rejects independently of filename or serialization form.
+        source = self.git('show', 'HEAD:app/lib/main.dart')
+        with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/assets/NOTICES', source))), redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(AssertionError, 'Renamed non-public source'):
+                release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_serialization_and_payload_resource_bounds_fail_closed(self):
+        raw = json.dumps(release.client_config(self.env)).encode()
+        for _ in range(12):
+            raw = base64.b64encode(raw)
+        for value in (raw, b'[' * 1500 + b'0' + b']' * 1500,
+                      b'[' + b','.join([b'0'] * 1100) + b']', b'"' + b'a' * 1048576 + b'"'):
+            with self.subTest(length=len(value)):
+                with self.assertRaises(AssertionError):
+                    release._candidate_private_content(value)
+        for raw, kind in ((b'not a font', 'font'), (b'not wasm', 'wasm'), (b'not png', 'png'),
+                          (b'\xff', 'text'), (b'# Python source', 'code'), (b'not html', 'html'),
+                          (b'NaN', 'json'), (b'{"value":Infinity}', 'json')):
+            with self.assertRaises((AssertionError, UnicodeError)):
+                release._candidate_public_type(raw, kind)
+
+        def oversized():
+            path = self.root / 'app/build/web/canvaskit/canvaskit.wasm'
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open('wb') as stream:
+                stream.truncate(67108865)  # Sparse fixture; must reject before reading.
+        with patch.object(release, 'run', side_effect=self.fake_compile(oversized)), redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(AssertionError, 'file too large'):
+                release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.reset_fixture()
+
+        def oversized_total():
+            for stem in ('canvaskit', 'chromium/canvaskit', 'webparagraph/canvaskit', 'skwasm', 'wimp'):
+                path = self.root / ('app/build/web/canvaskit/' + stem + '.wasm')
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open('wb') as stream:
+                    stream.write(b'\0asm\x01\0\0\0')
+                    stream.truncate(67108864)  # Valid header, sparse bounded data.
+        with patch.object(release, 'run', side_effect=self.fake_compile(oversized_total)), redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(AssertionError, 'total size exceeded'):
+                release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_source_declaration_language_is_closed_and_bounded(self):
+        for declaration in ('../lib/', 'lib/', '*alias', '{path: assets/public/}'):
+            with self.subTest(declaration=declaration):
+                self.declare_public_inputs({}, declarations=(declaration,))
+                with self.assertRaises(AssertionError):
+                    release._candidate_public_payload(self.root / 'app')
+        self.declare_public_inputs({}, declarations=('assets/public/',) * 257)
+        with self.assertRaisesRegex(AssertionError, 'declaration count exceeded'):
+            release._candidate_public_payload(self.root / 'app')
+        self.declare_public_inputs({'assets/public/item' + str(index) + '.txt': 'public data'
+                                    for index in range(2049)})
+        with self.assertRaisesRegex(AssertionError, 'input count exceeded'):
+            release._candidate_public_payload(self.root / 'app')
 
     def test_production_cli_has_no_candidate_environment_switch_and_workflow_artifacts_are_distinct(self):
         with patch.dict(os.environ, dict(self.env, PICKTEAMS_SOURCE_POLICY='candidate'), clear=True), \

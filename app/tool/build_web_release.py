@@ -587,43 +587,281 @@ def build(app, env, flutter):
     return manifest
 
 
+def _candidate_public_payload(app):
+    """Closed Flutter 3.47.9 dart2js payload, not a directory/suffix exemption.
+
+    Generated names are finite. Other files must be public typed app/web copies
+    or literal flutter assets/fonts under assets/ or fonts/, tracked in HEAD and
+    byte-identical to that source. Unsupported YAML declarations fail closed.
+    """
+    def git(*args):
+        return subprocess.check_output(['git', *args], cwd=app.parent, stderr=subprocess.DEVNULL)
+
+    revision = git('rev-parse', 'HEAD').decode().strip()
+    assert re.fullmatch(r'[a-f0-9]{40}', revision), 'Invalid public-input snapshot'
+    allowed = {name: (kind, None) for name, kind in {
+        'index.html': 'html', 'main.dart.js': 'code', 'flutter.js': 'code',
+        'flutter_bootstrap.js': 'code', 'flutter_service_worker.js': 'code',
+        'version.json': 'json', '.last_build_id': 'text',
+        'assets/AssetManifest.bin': 'binary', 'assets/AssetManifest.bin.json': 'json',
+        'assets/FontManifest.json': 'json', 'assets/NOTICES': 'text',
+        'assets/fonts/MaterialIcons-Regular.otf': 'font',
+        'assets/fonts/fallback/Roboto-Regular.ttf': 'font',
+        'assets/packages/cupertino_icons/assets/CupertinoIcons.ttf': 'font',
+        'assets/shaders/ink_sparkle.frag': 'binary',
+        'assets/shaders/stretch_effect.frag': 'binary',
+    }.items()}
+    for stem in ('canvaskit', 'chromium/canvaskit', 'webparagraph/canvaskit',
+                 'skwasm', 'skwasm_heavy', 'wimp'):
+        for suffix, kind in (('.js', 'code'), ('.js.symbols', 'text'), ('.wasm', 'wasm')):
+            allowed['canvaskit/' + stem + suffix] = (kind, None)
+
+    def safe_path(value):
+        assert value and not value.startswith('/') and len(value) <= 512, 'Invalid public source path'
+        parts = value.rstrip('/').split('/')
+        assert all(part and part not in ('.', '..') and not part.startswith('.') for part in parts), 'Unsafe public source path'
+        assert not any(ord(char) < 32 or char in '\\:' for char in value), 'Unsafe public source path'
+        return value
+
+    def literal(value):
+        value = value.strip()
+        if value.startswith('"'):
+            value = json.loads(value)
+        elif value.startswith("'"):
+            assert value.endswith("'"), 'Invalid public asset literal'
+            value = value[1:-1].replace("''", "'")
+        else:
+            value = value.split(' #', 1)[0].strip()
+            assert not any(char in value for char in '[]{}&*!|>'), 'Unsupported public asset declaration'
+        assert isinstance(value, str), 'Public asset path must be literal text'
+        return safe_path(value)
+
+    raw_pubspec = git('show', revision + ':app/pubspec.yaml')
+    assert len(raw_pubspec) <= 1048576, 'Public source declaration too large'
+    pubspec = raw_pubspec.decode()
+    assert '\t' not in pubspec, 'Unsupported pubspec indentation'
+    declarations = []
+    flutter = False
+    flutter_seen = False
+    sections = set()
+    section = None
+    for line in pubspec.splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        indent = len(line) - len(line.lstrip())
+        if indent == 0:
+            flutter = line == 'flutter:'
+            if flutter:
+                assert not flutter_seen, 'Duplicate flutter declaration'
+                flutter_seen = True
+            section = None
+            continue
+        if not flutter:
+            continue
+        if indent == 2:
+            section = line.strip()
+            if section.split(':', 1)[0] in ('assets', 'fonts'):
+                assert section in ('assets:', 'fonts:'), 'Unsupported public asset declaration'
+                assert section not in sections, 'Duplicate public declaration'
+                sections.add(section)
+            continue
+        if section == 'assets:':
+            assert indent == 4 and line.strip().startswith('- '), 'Unsupported public asset declaration'
+            declarations.append(literal(line.strip()[2:]))
+        elif section == 'fonts:':
+            match = re.fullmatch(r'\s+- asset: (.+)', line)
+            if match:
+                declarations.append(literal(match[1]))
+            else:
+                assert re.fullmatch(r'\s+(?:- family: .+|fonts:|weight: [0-9]+|style: (?:normal|italic))', line), 'Unsupported public font declaration'
+    assert len(declarations) <= 256, 'Public declaration count exceeded'
+    assert all(path.startswith(('assets/', 'fonts/')) for path in declarations), 'Public assets must use dedicated public roots'
+    types = {'.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg', '.gif': 'gif', '.webp': 'webp',
+             '.ico': 'ico', '.svg': 'svg', '.ttf': 'font', '.otf': 'font', '.woff': 'font',
+             '.woff2': 'font', '.wasm': 'wasm', '.json': 'json', '.txt': 'text', '.csv': 'text',
+             '.js': 'code', '.css': 'text', '.html': 'html'}
+    source_hashes = set()
+    for row in git('ls-tree', '-rz', revision).split(b'\0'):
+        if not row:
+            continue
+        header, raw_path = row.split(b'\t', 1)
+        mode, kind, oid = header.split()
+        path = raw_path.decode()
+        copied_web = path.startswith('app/web/')
+        asset = path.startswith('app/') and any(
+            path[4:].startswith(item) if item.endswith('/') else path[4:] == item
+            for item in declarations)
+        private_source = path.startswith(('app/lib/', 'app/tool/', '.github/', 'supabase/')) or path in (
+            'app/pubspec.yaml', 'app/pubspec.lock', 'app/analysis_options.yaml', 'vercel.json', 'app/vercel.json')
+        if not (copied_web or asset or private_source):
+            continue
+        assert kind == b'blob', 'Unsupported public/source entry'
+        digest = hashlib.sha256(git('cat-file', 'blob', oid.decode())).hexdigest()
+        if private_source:
+            source_hashes.add(digest)
+        if not (copied_web or asset):
+            continue
+        assert mode == b'100644', 'Executable public input'
+        relative = safe_path(path[len('app/web/'):] if copied_web else 'assets/' + path[4:])
+        public_kind = types.get(Path(relative).suffix.lower())
+        assert public_kind, 'Unsupported public payload type'
+        if copied_web and relative in ('index.html', 'flutter_bootstrap.js'):
+            continue  # Flutter transforms these two explicit source templates.
+        assert relative not in allowed, 'Public input collides with compiler output'
+        allowed[relative] = (public_kind, digest)
+        assert len(allowed) <= 2048, 'Public payload input count exceeded'
+    return allowed, source_hashes, revision
+
+
+def _candidate_private_content(raw, code=False):
+    """Bounded data classifier; compiled public defines are not secret matches.
+
+    Like native archive privacy, reject PEM/JKS/JCEKS/callback credentials by
+    content. Decode only whole JSON/string/list/dict, ENV and whole base64 data,
+    never arbitrary JS tokens, archives, encryption or unbounded nested blobs.
+    """
+    from build_native_candidate import CALLBACK_CREDENTIALS
+
+    budget = [0, 0]
+    fields = {b'SUPABASE_URL', b'SUPABASE_ANON_KEY'}
+
+    def inspect(data, depth=0):
+        assert depth <= 8, 'Candidate serialization depth exceeded'
+        budget[0] += 1
+        assert budget[0] <= 1024, 'Candidate serialization node limit exceeded'
+        assert not re.search(rb'-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY', data), 'Private key content'
+        assert not data.startswith((b'\xfe\xed\xfe\xed', b'\xce\xce\xce\xce')), 'Keystore content'
+        assert not CALLBACK_CREDENTIALS.search(data), 'Captured callback credentials'
+        assert not re.search(rb'(?m)^\s*(?:storeFile|storePassword|keyPassword|keyAlias|keystore)\s*[:=]', data), 'Signing configuration content'
+        if not code:
+            assert not all(field in data for field in fields), 'Raw client configuration content'
+        env_fields = set(re.findall(rb'(?m)^\s*(?:export\s+)?(SUPABASE_URL|SUPABASE_ANON_KEY)\s*=', data))
+        assert env_fields != fields, 'Client environment dump'
+        stripped = data.strip()
+        base64_data = len(stripped) >= 16 and re.fullmatch(rb'[A-Za-z0-9+/_=\s-]+', stripped)
+        structured = stripped.startswith((b'{', b'[', b'"', b'\xef\xbb\xbf', b'\xff\xfe', b'\xfe\xff', b'{\0', b'\0{'))
+        if not (structured or base64_data):
+            return
+        assert len(data) <= 1048576, 'Candidate serialized data too large'
+        budget[1] += len(data)
+        assert budget[1] <= 4194304, 'Candidate decoded data budget exceeded'
+        try:
+            value = json.loads(data)
+        except RecursionError:
+            raise AssertionError('Candidate JSON nesting exceeded') from None
+        except (ValueError, UnicodeError):
+            value = None
+        if value is not None:
+            walk(value, depth + 1)
+        elif base64_data:
+            compact = re.sub(rb'\s+', b'', stripped).translate(bytes.maketrans(b'-_', b'+/'))
+            try:
+                decoded = base64.b64decode(compact + b'=' * (-len(compact) % 4), validate=True)
+            except ValueError:
+                return
+            inspect(decoded, depth + 1)
+
+    def walk(value, depth):
+        assert depth <= 16, 'Candidate JSON depth exceeded'
+        budget[0] += 1
+        assert budget[0] <= 1024, 'Candidate serialization node limit exceeded'
+        if isinstance(value, dict):
+            assert not {field.decode() for field in fields} <= value.keys(), 'Raw client configuration object'
+            assert not {'storePassword', 'keyPassword', 'keystore'} & value.keys(), 'Signing configuration object'
+            for child in value.values():
+                walk(child, depth + 1)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child, depth + 1)
+        elif isinstance(value, str):
+            inspect(value.encode(), depth + 1)
+
+    inspect(raw)
+
+
+def _candidate_public_type(raw, kind):
+    """Small positive type contract for the closed public-payload roles."""
+    if kind in ('code', 'html', 'text', 'json', 'svg'):
+        text = raw.decode('utf-8-sig')
+        assert '\0' not in text, 'Binary content in public text'
+        if kind == 'json':
+            assert len(raw) <= 1048576, 'Generated/public JSON too large'
+
+            def invalid_constant(value):
+                raise ValueError('Non-JSON public constant')
+
+            try:
+                json.loads(text, parse_constant=invalid_constant)
+            except (ValueError, RecursionError):
+                raise AssertionError('Invalid public JSON') from None
+        elif kind == 'html':
+            assert re.match(r'\s*(?:<!doctype html|<html)', text, re.I), 'Invalid public HTML'
+        elif kind == 'svg':
+            assert '<svg' in text and '<!ENTITY' not in text and '<!DOCTYPE' not in text, 'Invalid public SVG'
+        elif kind == 'code':
+            assert not re.match(r'\s*(?:#|def\s+\w+\s*\(|from\s+[\w.]+\s+import\s)', text), 'Source content masquerading as compiled JS'
+    elif kind == 'font':
+        assert raw.startswith((b'OTTO', b'\x00\x01\x00\x00', b'ttcf', b'wOFF', b'wOF2')), 'Invalid public font'
+    elif kind == 'wasm':
+        assert raw.startswith(b'\0asm\x01\0\0\0'), 'Invalid public WASM'
+    elif kind == 'png':
+        assert raw.startswith(b'\x89PNG\r\n\x1a\n'), 'Invalid public PNG'
+    elif kind == 'jpeg':
+        assert raw.startswith(b'\xff\xd8\xff'), 'Invalid public JPEG'
+    elif kind == 'gif':
+        assert raw.startswith((b'GIF87a', b'GIF89a')), 'Invalid public GIF'
+    elif kind == 'webp':
+        assert raw.startswith(b'RIFF') and raw[8:12] == b'WEBP', 'Invalid public WebP'
+    elif kind == 'ico':
+        assert raw.startswith(b'\0\0\x01\0'), 'Invalid public icon'
+    else:
+        assert kind == 'binary', 'Unknown public payload role'
+
+
 def build_candidate(app, env, flutter):
     """Compile an unaccepted PR tree. This entrypoint cannot emit release.json."""
     source = CandidateSource(app.parent, env)
     output, config, version, commit = _compile_web(app, env, flutter, source.verify_stage)
     raw_config = json.dumps(config).encode()
+    allowed, source_hashes, public_revision = _candidate_public_payload(app)
+    assert public_revision == source.identity['checkoutCommit'], 'Public input source context changed'
     files = {}
+    total = 0
     for directory, directories, names in os.walk(output, followlinks=False):
         assert all(not (Path(directory) / name).is_symlink() for name in directories), 'Linked candidate output directory'
+        for name in directories:
+            relative_dir = (Path(directory) / name).relative_to(output).as_posix()
+            assert any(path.startswith(relative_dir + '/') for path in allowed), 'Unexpected candidate payload directory'
         for name in names:
             path = Path(directory) / name
             relative = path.relative_to(output).as_posix()
-            assert not any(ord(char) < 32 or char == '\\' for char in relative), 'Unsafe candidate output path'
-            assert name.lower() not in ('release.json', 'client-config.json') and not name.lower().startswith('.env'), 'Private or release output in candidate'
-            assert not name.lower().endswith(('.jks', '.pem', '.dart')), 'Unexpected candidate source/key output'
+            assert relative in allowed, 'Unexpected candidate payload file'
+            assert len(files) < 2048, 'Candidate payload file limit exceeded'
+            kind, source_digest = allowed[relative]
             with source_file(output, relative.split('/')) as fd:
-                assert not os.fstat(fd).st_mode & 0o7000, 'Special candidate output mode'
+                info = os.fstat(fd)
+                assert not info.st_mode & 0o7000, 'Special candidate output mode'
+                assert info.st_size <= 67108864, 'Candidate payload file too large'
+                total += info.st_size
+                assert total <= 268435456, 'Candidate payload total size exceeded'
                 chunks = []
-                while chunk := os.read(fd, 1024 * 1024):
+                length = 0
+                while chunk := os.read(fd, min(1048576, 67108865 - length)):
+                    length += len(chunk)
+                    assert length <= 67108864, 'Candidate payload grew beyond limit'
                     chunks.append(chunk)
+                assert length == info.st_size, 'Candidate payload changed while reading'
                 raw = b''.join(chunks)
-            assert raw_config not in raw and base64.b64encode(raw_config) not in raw, 'Raw client configuration in candidate output'
-            # Classify content, not a caller-chosen suffix: pretty/raw JSON
-            # remains private when renamed or written with an uppercase suffix.
-            try:
-                value = json.loads(raw)
-            except (ValueError, UnicodeError):
-                value = None
-
-            def raw_client(value):
-                if isinstance(value, dict):
-                    return set(config) <= value.keys() or any(raw_client(child) for child in value.values())
-                return isinstance(value, list) and any(raw_client(child) for child in value)
-
-            assert not raw_client(value), 'Raw client configuration object in candidate output'
-            files['web/' + relative] = hashlib.sha256(raw).hexdigest()
+            digest = hashlib.sha256(raw).hexdigest()
+            assert digest not in source_hashes, 'Renamed non-public source/control input'
+            assert source_digest is None or digest == source_digest, 'Public source payload differs from immutable input'
+            _candidate_private_content(raw, code=kind == 'code')
+            _candidate_public_type(raw, kind)
+            files['web/' + relative] = digest
     assert {'web/index.html', 'web/main.dart.js'} <= files.keys(), 'Missing runnable candidate entrypoint'
+    source.verify_stage(app.parent, 'after-compiler-and-checked-analysis-restore')
     manifest = {'schemaVersion': 1, 'kind': 'pickteams-unaccepted-web-candidate',
+                'payloadPolicy': 'flutter-3.47.9-dart2js-public-v1',
                 'promotable': False, 'productionAccepted': False,
                 'notice': 'UNACCEPTED CANDIDATE - NOT FOR PRODUCTION OR NATIVE PROMOTION',
                 'source': source.identity, 'version': version, 'entrypoint': 'lib/main.dart',
