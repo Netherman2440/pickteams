@@ -60,7 +60,7 @@ class ReleaseContractTest(unittest.TestCase):
 
     def test_wrong_version_or_code_is_rejected(self):
         for version in ('1.0.4+2026111301', '1.0.5+2026111501',
-                        '1.0.6+2026111601', '1.0.7+2026111602'):
+                        '1.0.6+2026111602', '1.0.7+2026111602'):
             with self.subTest(version=version):
                 self.put('app/pubspec.yaml', 'name: app\nversion: ' + version + '\n')
                 self.commit()
@@ -221,25 +221,28 @@ class ReleaseContractTest(unittest.TestCase):
             release.restore_analysis(path, original)
 
 
-class AcceptedDisplayReleaseTest(unittest.TestCase):
-    def test_shared_version_and_runtime_pin_replace_old_native_contract(self):
+class AcceptedStarsReleaseTest(unittest.TestCase):
+    def test_shared_version_and_landed_pin_replace_prior_release_contract(self):
         import audit_native_candidate
         import build_native_candidate
         import sign_native_candidate
 
-        self.assertEqual(release.ACCEPTED_SOURCE, '4fe251fc2dadf5cd0e9abc70a25b2220096ded02')
-        self.assertEqual((release.VERSION, release.VERSION_CODE), ('1.0.6', 2026111602))
+        self.assertEqual(release.ACCEPTED_SOURCE, '492f3f3eb1a19c380fd4f4066695423fcd506609')
+        self.assertEqual((release.VERSION, release.VERSION_CODE), ('1.0.7', 2026111701))
         for module in (audit_native_candidate, build_native_candidate, sign_native_candidate):
             self.assertEqual((module.VERSION, module.VERSION_CODE), (release.VERSION, release.VERSION_CODE))
         self.assertEqual(build_native_candidate.UI_SOURCE, release.ACCEPTED_SOURCE)
-        # Old prepared APK metadata must not be accepted as the new runtime.
-        with self.assertRaisesRegex(AssertionError, 'Unaccepted runtime source'):
-            release.validate_metadata(dict(reviewed_ui_source='01f03757c48c44a5fd9b49d7ce393ebf91a61e96',
-                                           build_name='1.0.6', build_number=2026111601,
-                                           entrypoint='lib/main.dart'))
+        # Prior runtime, same-tree feature and operator delivery are not the pin.
+        for source in ('4fe251fc2dadf5cd0e9abc70a25b2220096ded02',
+                       'f0384d6e38673bf0f44423514e7749cb316c83d3',
+                       '3047fd512bb3b729022e5b4140b87d4a597b6cb9'):
+            with self.subTest(source=source), self.assertRaisesRegex(AssertionError, 'Unaccepted runtime source'):
+                release.validate_metadata(dict(reviewed_ui_source=source,
+                                               build_name=release.VERSION, build_number=release.VERSION_CODE,
+                                               entrypoint='lib/main.dart'))
         with self.assertRaisesRegex(AssertionError, 'Release version mismatch'):
             release.validate_metadata(dict(reviewed_ui_source=release.ACCEPTED_SOURCE,
-                                           build_name='1.0.6', build_number=2026111601,
+                                           build_name='1.0.6', build_number=2026111602,
                                            entrypoint='lib/main.dart'))
 
 
