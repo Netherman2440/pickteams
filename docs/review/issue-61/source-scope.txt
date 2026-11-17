@@ -1,0 +1,10 @@
+Session=01a1e59b-7b4e-76fb-acfc-1393d251bb90
+ec6630d6d732d3c9191ef74c5e5460bd3cc2f847
+limen/github-issue-61-issue-61
+4fe251fc2dadf5cd0e9abc70a25b2220096ded02
+Ranking source/formula and overlay commit diff (empty):
+Overlay cmp exit: 0
+ M AGENTS.md
+ec6630d fix(matches): make the match-level footer divider visible
+4b5b125 test(matches): compare baseline values across Dart VM and web
+20913a0 feat(matches): calibrate star defaults and preserve late-save refresh

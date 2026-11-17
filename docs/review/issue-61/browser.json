@@ -1,0 +1,477 @@
+[
+  {
+    "case": "list",
+    "query": {
+      "screen": "list"
+    },
+    "image": "list.png",
+    "sha256": "65b58171bbeb7cff8f793ec5da229334e7d5ed8d3371e1da369fb2437df50bcd",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "13.11",
+      "ZIELONI",
+      "3",
+      "NIEBIESCY",
+      "1",
+      "Poziom meczu",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "3,5",
+      "Mecze",
+      ""
+    ],
+    "ratings": [
+      3.5
+    ],
+    "fields": [],
+    "saves": 0,
+    "thresholds": [
+      10,
+      20,
+      40,
+      70,
+      120
+    ],
+    "requests": [
+      "GET squads",
+      "GET matches",
+      "GET team_players",
+      "GET ranking_history"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "details",
+    "query": {
+      "screen": "details"
+    },
+    "image": "details.png",
+    "sha256": "7d713fd60dbfc7d32cdecb02a0d3d18ed6411c17286369ed4e82025ad0a119c0",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "Gospodarze",
+      "Ranking: 100.0",
+      "Goście",
+      "Ranking: 120.0",
+      "Player p1",
+      "60.00",
+      "Player p3",
+      "70.00",
+      "Player p0",
+      "40.00",
+      "Player p2",
+      "50.00",
+      "Gospodarze\n60%",
+      "Szansa na wygraną",
+      "",
+      "Goście\n40%",
+      "Poziom meczu",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "3,5",
+      "Siła obsady na podstawie historycznych rankingów. To nie ocena wyniku ani wyrównania drużyn.",
+      "13.11.2026 00:00",
+      "3",
+      ":",
+      "1",
+      "",
+      ""
+    ],
+    "ratings": [
+      3.5
+    ],
+    "fields": [],
+    "saves": 0,
+    "thresholds": [
+      10,
+      20,
+      40,
+      70,
+      120
+    ],
+    "requests": [
+      "GET squads",
+      "GET matches",
+      "GET team_players",
+      "GET ranking_history"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "settings",
+    "query": {
+      "screen": "settings"
+    },
+    "image": "settings.png",
+    "sha256": "5f5bb9ebd29a43bd2fcd47a680723e5b7bbf254274a1d05545460e57a27f7d1c",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "Zarządzaj członkami składu, rolami i widocznością.",
+      "Members",
+      "Link zaproszenia",
+      "Brak aktywnego linku zaproszenia. Wygeneruj go, aby zaprosić członków.",
+      "Wygeneruj link zaproszenia",
+      "Zmiana progów gwiazdek",
+      "Ustaw poziom meczu dla tego składu. Połówki obliczamy automatycznie.",
+      "",
+      "Strefa zagrożenia",
+      "Widoczność",
+      "Ten skład jest obecnie prywatny.",
+      "Zmień widoczność",
+      "Nazwa",
+      "Ten skład ma obecnie nazwę \"SYNTHETIC\".",
+      "Zmień nazwę",
+      "Zarządzaj aktualizacją rankingu",
+      "Skonfiguruj, jak wyniki meczów zmieniają rankingi graczy.",
+      "Zarządzaj",
+      "Przekaż własność",
+      "Przekaż ten skład innemu użytkownikowi.",
+      "Przekaż",
+      "Usuń skład",
+      "Po usunięciu składu nie będzie odwrotu. Upewnij się, że tego chcesz.",
+      "Usuń",
+      "Ustawienia"
+    ],
+    "ratings": [],
+    "fields": [],
+    "saves": 0,
+    "thresholds": [
+      10,
+      20,
+      40,
+      70,
+      120
+    ],
+    "requests": [],
+    "pageErrors": []
+  },
+  {
+    "case": "thresholds",
+    "query": {
+      "screen": "stars"
+    },
+    "image": "thresholds.png",
+    "sha256": "aa1baebb81a3eaa31ae2b9910bca9494ac79dab2c95bf0684808218ea427a1cb",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "Pięć progów pełnych gwiazdek musi być liczbowych i ściśle rosnących. Połówki wyliczamy automatycznie w połowie sąsiednich progów.",
+      "Własne progi tego składu. Zmiana nie wpływa na ustawienia innych składów.",
+      "1 — próg pełnych gwiazdek",
+      "",
+      "2 — próg pełnych gwiazdek",
+      "",
+      "3 — próg pełnych gwiazdek",
+      "",
+      "4 — próg pełnych gwiazdek",
+      "",
+      "5 — próg pełnych gwiazdek",
+      "",
+      "Automatyczne połówki",
+      "",
+      "1,5: 15",
+      "",
+      "2,5: 30",
+      "",
+      "3,5: 55",
+      "",
+      "4,5: 95",
+      "Zapisz",
+      "",
+      "Progi gwiazdek"
+    ],
+    "ratings": [],
+    "fields": [
+      {
+        "label": "1 — próg pełnych gwiazdek",
+        "text": "10",
+        "x": 195,
+        "y": 233
+      },
+      {
+        "label": "2 — próg pełnych gwiazdek",
+        "text": "20",
+        "x": 195,
+        "y": 297
+      },
+      {
+        "label": "3 — próg pełnych gwiazdek",
+        "text": "40",
+        "x": 195,
+        "y": 361
+      },
+      {
+        "label": "4 — próg pełnych gwiazdek",
+        "text": "70",
+        "x": 195,
+        "y": 425
+      },
+      {
+        "label": "5 — próg pełnych gwiazdek",
+        "text": "120",
+        "x": 195,
+        "y": 489
+      }
+    ],
+    "saves": 0,
+    "thresholds": [
+      10,
+      20,
+      40,
+      70,
+      120
+    ],
+    "requests": [
+      "GET squads"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "validation",
+    "image": "validation.png",
+    "sha256": "8e24be6992fc8c1bcad6ba05ef4619e37e33f446d028d33ae7f00a6554e420d7",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "Pięć progów pełnych gwiazdek musi być liczbowych i ściśle rosnących. Połówki wyliczamy automatycznie w połowie sąsiednich progów.",
+      "Własne progi tego składu. Zmiana nie wpływa na ustawienia innych składów.",
+      "1 — próg pełnych gwiazdek",
+      "",
+      "2 — próg pełnych gwiazdek",
+      "",
+      "3 — próg pełnych gwiazdek",
+      "",
+      "4 — próg pełnych gwiazdek",
+      "",
+      "5 — próg pełnych gwiazdek",
+      "",
+      "Automatyczne połówki",
+      "",
+      "1,5: —",
+      "",
+      "2,5: —",
+      "",
+      "3,5: —",
+      "",
+      "4,5: —",
+      "Wpisz pięć skończonych wartości w kolejności rosnącej.",
+      "Zapisz",
+      "",
+      "Progi gwiazdek"
+    ],
+    "ratings": [],
+    "fields": [
+      {
+        "label": "1 — próg pełnych gwiazdek",
+        "text": "20",
+        "x": 195,
+        "y": 233
+      },
+      {
+        "label": "2 — próg pełnych gwiazdek",
+        "text": "20",
+        "x": 195,
+        "y": 297
+      },
+      {
+        "label": "3 — próg pełnych gwiazdek",
+        "text": "40",
+        "x": 195,
+        "y": 361
+      },
+      {
+        "label": "4 — próg pełnych gwiazdek",
+        "text": "70",
+        "x": 195,
+        "y": 425
+      },
+      {
+        "label": "5 — próg pełnych gwiazdek",
+        "text": "120",
+        "x": 195,
+        "y": 489
+      }
+    ],
+    "saves": 0,
+    "thresholds": [
+      10,
+      20,
+      40,
+      70,
+      120
+    ],
+    "requests": [
+      "GET squads"
+    ]
+  },
+  {
+    "case": "hidden-25",
+    "query": {
+      "screen": "list",
+      "completed": "25"
+    },
+    "image": "hidden-25.png",
+    "sha256": "bb7bd6dd0e53113aab26d6411062067b6b093324f9d3194a6f655322d69a1284",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "13.11",
+      "ZIELONI",
+      "3",
+      "NIEBIESCY",
+      "1",
+      "Mecze",
+      ""
+    ],
+    "ratings": [],
+    "fields": [],
+    "saves": 0,
+    "thresholds": [
+      10,
+      20,
+      40,
+      70,
+      120
+    ],
+    "requests": [
+      "GET squads",
+      "GET matches"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "baseline",
+    "query": {
+      "screen": "stars",
+      "configured": "false"
+    },
+    "image": "baseline.png",
+    "sha256": "4776e06ede03bdaef8bf74bb30afa970d247ba9555a8a6f7ec75e36bc599c68a",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "Pięć progów pełnych gwiazdek musi być liczbowych i ściśle rosnących. Połówki wyliczamy automatycznie w połowie sąsiednich progów.",
+      "Progi bazowe skalibrowane dla Politechniki Lubelskiej. Możesz zapisać własne wartości dla tego składu.",
+      "1 — próg pełnych gwiazdek",
+      "",
+      "2 — próg pełnych gwiazdek",
+      "",
+      "3 — próg pełnych gwiazdek",
+      "",
+      "4 — próg pełnych gwiazdek",
+      "",
+      "5 — próg pełnych gwiazdek",
+      "",
+      "Automatyczne połówki",
+      "",
+      "1,5: 52,95",
+      "",
+      "2,5: 57,05",
+      "",
+      "3,5: 58,9",
+      "",
+      "4,5: 61,35",
+      "Zapisz",
+      "",
+      "Progi gwiazdek"
+    ],
+    "ratings": [],
+    "fields": [
+      {
+        "label": "1 — próg pełnych gwiazdek",
+        "text": "49,8",
+        "x": 195,
+        "y": 233
+      },
+      {
+        "label": "2 — próg pełnych gwiazdek",
+        "text": "56,1",
+        "x": 195,
+        "y": 297
+      },
+      {
+        "label": "3 — próg pełnych gwiazdek",
+        "text": "58",
+        "x": 195,
+        "y": 361
+      },
+      {
+        "label": "4 — próg pełnych gwiazdek",
+        "text": "59,8",
+        "x": 195,
+        "y": 425
+      },
+      {
+        "label": "5 — próg pełnych gwiazdek",
+        "text": "62,9",
+        "x": 195,
+        "y": 489
+      }
+    ],
+    "saves": 0,
+    "thresholds": null,
+    "requests": [
+      "GET squads"
+    ],
+    "pageErrors": []
+  },
+  {
+    "case": "permission",
+    "query": {
+      "screen": "stars",
+      "guest": "true"
+    },
+    "image": "permission.png",
+    "sha256": "6f51f68cb334d95fd18dd68e5669821ebb1b69be8de1796853f6fc4215a0de71",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "Brak uprawnień.",
+      "",
+      "Progi gwiazdek"
+    ],
+    "ratings": [],
+    "fields": [],
+    "saves": 0,
+    "thresholds": [
+      10,
+      20,
+      40,
+      70,
+      120
+    ],
+    "requests": [],
+    "pageErrors": []
+  },
+  {
+    "case": "load-failure",
+    "query": {
+      "screen": "stars",
+      "failLoad": "true"
+    },
+    "image": "load-failure.png",
+    "sha256": "2e718c296b98f27d2121ace7f233e88a3ec7bf24b9da0152e4e56b5b51fa5478",
+    "labels": [
+      "SYNTHETIC browser fixture — not production",
+      "Nie udało się wczytać progów.",
+      "Spróbuj ponownie",
+      "",
+      "Progi gwiazdek"
+    ],
+    "ratings": [],
+    "fields": [],
+    "saves": 0,
+    "thresholds": [
+      10,
+      20,
+      40,
+      70,
+      120
+    ],
+    "requests": [
+      "GET squads"
+    ],
+    "pageErrors": []
+  }
+]

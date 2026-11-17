@@ -1,0 +1,42 @@
+{
+  "owner_supplied_input": {
+    "source": "https://github.com/Netherman2440/pickteams/issues/61#issuecomment-6941297324",
+    "reported_reader": "dot, public RLS GET, 2026-11-16 19:14 UTC",
+    "squad": "Politechnika Lubelska",
+    "through": "2026-11-13 inclusive; created_at in Europe/Warsaw; played_at NULL",
+    "completed_matches": 54,
+    "match_player_pairs": 791,
+    "match_specific_rankings": 791,
+    "reported_missing_duplicate_nonfinite": 0,
+    "mean": "58.1409",
+    "population_sd": "2.85331",
+    "minimum": "49.8",
+    "maximum": "62.926"
+  },
+  "independent_arithmetic": {
+    "cdf_endpoints": [
+      0.0017320663255985247,
+      0.9532321558305068
+    ],
+    "raw_full": [
+      49.800000000000004,
+      56.12199193655627,
+      57.97976222371534,
+      59.76472942322212,
+      62.926
+    ],
+    "full": [
+      "49.8",
+      "56.1",
+      "58.0",
+      "59.8",
+      "62.9"
+    ],
+    "halves": [
+      "52.95",
+      "57.05",
+      "58.9",
+      "61.35"
+    ]
+  }
+}

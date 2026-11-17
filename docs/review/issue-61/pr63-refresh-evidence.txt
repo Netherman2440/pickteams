@@ -1,0 +1,8 @@
+00:17 +18: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/features/players/player_goal_comparison_refresh_test.dart: (setUpAll)
+00:17 +18: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/features/players/player_goal_comparison_refresh_test.dart: profile → real Matches/details → scores → back; save=true
+00:20 +19: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/features/players/player_goal_comparison_refresh_test.dart: profile → real Matches/details → scores → back; save=false
+00:21 +20: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/features/players/player_goal_comparison_refresh_test.dart: profile → real Matches/details → teams → back; save=true
+00:22 +21: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/features/players/player_goal_comparison_refresh_test.dart: profile → real Matches/details → teams → back; save=false
+00:22 +22: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/features/players/player_goal_comparison_refresh_test.dart: profile → real Matches/details → colors → back; save=true
+00:23 +23: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/features/players/player_goal_comparison_refresh_test.dart: profile → real Matches/details → colors → back; save=false
+00:23 +24: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/features/players/player_goal_comparison_refresh_test.dart: (tearDownAll)
