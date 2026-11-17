@@ -809,5 +809,298 @@ class WebSourceBoundaryTest(unittest.TestCase):
                 self.assertEqual(release.verify_source_stage(self.root, stage), self.head)
 
 
+class CandidatePolicyTest(unittest.TestCase):
+    """Synthetic Git/GitHub fixtures, not hosted compiler or authentication proof."""
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name) / 'source'
+        self.root.mkdir()
+        self.git('init', '-q')
+        self.git('config', 'user.name', 'Synthetic')
+        self.git('config', 'user.email', 'fixture@invalid')
+        self.git('remote', 'add', 'origin', 'https://github.com/Netherman2440/pickteams')
+        self.put('app/pubspec.yaml', 'name: app\nversion: 1.0.5+2026111501\n')
+        self.put('app/.gitignore', '/build/\n')
+        self.put('app/analysis_options.yaml', 'include: package:flutter_lints/flutter.yaml\n')
+        self.put('app/lib/main.dart', 'accepted synthetic runtime\n')
+        self.put('scripts/checked.sh', '#!/bin/sh\ntrue\n')
+        (self.root / 'scripts/checked.sh').chmod(0o755)
+        for path in ('vercel.json', 'app/vercel.json'):
+            self.put(path, (release.APP.parent / path).read_bytes())
+        self.commit()
+        accepted = self.sha()
+        for module in (contract, release):
+            pin = patch.object(module, 'ACCEPTED_SOURCE', accepted)
+            pin.start()
+            self.addCleanup(pin.stop)
+        self.put('app/pubspec.yaml', f'name: app\nversion: {RELEASE_VERSION}\n')
+        self.commit()
+        self.base = self.sha()
+        self.git('checkout', '-qb', 'synthetic-feature')
+        self.put('app/lib/main.dart', 'unaccepted stars-like synthetic runtime\n')
+        self.commit()
+        self.head = self.sha()
+        self.git('checkout', '-q', '--detach', self.base)
+        self.git('merge', '-q', '--no-ff', '--no-edit', self.head)
+        self.checkout = self.sha()
+        repo = {'full_name': 'Netherman2440/pickteams', 'fork': False}
+        self.event = {'repository': repo, 'number': 7, 'pull_request': {
+            'number': 7, 'merge_commit_sha': self.checkout,
+            'head': {'sha': self.head, 'repo': repo},
+            'base': {'sha': self.base, 'ref': 'main', 'repo': repo}}}
+        self.event_path = self.root / '.git/event.json'
+        self.event_path.write_text(json.dumps(self.event))
+        self.env = dict(config(), GITHUB_ACTIONS='true', GITHUB_EVENT_NAME='pull_request',
+                        GITHUB_REPOSITORY='Netherman2440/pickteams', GITHUB_SERVER_URL='https://github.com',
+                        GITHUB_SHA=self.checkout, GITHUB_REF='refs/pull/7/merge',
+                        GITHUB_RUN_ID='123456', GITHUB_RUN_ATTEMPT='1',
+                        GITHUB_EVENT_PATH=str(self.event_path),
+                        GITHUB_WORKFLOW_REF='Netherman2440/pickteams/.github/workflows/main.yml@refs/pull/7/merge')
+        del self.env['VERCEL_GIT_COMMIT_SHA']
+
+    def git(self, *args, **kwargs):
+        return subprocess.check_output(['git', *args], cwd=self.root, stderr=subprocess.PIPE, **kwargs)
+
+    def sha(self):
+        return self.git('rev-parse', 'HEAD').decode().strip()
+
+    def put(self, path, raw):
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(raw if isinstance(raw, bytes) else raw.encode())
+
+    def commit(self):
+        self.git('add', '.')
+        self.git('commit', '-qm', 'synthetic fixture')
+
+    def reset_fixture(self):
+        # Only this disposable fixture, never a task/source checkout.
+        self.git('reset', '--hard', self.checkout)
+        self.git('clean', '-fdxq')
+        self.event_path.write_text(json.dumps(self.event))
+
+    def check(self, env=None, stage='before-sdk'):
+        with redirect_stdout(StringIO()):
+            return release.CandidateSource(self.root, self.env if env is None else env).verify_stage(self.root, stage)
+
+    def reject(self, env=None):
+        with self.assertRaises((AssertionError, ValueError, OSError, subprocess.CalledProcessError)):
+            self.check(env)
+
+    def test_unaccepted_runtime_passes_only_the_bound_candidate_policy(self):
+        self.assertEqual(self.check(), self.checkout)
+        identity = release.candidate_context(self.root, self.env)
+        self.assertEqual(identity['mergeParents'], [self.base, self.head])
+        self.assertEqual(identity['runtimeTree'], self.git('rev-parse', 'HEAD^{tree}').decode().strip())
+        for strict in (contract.verify_source, native.verify_source):
+            with self.assertRaisesRegex(AssertionError, 'Unapproved source differences'):
+                strict(self.root)
+        with self.assertRaisesRegex(AssertionError, 'Unapproved source differences'):
+            release.verify_web_source(self.root, {})
+        self.git('checkout', '-q', '--detach', self.base)
+        self.assertEqual(release.verify_web_source(self.root, {}), self.base)
+        self.reject()  # A clean accepted tree is not the declared PR merge.
+
+    def test_context_rejects_missing_wrong_sha_repository_ref_workflow_and_run(self):
+        for key in ('GITHUB_ACTIONS', 'GITHUB_EVENT_NAME', 'GITHUB_REPOSITORY', 'GITHUB_SERVER_URL',
+                    'GITHUB_SHA', 'GITHUB_REF', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT',
+                    'GITHUB_EVENT_PATH', 'GITHUB_WORKFLOW_REF'):
+            for value in (None, '', 'SYNTHETIC_WRONG'):
+                with self.subTest(key=key, value=value):
+                    env = dict(self.env)
+                    if value is None:
+                        del env[key]
+                    else:
+                        env[key] = value
+                    self.reject(env)
+        baseline = json.dumps(self.event)
+        for target, field, value in (
+            ('event', 'repository', {'full_name': 'other/repository'}),
+            ('event', 'number', True), ('pr', 'number', False),
+            ('pr', 'merge_commit_sha', 'a' * 40),
+            ('head', 'sha', 'b' * 40), ('base', 'sha', 'c' * 40),
+            ('base', 'ref', 'other'), ('head', 'repo', {'full_name': 'other/repo', 'fork': True}),
+        ):
+            with self.subTest(target=target, field=field):
+                event = json.loads(baseline)
+                obj = event if target == 'event' else event['pull_request'] if target == 'pr' else event['pull_request'][target]
+                obj[field] = value
+                self.event_path.write_text(json.dumps(event))
+                self.reject()
+        self.event_path.write_text(baseline)
+        self.git('remote', 'set-url', 'origin', 'https://untrusted.invalid/repo')
+        self.reject()
+        self.git('remote', 'remove', 'origin')
+        self.reject()
+
+    def test_index_dirty_cached_bytes_modes_and_links_reject(self):
+        for path in ('app/lib/main.dart', 'app/vercel.json', 'untracked'):
+            with self.subTest(path=path):
+                self.put(path, 'SYNTHETIC_MUTATION')
+                self.reject()
+                self.reset_fixture()
+        for flag in ('--assume-unchanged', '--skip-worktree'):
+            self.git('update-index', flag, 'app/lib/main.dart')
+            self.put('app/lib/main.dart', 'HIDDEN_MUTATION')
+            self.assertEqual(self.git('status', '--porcelain'), b'')
+            self.reject()
+            self.git('update-index', '--no-assume-unchanged', 'app/lib/main.dart')
+            self.git('update-index', '--no-skip-worktree', 'app/lib/main.dart')
+            self.reset_fixture()
+        self.put('app/lib/main.dart', 'INDEX_MUTATION')
+        self.git('add', 'app/lib/main.dart')
+        self.put('app/lib/main.dart', self.git('show', 'HEAD:app/lib/main.dart'))
+        self.reject()
+        self.reset_fixture()
+        self.git('config', 'core.fileMode', 'false')
+        for path, modes in (('app/lib/main.dart', (0o601, 0o610, 0o700, 0o4644, 0o2644, 0o1644)),
+                            ('scripts/checked.sh', (0o600, 0o611, 0o4755, 0o2755, 0o1755))):
+            original = (self.root / path).stat().st_mode & 0o7777
+            for mode in modes:
+                with self.subTest(path=path, mode=oct(mode)):
+                    (self.root / path).chmod(mode)
+                    self.assertEqual(self.git('status', '--porcelain'), b'')
+                    self.reject()
+            (self.root / path).chmod(original)
+        self.git('update-index', '--assume-unchanged', 'app/lib/main.dart')
+        (self.root / 'app/lib/main.dart').unlink()
+        (self.root / 'app/lib/main.dart').symlink_to(self.root / 'app/pubspec.yaml')
+        self.assertEqual(self.git('status', '--porcelain'), b'')
+        self.reject()
+
+    def test_merge_tree_parents_and_complete_history_are_not_inferred(self):
+        self.put('untrusted-merge-addition', 'not in either declared parent')
+        self.git('add', '.')
+        tree = self.git('write-tree').decode().strip()
+        bad = self.git('commit-tree', tree, '-p', self.base, '-p', self.head, input=b'bad tree\n').decode().strip()
+        self.git('reset', '--hard', bad)
+        env = dict(self.env, GITHUB_SHA=bad)
+        self.event['pull_request']['merge_commit_sha'] = bad
+        self.event_path.write_text(json.dumps(self.event))
+        self.reject(env)
+        self.git('checkout', '-q', '--detach', self.head)
+        env['GITHUB_SHA'] = self.head
+        self.event['pull_request']['merge_commit_sha'] = self.head
+        self.event_path.write_text(json.dumps(self.event))
+        self.reject(env)
+        self.reset_fixture()
+        self.event['pull_request']['merge_commit_sha'] = self.checkout
+        self.event_path.write_text(json.dumps(self.event))
+        self.put('.git/shallow', self.base + '\n')
+        self.reject()
+
+    def fake_compile(self, extra=None):
+        def execute(command, *, cwd, env):
+            self.assertEqual(cwd, self.root / 'app')
+            if 'get' in command:
+                self.assertIn('--enforce-lockfile', command)
+                analysis = cwd / 'analysis_options.yaml'
+                analysis.write_bytes(ANALYSIS_MIGRATION + analysis.read_bytes())
+            if 'build' in command:
+                self.assertIn('--no-pub', command)
+                self.assertIn('--target=lib/main.dart', command)
+                self.assertEqual((cwd / 'analysis_options.yaml').read_text(), 'include: package:flutter_lints/flutter.yaml\n')
+                option = next(arg for arg in command if str(arg).startswith('--dart-define-from-file='))
+                temporary = Path(str(option).split('=', 1)[1])
+                self.assertEqual(temporary.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(json.loads(temporary.read_bytes()), release.client_config(self.env))
+                self.config_path = temporary
+                self.config_bytes = temporary.read_bytes()
+                self.put('app/build/web/index.html', '<html>synthetic runnable fixture</html>')
+                self.put('app/build/web/main.dart.js', 'synthetic compiled public client')
+                self.put('app/build/web/assets/manifest.json', '{"synthetic":true}')
+                if extra:
+                    extra()
+        return execute
+
+    def test_shared_compilation_seals_separate_full_payload_and_private_config_binding(self):
+        stdout = StringIO()
+        with patch.object(release, 'run', side_effect=self.fake_compile()), redirect_stdout(stdout):
+            manifest = release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        container = self.root / 'app/build/candidate-web'
+        self.assertFalse(self.config_path.exists())
+        self.assertFalse((self.root / 'app/build/web').exists())
+        self.assertEqual(manifest['kind'], 'pickteams-unaccepted-web-candidate')
+        self.assertIs(manifest['promotable'], False)
+        self.assertIs(manifest['productionAccepted'], False)
+        self.assertEqual(manifest['source']['checkoutCommit'], self.checkout)
+        self.assertEqual(manifest['source']['headCommit'], self.head)
+        self.assertEqual(manifest['configurationSha256'], release.hashlib.sha256(self.config_bytes).hexdigest())
+        actual = {path.relative_to(container).as_posix(): release.hashlib.sha256(path.read_bytes()).hexdigest()
+                  for path in (container / 'web').rglob('*') if path.is_file()}
+        self.assertEqual(manifest['files'], actual)
+        self.assertEqual(len(actual), 3)
+        self.assertEqual(json.loads((container / 'candidate.json').read_bytes()), manifest)
+        digest = release.hashlib.sha256((container / 'candidate.json').read_bytes()).hexdigest()
+        self.assertEqual((container / 'candidate.json.sha256').read_text(), digest + '  candidate.json\n')
+        self.assertFalse(list(container.rglob('release.json')))
+        self.assertNotIn(self.env['SUPABASE_ANON_KEY'], stdout.getvalue())
+        self.assertNotIn(self.env['SUPABASE_URL'], json.dumps(manifest))
+        with self.assertRaises(KeyError):
+            contract.validate_metadata(manifest)
+        self.reject()  # Stale evidence cannot be silently reused by a new run.
+
+    def test_candidate_privacy_links_and_release_metadata_reject(self):
+        for mutation in ('release.json', 'raw-json', 'renamed-raw', 'encoded-raw', 'link', 'directory-link'):
+            with self.subTest(mutation=mutation):
+                self.reset_fixture()
+
+                def extra():
+                    if mutation == 'release.json':
+                        self.put('app/build/web/release.json', '{}')
+                    elif mutation == 'raw-json':
+                        self.put('app/build/web/leaked.json', json.dumps(release.client_config(self.env), indent=2))
+                    elif mutation == 'renamed-raw':
+                        self.put('app/build/web/renamed.bin', self.config_bytes)
+                    elif mutation == 'encoded-raw':
+                        self.put('app/build/web/encoded.bin', base64.b64encode(self.config_bytes))
+                    elif mutation == 'link':
+                        (self.root / 'app/build/web/leak').symlink_to(self.root / 'app/pubspec.yaml')
+                    else:
+                        (self.root / 'app/build/web/linked').symlink_to(self.root / 'app', target_is_directory=True)
+                with patch.object(release, 'run', side_effect=self.fake_compile(extra)), redirect_stdout(StringIO()):
+                    with self.assertRaises((AssertionError, OSError)):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+                self.assertFalse(self.config_path.exists())
+                self.assertFalse((self.root / 'app/build/candidate-web/candidate.json').exists())
+
+    def test_each_candidate_stage_rechecks_source_and_checked_analysis_restore(self):
+        for mutation in ('source-after-pub', 'unknown-analysis-migration', 'source-after-compiler'):
+            with self.subTest(mutation=mutation):
+                self.reset_fixture()
+                execute = self.fake_compile()
+
+                def run(command, *, cwd, env):
+                    execute(command, cwd=cwd, env=env)
+                    if 'get' in command:
+                        if mutation == 'source-after-pub':
+                            self.put('app/lib/main.dart', 'changed after initial check')
+                        elif mutation == 'unknown-analysis-migration':
+                            self.put('app/analysis_options.yaml', 'unknown migration')
+                    if 'build' in command and mutation == 'source-after-compiler':
+                        self.put('app/lib/main.dart', 'changed by compiler')
+                with patch.object(release, 'run', side_effect=run), redirect_stdout(StringIO()):
+                    with self.assertRaises(AssertionError):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+                self.assertFalse((self.root / 'app/build/candidate-web/candidate.json').exists())
+
+    def test_production_cli_has_no_candidate_environment_switch_and_workflow_artifacts_are_distinct(self):
+        with patch.dict(os.environ, dict(self.env, PICKTEAMS_SOURCE_POLICY='candidate'), clear=True), \
+                patch.object(release, 'install_flutter') as install, patch.object(release, 'APP', self.root / 'app'), redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(AssertionError, 'Unapproved source differences'):
+                release.main()
+            install.assert_not_called()
+        workflow = (release.APP.parent / '.github/workflows/main.yml').read_text()
+        production = workflow.split('- name: Build configured production entrypoint with pinned SDK', 1)[1].split('- name:', 1)[0]
+        self.assertIn("if: github.event_name != 'pull_request'", production)
+        self.assertIn('python3 tool/build_web_release.py', production)
+        candidate = workflow.split('- name: Build NONPROMOTABLE configured PR candidate', 1)[1].split('- name:', 1)[0]
+        self.assertIn("if: github.event_name == 'pull_request'", candidate)
+        self.assertIn('candidate_main()', candidate)
+        self.assertIn('unaccepted-web-candidate-${{ github.event.pull_request.head.sha }}-${{ github.sha }}', workflow)
+        self.assertIn('path: app/build/candidate-web/', workflow)
+
+
 if __name__ == '__main__':
     unittest.main()

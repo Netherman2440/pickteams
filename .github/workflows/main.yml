@@ -79,7 +79,7 @@ jobs:
       run:
         working-directory: app
     steps:
-      # The source gate compares HEAD with the accepted runtime ancestor.
+      # Both source policies require full immutable Git history.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -89,12 +89,20 @@ jobs:
           channel: stable
           flutter-version: '3.47.9'
       - name: Build configured production entrypoint with pinned SDK
+        if: github.event_name != 'pull_request'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           VERCEL_GIT_COMMIT_SHA: ${{ github.sha }}
         run: PICKTEAMS_FLUTTER_ROOT="$FLUTTER_ROOT" python3 tool/build_web_release.py
+      - name: Build NONPROMOTABLE configured PR candidate
+        if: github.event_name == 'pull_request'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: PICKTEAMS_FLUTTER_ROOT="$FLUTTER_ROOT" PYTHONPATH=tool python3 -c 'from build_web_release import candidate_main; candidate_main()'
       - name: Preserve public release provenance
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: web-release-metadata-${{ github.sha }}
@@ -102,9 +110,19 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Preserve configured public web build
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: web-build-${{ github.sha }}
           path: app/build/web/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve NONPROMOTABLE candidate bundle and provenance
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unaccepted-web-candidate-${{ github.event.pull_request.head.sha }}-${{ github.sha }}
+          path: app/build/candidate-web/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7

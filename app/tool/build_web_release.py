@@ -425,7 +425,125 @@ def verify_source_stage(root, stage):
     return commit
 
 
-def build(app, env, flutter):
+CANDIDATE_REPOSITORY = 'Netherman2440/pickteams'
+
+
+def candidate_context(root, env):
+    """Bind a GitHub PR merge checkout, never production acceptance.
+
+    Trust comes from the reviewed GitHub workflow/runner context, not IDs alone.
+    Local synthetic contexts are useful tests, not hosted authentication proof.
+    """
+    def git(*args):
+        return subprocess.check_output(['git', *args], cwd=root, stderr=subprocess.DEVNULL)
+
+    expected = {'GITHUB_ACTIONS': 'true', 'GITHUB_EVENT_NAME': 'pull_request',
+                'GITHUB_REPOSITORY': CANDIDATE_REPOSITORY,
+                'GITHUB_SERVER_URL': 'https://github.com'}
+    assert all(env.get(key) == value for key, value in expected.items()), 'Untrusted candidate context'
+    for key in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'):
+        assert isinstance(env.get(key), str) and re.fullmatch(r'[1-9][0-9]{0,19}', env[key]), 'Invalid candidate run context'
+    event_path = Path(env.get('GITHUB_EVENT_PATH', ''))
+    assert event_path.is_absolute() and '..' not in event_path.parts, 'Invalid candidate event path'
+    with source_file(Path('/'), event_path.parts[1:]) as fd:
+        info = os.fstat(fd)
+        assert not info.st_mode & 0o7113 and info.st_size <= 1048576, 'Unsafe candidate event'
+        raw = os.read(fd, 1048577)
+        assert len(raw) <= 1048576, 'Oversize candidate event'
+    event = parse_control(raw)
+
+    def obj(value):
+        assert isinstance(value, dict), 'Invalid candidate event structure'
+        return value
+
+    def sha(value):
+        assert isinstance(value, str) and re.fullmatch(r'[a-f0-9]{40}', value), 'Invalid candidate SHA'
+        return value
+
+    assert obj(event.get('repository')).get('full_name') == CANDIDATE_REPOSITORY, 'Wrong candidate repository'
+    pr = obj(event.get('pull_request'))
+    number = event.get('number')
+    assert (type(number) is int and type(pr.get('number')) is int and
+            0 < number < 1000000000 and pr['number'] == number), 'Invalid candidate PR'
+    ref = f'refs/pull/{number}/merge'
+    assert env.get('GITHUB_REF') == ref, 'Candidate must use the actual PR merge checkout'
+    assert env.get('GITHUB_WORKFLOW_REF') == f'{CANDIDATE_REPOSITORY}/.github/workflows/main.yml@{ref}', 'Wrong candidate workflow'
+    head_info, base_info = obj(pr.get('head')), obj(pr.get('base'))
+    for branch in (head_info, base_info):
+        repository = obj(branch.get('repo'))
+        assert repository.get('full_name') == CANDIDATE_REPOSITORY and repository.get('fork') is False, 'Unsafe candidate repository context'
+    assert base_info.get('ref') == 'main', 'Candidate base must be main'
+    head, base, checkout = sha(head_info.get('sha')), sha(base_info.get('sha')), sha(env.get('GITHUB_SHA'))
+    if pr.get('merge_commit_sha') is not None:
+        assert sha(pr['merge_commit_sha']) == checkout, 'Candidate event merge mismatch'
+    assert git('remote', 'get-url', 'origin').strip() in (
+        b'https://github.com/Netherman2440/pickteams',
+        b'https://github.com/Netherman2440/pickteams.git',
+    ), 'Wrong candidate source origin'
+    assert git('rev-parse', '--is-shallow-repository').strip() == b'false', 'Candidate requires complete history'
+    assert git('rev-parse', 'HEAD').decode().strip() == checkout, 'Candidate checkout SHA mismatch'
+    assert git('rev-list', '--parents', '-n', '1', checkout).decode().split() == [checkout, base, head], 'Candidate merge parents mismatch'
+    subprocess.run(['git', 'merge-base', '--is-ancestor', ACCEPTED_SOURCE, base], cwd=root,
+                   check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    tree = git('rev-parse', checkout + '^{tree}').decode().strip()
+    merged = git('merge-tree', '--write-tree', base, head).decode().splitlines()[0]
+    assert tree == merged, 'Candidate merge tree mismatch'
+    return {'repository': CANDIDATE_REPOSITORY, 'pullRequest': number,
+            'headCommit': head, 'baseCommit': base, 'checkoutCommit': checkout,
+            'headTree': git('rev-parse', head + '^{tree}').decode().strip(),
+            'baseTree': git('rev-parse', base + '^{tree}').decode().strip(),
+            'runtimeTree': tree, 'mergeParents': [base, head],
+            'runId': env['GITHUB_RUN_ID'], 'runAttempt': env['GITHUB_RUN_ATTEMPT'],
+            'workflowRef': env['GITHUB_WORKFLOW_REF']}
+
+
+class CandidateSource:
+    """Closed PR-only policy. No production pin, exclusion or authority switch."""
+    def __init__(self, root, env):
+        self.env = dict(env)
+        self.identity = candidate_context(root, self.env)
+
+    def verify_stage(self, root, stage):
+        print(f'Candidate source check: {stage}', flush=True)
+        assert candidate_context(root, self.env) == self.identity, 'Candidate context changed'
+
+        def git(*args):
+            return subprocess.check_output(['git', *args], cwd=root, stderr=subprocess.DEVNULL)
+
+        assert git('write-tree').strip() == git('rev-parse', 'HEAD^{tree}').strip(), 'Staged candidate mutation'
+        assert not git('status', '--porcelain=v1', '-z', '--untracked-files=all'), 'Dirty candidate source'
+        for parts in (('.vercel',), ('app', '.vercel')):
+            if os.path.lexists(root.joinpath(*parts)):
+                with source_directory(root, parts) as directory:
+                    assert not os.listdir(directory), 'Unexpected candidate provider controls'
+        base_modes = {entry.split(b'\t', 1)[1]: entry.split(b' ', 1)[0]
+                      for entry in git('ls-tree', '-rz', self.identity['baseCommit']).split(b'\0') if entry}
+        for entry in git('ls-tree', '-rz', 'HEAD').split(b'\0'):
+            if not entry:
+                continue
+            header, path = entry.split(b'\t', 1)
+            mode, kind, oid = header.split()
+            assert kind == b'blob' and mode in (b'100644', b'100755'), 'Unsafe candidate source entry'
+            assert mode == base_modes.get(path, b'100644'), 'Candidate Git mode change'
+            with source_file(root, os.fsdecode(path).split('/')) as fd:
+                info = os.fstat(fd)
+                assert not info.st_mode & 0o7000, 'Candidate special mode mutation'
+                assert (bool(info.st_mode & stat.S_IXUSR) if mode == b'100755' else
+                        not info.st_mode & 0o111), 'Candidate execute mode mutation'
+                digest = hashlib.sha1(b'blob ' + str(info.st_size).encode() + b'\0')
+                while chunk := os.read(fd, 1024 * 1024):
+                    digest.update(chunk)
+                assert digest.hexdigest().encode() == oid, 'Candidate byte mutation'
+        assert candidate_context(root, self.env) == self.identity, 'Candidate source history changed'
+        assert git('write-tree').strip() == git('rev-parse', 'HEAD^{tree}').strip(), 'Candidate index changed'
+        assert not os.path.lexists(root / 'app/build/candidate-web'), 'Candidate evidence already exists'
+        if stage != 'after-compiler-and-checked-analysis-restore':
+            assert not os.path.lexists(root / 'app/build/web'), 'Stale candidate compiler output'
+        return self.identity['checkoutCommit']
+
+
+def _compile_web(app, env, flutter, check_source):
+    """Shared compiler only; public entrypoints fix their policy and evidence."""
     config = client_config(env)
     version_match = re.search(r"^version:\s*(\d+\.\d+\.\d+\+\d+)\s*$", (app / "pubspec.yaml").read_text(), re.M)
     if not version_match:
@@ -436,13 +554,13 @@ def build(app, env, flutter):
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=app, text=True).strip()
     if not re.fullmatch(r"[a-f0-9]{40}", commit):
         raise ValueError("A full Git commit SHA is required for release provenance")
-    if verify_source_stage(app.parent, "after-sdk-before-pub-get") != commit:
+    if check_source(app.parent, "after-sdk-before-pub-get") != commit:
         raise ValueError("Build commit differs from checked out source")
     analysis = app / "analysis_options.yaml"
     original_analysis = analysis.read_bytes()
     run([flutter, "pub", "get", "--enforce-lockfile"], cwd=app, env=env)
     restore_analysis(analysis, original_analysis)
-    verify_source_stage(app.parent, "after-pub-get-and-checked-analysis-restore")
+    check_source(app.parent, "after-pub-get-and-checked-analysis-restore")
     with tempfile.TemporaryDirectory(prefix="pickteams-web-config-") as temporary:
         client = Path(temporary) / "client-config.json"
         client.touch(mode=0o600)
@@ -451,10 +569,15 @@ def build(app, env, flutter):
              "--no-web-resources-cdn", "--no-wasm-dry-run", "--dart-define-from-file=" + str(client)],
             cwd=app, env=env)
     restore_analysis(analysis, original_analysis)
-    verify_source_stage(app.parent, "after-compiler-and-checked-analysis-restore")
+    check_source(app.parent, "after-compiler-and-checked-analysis-restore")
     output = app / "build/web"
     if not (output / "index.html").is_file() or not (output / "main.dart.js").is_file():
         raise ValueError("Web build did not produce the real application entrypoint")
+    return output, config, version, commit
+
+
+def build(app, env, flutter):
+    output, config, version, commit = _compile_web(app, env, flutter, verify_source_stage)
     manifest = {"schemaVersion": 1, "version": version, "commit": commit,
                 "flutter": FLUTTER_VERSION, "flutterRevision": FLUTTER_REVISION,
                 "files": {name: hashlib.sha256((output / name).read_bytes()).hexdigest()
@@ -462,6 +585,72 @@ def build(app, env, flutter):
     (output / "release.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(f"Built Pickteams {version} from {commit}")
     return manifest
+
+
+def build_candidate(app, env, flutter):
+    """Compile an unaccepted PR tree. This entrypoint cannot emit release.json."""
+    source = CandidateSource(app.parent, env)
+    output, config, version, commit = _compile_web(app, env, flutter, source.verify_stage)
+    raw_config = json.dumps(config).encode()
+    files = {}
+    for directory, directories, names in os.walk(output, followlinks=False):
+        assert all(not (Path(directory) / name).is_symlink() for name in directories), 'Linked candidate output directory'
+        for name in names:
+            path = Path(directory) / name
+            relative = path.relative_to(output).as_posix()
+            assert not any(ord(char) < 32 or char == '\\' for char in relative), 'Unsafe candidate output path'
+            assert name.lower() not in ('release.json', 'client-config.json') and not name.lower().startswith('.env'), 'Private or release output in candidate'
+            assert not name.lower().endswith(('.jks', '.pem', '.dart')), 'Unexpected candidate source/key output'
+            with source_file(output, relative.split('/')) as fd:
+                assert not os.fstat(fd).st_mode & 0o7000, 'Special candidate output mode'
+                chunks = []
+                while chunk := os.read(fd, 1024 * 1024):
+                    chunks.append(chunk)
+                raw = b''.join(chunks)
+            assert raw_config not in raw and base64.b64encode(raw_config) not in raw, 'Raw client configuration in candidate output'
+            if path.suffix == '.json':
+                try:
+                    value = json.loads(raw)
+                except (ValueError, UnicodeError):
+                    value = None
+
+                def raw_client(value):
+                    if isinstance(value, dict):
+                        return set(config) <= value.keys() or any(raw_client(child) for child in value.values())
+                    return isinstance(value, list) and any(raw_client(child) for child in value)
+
+                assert not raw_client(value), 'Raw client configuration object in candidate output'
+            files['web/' + relative] = hashlib.sha256(raw).hexdigest()
+    assert {'web/index.html', 'web/main.dart.js'} <= files.keys(), 'Missing runnable candidate entrypoint'
+    manifest = {'schemaVersion': 1, 'kind': 'pickteams-unaccepted-web-candidate',
+                'promotable': False, 'productionAccepted': False,
+                'notice': 'UNACCEPTED CANDIDATE - NOT FOR PRODUCTION OR NATIVE PROMOTION',
+                'source': source.identity, 'version': version, 'entrypoint': 'lib/main.dart',
+                'flutter': FLUTTER_VERSION, 'flutterRevision': FLUTTER_REVISION,
+                'configurationSha256': hashlib.sha256(raw_config).hexdigest(),
+                'files': files,
+                'payloadTreeSha256': hashlib.sha256(json.dumps(files, sort_keys=True, separators=(',', ':')).encode()).hexdigest()}
+    # Hash every runnable payload file. A detached digest covers the manifest;
+    # GitHub's artifact digest is the external envelope binding both receipts.
+    container = app / 'build/candidate-web'
+    container.mkdir()
+    output.rename(container / 'web')
+    raw_manifest = (json.dumps(manifest, sort_keys=True, indent=2) + '\n').encode()
+    (container / 'candidate.json').write_bytes(raw_manifest)
+    (container / 'candidate.json.sha256').write_text(hashlib.sha256(raw_manifest).hexdigest() + '  candidate.json\n')
+    assert commit == source.identity['checkoutCommit'], 'Candidate provenance mismatch'
+    print(f'Built NONPROMOTABLE candidate {commit} from PR {source.identity["pullRequest"]}')
+    return manifest
+
+
+def candidate_main():
+    """GitHub PR-only CLI, distinct from the unchanged production main()."""
+    env = dict(os.environ, CI='true', FLUTTER_SUPPRESS_ANALYTICS='true')
+    client_config(env)
+    CandidateSource(APP.parent, env).verify_stage(APP.parent, 'before-sdk')
+    flutter = install_flutter(env)
+    env['PATH'] = str(flutter.parent) + os.pathsep + env.get('PATH', '')
+    build_candidate(APP, env, flutter)
 
 
 def main():
