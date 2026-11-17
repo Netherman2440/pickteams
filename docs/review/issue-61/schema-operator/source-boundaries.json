@@ -1,0 +1,35 @@
+{
+  "applicationAndMigrationsTreesUnchanged": true,
+  "applicationBranch": "limen/github-issue-61-issue-61",
+  "applicationHead": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "applicationOverlaySha256": "a95aebdb4b70a14d48d02ec0ee6faae1815fc36eafc33ec60381504def5b6531",
+  "applicationOverlayUnchanged": true,
+  "applicationStatus": "M AGENTS.md",
+  "canonicalSha256": "02cfb0ff0c766c77e76c75be115a981960a32db551b3cb5733f623ff61b4f35a",
+  "changedFiles": [
+    "docs/operations/squad-star-thresholds.md",
+    "supabase/tools/generate_stars_rollout.py",
+    "supabase/tools/prove_stars_rollout.py",
+    "supabase/tools/squad_star_thresholds_operator.sql",
+    "supabase/tools/stars_operator.template.sql",
+    "supabase/tools/test_stars_rollout.py"
+  ],
+  "deliveryBase": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "deliveryBranch": "limen/issue-61-schema-operator",
+  "deliveryHead": "3047fd512bb3b729022e5b4140b87d4a597b6cb9",
+  "deliveryWorktree": "/home/agents/.local/share/pickteams-validation/issue-61-schema-operator",
+  "onlyNewDeliveryFiles": true,
+  "operatorSha256": "f26b6a1b597e83c9a989bc73f6ae6bf1302370ddbf1bfe25d90a5dfa09c7cfba",
+  "ownedPostgresStoppedAndSocketsRemoved": true,
+  "proof": {
+    "canonicalSha256": "02cfb0ff0c766c77e76c75be115a981960a32db551b3cb5733f623ff61b4f35a",
+    "hostedOrCacheReadinessClaimed": false,
+    "operatorSha256": "f26b6a1b597e83c9a989bc73f6ae6bf1302370ddbf1bfe25d90a5dfa09c7cfba",
+    "postgresVersion": "postgres (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "thresholdVectors": {
+      "invalidFunctionAndConstraintVectors": 30,
+      "validConstraintWrites": 4
+    }
+  },
+  "session": "01a1e59b-7b4e-76fb-acfc-1393d251bb90"
+}

@@ -1,0 +1,16 @@
+DELIVERY_HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+APPLICATION_HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+COMMAND=python3 -m unittest discover -s supabase/tools -p test_stars_rollout.py -v 
+MemAvailable=2747508 KiB
+test_any_changed_source_is_refused_not_rehashed (test_stars_rollout.StarsGeneratorTest.test_any_changed_source_is_refused_not_rehashed) ... ok
+test_check_refuses_stale_package_without_write (test_stars_rollout.StarsGeneratorTest.test_check_refuses_stale_package_without_write) ... Stale stars operator package
+ok
+test_exact_source_and_reproducible_package (test_stars_rollout.StarsGeneratorTest.test_exact_source_and_reproducible_package) ... ok
+test_no_default_backfill_or_new_policy (test_stars_rollout.StarsGeneratorTest.test_no_default_backfill_or_new_policy) ... ok
+test_transaction_reservation_history_and_receipt_order (test_stars_rollout.StarsGeneratorTest.test_transaction_reservation_history_and_receipt_order) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.003s
+
+OK
+EXIT=0

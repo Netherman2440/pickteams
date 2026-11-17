@@ -1,0 +1,40 @@
+PASS exact clean detached delivery3047/basef038; three commits/six additions only; full app/migration/test trees unchanged
+PASS canonical 02cfb0ff0c766c77e76c75be115a981960a32db551b3cb5733f623ff61b4f35a
+PASS generated operator f26b6a1b597e83c9a989bc73f6ae6bf1302370ddbf1bfe25d90a5dfa09c7cfba
+PASS independent canonical-boundary/hash/fresh generation check; modified canonical bytes reject without rehash
+RETAINED NEGATIVE standard 040-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE version_only 050-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE name_only 060-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE statements_only 070-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE absent 079-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE column_collision 085-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE function_collision 091-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE signature_collision 097-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE constraint_collision 103-psql.log Stars operator: target object already exists; no blind rerun
+RETAINED NEGATIVE version_collision 109-psql.log Stars operator: migration version already recorded
+RETAINED NEGATIVE unknown_column 115-psql.log Stars operator: unsupported history shape
+RETAINED NEGATIVE required_column 121-psql.log Stars operator: unsupported history shape
+RETAINED NEGATIVE wrong_type 127-psql.log Stars operator: unsupported history shape
+RETAINED NEGATIVE missing_pk 133-psql.log Stars operator: unsupported history shape
+RETAINED NEGATIVE history_default 139-psql.log Stars operator: unsupported history shape
+RETAINED NEGATIVE extra_index 145-psql.log Stars operator: unsupported history shape
+RETAINED NEGATIVE history_view 150-psql.log Stars operator: unsupported history relation
+RETAINED NEGATIVE history_rls 156-psql.log Stars operator: unsupported history relation
+RETAINED NEGATIVE history_trigger 162-psql.log Stars operator: unsupported history relation
+RETAINED NEGATIVE rls_disabled 168-psql.log Stars operator: unexpected squads RLS state
+RETAINED NEGATIVE rls_forced 174-psql.log Stars operator: unexpected squads RLS state
+RETAINED NEGATIVE unknown_policy 180-psql.log Stars operator: unexpected squads policies
+RETAINED NEGATIVE missing_update 186-psql.log Stars operator: expected existing API permissions missing
+RETAINED NEGATIVE nullable_owner 192-psql.log Stars operator: unexpected owner column
+RETAINED NEGATIVE limited_operator 198-psql.log Stars operator: existing administrator privileges required
+RETAINED NEGATIVE history_privileges 204-psql.log Stars operator: history privileges missing
+RETAINED NEGATIVE bad_defaults 210-psql.log Stars operator: metadata verification failed; transaction must roll back
+RETAINED NEGATIVE late_failure 215-psql.log deliberate late failure
+RETAINED NEGATIVE late_absent 224-psql.log deliberate late failure
+RETAINED NEGATIVE wrong_validator 234-psql.log Stars operator: metadata verification failed; transaction must roll back
+RETAINED NEGATIVE wrong_column 239-psql.log Stars operator: metadata verification failed; transaction must roll back
+RETAINED NEGATIVE changed_acl 244-psql.log Stars operator: metadata verification failed; transaction must roll back
+RETAINED NEGATIVE changed_old_history 249-psql.log Stars operator: metadata verification failed; transaction must roll back
+RETAINED NEGATIVE bypass_role 258-psql.log Stars operator: unexpected API role privileges
+PASS independent retained inspection: 34 named intended negative SQL errors; 35 full dump pairs equal after excluding only randomized pg_dump restrict markers
+RETAINED final PostgreSQL postgres (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) ; four valid writes/30 invalid vectors; no execution repeated by this check

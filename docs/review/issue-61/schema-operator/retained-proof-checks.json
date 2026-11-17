@@ -1,0 +1,351 @@
+{
+  "negativeErrors": [
+    {
+      "file": "040-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "standard"
+    },
+    {
+      "file": "050-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "version_only"
+    },
+    {
+      "file": "060-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "name_only"
+    },
+    {
+      "file": "070-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "statements_only"
+    },
+    {
+      "file": "079-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "absent"
+    },
+    {
+      "file": "085-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "column_collision"
+    },
+    {
+      "file": "091-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "function_collision"
+    },
+    {
+      "file": "097-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "signature_collision"
+    },
+    {
+      "file": "103-psql.log",
+      "error": "Stars operator: target object already exists; no blind rerun",
+      "case": "constraint_collision"
+    },
+    {
+      "file": "109-psql.log",
+      "error": "Stars operator: migration version already recorded",
+      "case": "version_collision"
+    },
+    {
+      "file": "115-psql.log",
+      "error": "Stars operator: unsupported history shape",
+      "case": "unknown_column"
+    },
+    {
+      "file": "121-psql.log",
+      "error": "Stars operator: unsupported history shape",
+      "case": "required_column"
+    },
+    {
+      "file": "127-psql.log",
+      "error": "Stars operator: unsupported history shape",
+      "case": "wrong_type"
+    },
+    {
+      "file": "133-psql.log",
+      "error": "Stars operator: unsupported history shape",
+      "case": "missing_pk"
+    },
+    {
+      "file": "139-psql.log",
+      "error": "Stars operator: unsupported history shape",
+      "case": "history_default"
+    },
+    {
+      "file": "145-psql.log",
+      "error": "Stars operator: unsupported history shape",
+      "case": "extra_index"
+    },
+    {
+      "file": "150-psql.log",
+      "error": "Stars operator: unsupported history relation",
+      "case": "history_view"
+    },
+    {
+      "file": "156-psql.log",
+      "error": "Stars operator: unsupported history relation",
+      "case": "history_rls"
+    },
+    {
+      "file": "162-psql.log",
+      "error": "Stars operator: unsupported history relation",
+      "case": "history_trigger"
+    },
+    {
+      "file": "168-psql.log",
+      "error": "Stars operator: unexpected squads RLS state",
+      "case": "rls_disabled"
+    },
+    {
+      "file": "174-psql.log",
+      "error": "Stars operator: unexpected squads RLS state",
+      "case": "rls_forced"
+    },
+    {
+      "file": "180-psql.log",
+      "error": "Stars operator: unexpected squads policies",
+      "case": "unknown_policy"
+    },
+    {
+      "file": "186-psql.log",
+      "error": "Stars operator: expected existing API permissions missing",
+      "case": "missing_update"
+    },
+    {
+      "file": "192-psql.log",
+      "error": "Stars operator: unexpected owner column",
+      "case": "nullable_owner"
+    },
+    {
+      "file": "198-psql.log",
+      "error": "Stars operator: existing administrator privileges required",
+      "case": "limited_operator"
+    },
+    {
+      "file": "204-psql.log",
+      "error": "Stars operator: history privileges missing",
+      "case": "history_privileges"
+    },
+    {
+      "file": "210-psql.log",
+      "error": "Stars operator: metadata verification failed; transaction must roll back",
+      "case": "bad_defaults"
+    },
+    {
+      "file": "215-psql.log",
+      "error": "deliberate late failure",
+      "case": "late_failure"
+    },
+    {
+      "file": "224-psql.log",
+      "error": "deliberate late failure",
+      "case": "late_absent"
+    },
+    {
+      "file": "234-psql.log",
+      "error": "Stars operator: metadata verification failed; transaction must roll back",
+      "case": "wrong_validator"
+    },
+    {
+      "file": "239-psql.log",
+      "error": "Stars operator: metadata verification failed; transaction must roll back",
+      "case": "wrong_column"
+    },
+    {
+      "file": "244-psql.log",
+      "error": "Stars operator: metadata verification failed; transaction must roll back",
+      "case": "changed_acl"
+    },
+    {
+      "file": "249-psql.log",
+      "error": "Stars operator: metadata verification failed; transaction must roll back",
+      "case": "changed_old_history"
+    },
+    {
+      "file": "258-psql.log",
+      "error": "Stars operator: unexpected API role privileges",
+      "case": "bypass_role"
+    }
+  ],
+  "equalDumpPairs": [
+    {
+      "before": "039-pg_dump.log",
+      "after": "041-pg_dump.log",
+      "sha256": "f81013dfd296389be23b8e72d88ff3d1e81dbfab509b1880473a0fed3ca8f741"
+    },
+    {
+      "before": "049-pg_dump.log",
+      "after": "051-pg_dump.log",
+      "sha256": "9e69309b6b2c50406b991795aff78a96c84b666bd71caf9e1a77c1ab3170d910"
+    },
+    {
+      "before": "059-pg_dump.log",
+      "after": "061-pg_dump.log",
+      "sha256": "504392143e9f83688e37643ab143b0520efb75abcaf319c325c4ba4be153f0af"
+    },
+    {
+      "before": "069-pg_dump.log",
+      "after": "071-pg_dump.log",
+      "sha256": "a800ef333736652c3e1823a7a14d61e279a99d647bf6cb45dbf524756fefcaea"
+    },
+    {
+      "before": "078-pg_dump.log",
+      "after": "080-pg_dump.log",
+      "sha256": "63563c43e4c96b8a163dda1e2a0cb10b0e8df7e39234b2fd4d22eff8375c2aad"
+    },
+    {
+      "before": "084-pg_dump.log",
+      "after": "086-pg_dump.log",
+      "sha256": "143a50ba04a741d72b7560570b7a55109eff16e82e02a74324322cb7b84b4280"
+    },
+    {
+      "before": "090-pg_dump.log",
+      "after": "092-pg_dump.log",
+      "sha256": "d34e98245f41e95b5b0b4270da7a504e9b53ca0038018e78ce568a4c1158a33b"
+    },
+    {
+      "before": "096-pg_dump.log",
+      "after": "098-pg_dump.log",
+      "sha256": "6332b94061d86f708de2529f6123651cb150a28fc738d4c542f9ee3ee9885f30"
+    },
+    {
+      "before": "102-pg_dump.log",
+      "after": "104-pg_dump.log",
+      "sha256": "f0a8e1151ab23e17238b14ed4bec6d0bef7b9eb81c6843b316b03e1b1c56e228"
+    },
+    {
+      "before": "108-pg_dump.log",
+      "after": "110-pg_dump.log",
+      "sha256": "679ae7dceb4410dbc8bf271a4075d68fe82e6bc7e815c9c3dec4031bafe6f97a"
+    },
+    {
+      "before": "114-pg_dump.log",
+      "after": "116-pg_dump.log",
+      "sha256": "0598661a613617d0f2095be87b3326792531ded48a355534fbbb5e82f1786001"
+    },
+    {
+      "before": "120-pg_dump.log",
+      "after": "122-pg_dump.log",
+      "sha256": "1152933914e005dfb2f3ef3804fcc4f03492bf25c95fc24eb84829a3e66b0331"
+    },
+    {
+      "before": "126-pg_dump.log",
+      "after": "128-pg_dump.log",
+      "sha256": "a9e03080321eeb1173007e55d33fdee9cee93e291b9dcfac545f10ffa128f080"
+    },
+    {
+      "before": "132-pg_dump.log",
+      "after": "134-pg_dump.log",
+      "sha256": "7a55a65268cc0820982cbb64be5a9da5f48224abdbfd051bf1c05b95d2a7da46"
+    },
+    {
+      "before": "138-pg_dump.log",
+      "after": "140-pg_dump.log",
+      "sha256": "12b19dcca06136030057a0445f992d37e4d0d6b98ea10ecfec705e46a8af3d51"
+    },
+    {
+      "before": "144-pg_dump.log",
+      "after": "146-pg_dump.log",
+      "sha256": "e484933d44906dcbcab7d6c3a20cef1c817453f3c12fa5be094d58500a6a6ab6"
+    },
+    {
+      "before": "149-pg_dump.log",
+      "after": "151-pg_dump.log",
+      "sha256": "8c752b2e05984554caf5824c2aae9f23c53dcac18369ac8775f188e9d5985244"
+    },
+    {
+      "before": "155-pg_dump.log",
+      "after": "157-pg_dump.log",
+      "sha256": "8e1bf1a7fe00fdd899b711ab774cdbabde92e268ec716f3376ee904b76c20ba6"
+    },
+    {
+      "before": "161-pg_dump.log",
+      "after": "163-pg_dump.log",
+      "sha256": "662371db496e09cfdaafc2ae774b91dd495af2de69fdd1e931aaef8db25e89c8"
+    },
+    {
+      "before": "167-pg_dump.log",
+      "after": "169-pg_dump.log",
+      "sha256": "1923b47f3fe886c9b3192694d92273ba745449f6681f64c0b822a904488367f2"
+    },
+    {
+      "before": "173-pg_dump.log",
+      "after": "175-pg_dump.log",
+      "sha256": "6f4612a4e35c5290750a0442c7133048e04924984214e60e3ab8400df1f8b3d8"
+    },
+    {
+      "before": "179-pg_dump.log",
+      "after": "181-pg_dump.log",
+      "sha256": "842a510e9b4864e59715da39aa00ad329fdd1b6162e51e096923374842206a0c"
+    },
+    {
+      "before": "185-pg_dump.log",
+      "after": "187-pg_dump.log",
+      "sha256": "6c045206a0fb1176d7f09ee8e16b28d0dc106c24b1886a14f0dd649033adeffe"
+    },
+    {
+      "before": "191-pg_dump.log",
+      "after": "193-pg_dump.log",
+      "sha256": "87ae4e202ef803f20ad2bd02cc498d860847db1e0f8949c6f2ac2023a3a0ba7b"
+    },
+    {
+      "before": "197-pg_dump.log",
+      "after": "199-pg_dump.log",
+      "sha256": "419c57809ffdb1ae1f852cfe6e6096ccee4998b278be8faa6e50062fe4ddb3cb"
+    },
+    {
+      "before": "203-pg_dump.log",
+      "after": "205-pg_dump.log",
+      "sha256": "183d03a298b909e86c341587ffaa2671b6a0999723b7e7fe3280afd6e0d90a25"
+    },
+    {
+      "before": "209-pg_dump.log",
+      "after": "211-pg_dump.log",
+      "sha256": "db8b3d88c29f7172d55f58a3a1ddc0c6e42b9b2f00303e3732bb7194203f0719"
+    },
+    {
+      "before": "214-pg_dump.log",
+      "after": "216-pg_dump.log",
+      "sha256": "7bd42773fa0ee0e22aec4ea71669f5d664a0c128445a777d24bffae26754167c"
+    },
+    {
+      "before": "223-pg_dump.log",
+      "after": "225-pg_dump.log",
+      "sha256": "992e873ad1e3b4a9bf18b0e0a13e167f44b4969a86d8a82da196cd56c0ad7d04"
+    },
+    {
+      "before": "233-pg_dump.log",
+      "after": "235-pg_dump.log",
+      "sha256": "419c57809ffdb1ae1f852cfe6e6096ccee4998b278be8faa6e50062fe4ddb3cb"
+    },
+    {
+      "before": "238-pg_dump.log",
+      "after": "240-pg_dump.log",
+      "sha256": "419c57809ffdb1ae1f852cfe6e6096ccee4998b278be8faa6e50062fe4ddb3cb"
+    },
+    {
+      "before": "243-pg_dump.log",
+      "after": "245-pg_dump.log",
+      "sha256": "419c57809ffdb1ae1f852cfe6e6096ccee4998b278be8faa6e50062fe4ddb3cb"
+    },
+    {
+      "before": "248-pg_dump.log",
+      "after": "250-pg_dump.log",
+      "sha256": "7bd42773fa0ee0e22aec4ea71669f5d664a0c128445a777d24bffae26754167c"
+    },
+    {
+      "before": "251-pg_dump.log",
+      "after": "253-pg_dump.log",
+      "sha256": "f81013dfd296389be23b8e72d88ff3d1e81dbfab509b1880473a0fed3ca8f741"
+    },
+    {
+      "before": "257-pg_dump.log",
+      "after": "259-pg_dump.log",
+      "sha256": "419c57809ffdb1ae1f852cfe6e6096ccee4998b278be8faa6e50062fe4ddb3cb"
+    }
+  ]
+}

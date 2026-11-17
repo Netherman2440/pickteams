@@ -1,0 +1,48 @@
+[
+  {
+    "case": "owned socket-only PG16 fixture; canonical predecessors and synthetic sentinel",
+    "socket": "/tmp/pt-r6-i0p38h5k",
+    "port": "56417"
+  },
+  {
+    "case": "exact full-file commit then nine booleans; public helper shadowing ineffective; existing rows/policies/ACL preserved"
+  },
+  {
+    "case": "own NULL/extreme/shape probes and owner/nonowner/guest RLS checks; full dump unchanged",
+    "dumpSha256": "a4b2ea07806d128d6e073b74326a3e3c22b6d7903501e4948fffd5c0c4c5da88"
+  },
+  {
+    "case": "absent history remains absent; false history flag is limitation, not fabricated baseline"
+  },
+  {
+    "case": "late_history: late fault after NOTIFY rolls back canonical DDL/stub/history",
+    "dumpSha256": "64321c6f15a6d3bba4a7bb44ea1c15b555e84a32f02be9421325e15519e9d9e2"
+  },
+  {
+    "case": "late_absent: late fault after NOTIFY rolls back canonical DDL/stub/history",
+    "dumpSha256": "1d276e0da1aec242e2ba6a6ade34058da0d022b4b9587fb0f45e590423cee210"
+  },
+  {
+    "case": "competing advisory operator refuses at intended immediate guard; dump unchanged"
+  },
+  {
+    "case": "independent relation-lock contention hits package 5-second timeout; dump unchanged"
+  },
+  {
+    "case": "concurrent exact-signature creation after absence check survives unmodified; plain CREATE refuses, no OR REPLACE hijack"
+  },
+  {
+    "case": "uncommitted plain-CREATE stub reserves exact signature; second creator cannot commit through it; canonical body replaces own stub only"
+  },
+  {
+    "case": "same-session temporary receipt collision refuses, no persistent changes",
+    "dumpSha256": "64321c6f15a6d3bba4a7bb44ea1c15b555e84a32f02be9421325e15519e9d9e2"
+  },
+  {
+    "case": "commit without receipt retrieval is still applied; blind replay refuses without changing state",
+    "dumpSha256": "cdc8e20f099f55425c202e219f8454018bca3d5eda708aa2cff3fb40a5c188c7"
+  },
+  {
+    "case": "owned server stopped and private socket removed"
+  }
+]

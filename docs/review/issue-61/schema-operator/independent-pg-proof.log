@@ -1,0 +1,21 @@
+DELIVERY_HEAD=3047fd512bb3b729022e5b4140b87d4a597b6cb9
+APPLICATION_BASE=f0384d6e38673bf0f44423514e7749cb316c83d3
+COMMAND=python3 -B /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/review-6/independent_pg_proof.py
+MemAvailable=2937468 KiB; required=2621440 KiB
+ADMISSION PASSED; one bounded independent PostgreSQL invocation
+ACTUAL postgres (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
+PASS owned socket-only PG16 fixture; canonical predecessors and synthetic sentinel {"port": "56417", "socket": "/tmp/pt-r6-i0p38h5k"}
+PASS exact full-file commit then nine booleans; public helper shadowing ineffective; existing rows/policies/ACL preserved {}
+PASS own NULL/extreme/shape probes and owner/nonowner/guest RLS checks; full dump unchanged {"dumpSha256": "a4b2ea07806d128d6e073b74326a3e3c22b6d7903501e4948fffd5c0c4c5da88"}
+PASS absent history remains absent; false history flag is limitation, not fabricated baseline {}
+PASS late_history: late fault after NOTIFY rolls back canonical DDL/stub/history {"dumpSha256": "64321c6f15a6d3bba4a7bb44ea1c15b555e84a32f02be9421325e15519e9d9e2"}
+PASS late_absent: late fault after NOTIFY rolls back canonical DDL/stub/history {"dumpSha256": "1d276e0da1aec242e2ba6a6ade34058da0d022b4b9587fb0f45e590423cee210"}
+PASS competing advisory operator refuses at intended immediate guard; dump unchanged {}
+PASS independent relation-lock contention hits package 5-second timeout; dump unchanged {}
+PASS concurrent exact-signature creation after absence check survives unmodified; plain CREATE refuses, no OR REPLACE hijack {}
+PASS uncommitted plain-CREATE stub reserves exact signature; second creator cannot commit through it; canonical body replaces own stub only {}
+PASS same-session temporary receipt collision refuses, no persistent changes {"dumpSha256": "64321c6f15a6d3bba4a7bb44ea1c15b555e84a32f02be9421325e15519e9d9e2"}
+PASS commit without receipt retrieval is still applied; blind replay refuses without changing state {"dumpSha256": "cdc8e20f099f55425c202e219f8454018bca3d5eda708aa2cff3fb40a5c188c7"}
+PASS owned server stopped and private socket removed {}
+EXECUTED PASS 13 independent SQL case groups; no shared or production connection
+EXIT=0

@@ -1,0 +1,49 @@
+DELIVERY_HEAD=3047fd512bb3b729022e5b4140b87d4a597b6cb9
+APPLICATION_HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+COMMAND=env LD_LIBRARY_PATH=/home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/root/usr/lib/x86_64-linux-gnu python3 supabase/tools/prove_stars_rollout.py --pg-bin /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/root/usr/lib/postgresql/16/bin --proof-dir /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/schema-operator-preparation/postgres-proof-v3 --socket-dir /home/agents/.local/share/pickteams-validation/issue-61-schema-operator/.pg-socket 
+MemAvailable=2861940 KiB
+PASS real canonical predecessors and existing local_auth fixture; pre-existing squad sentinel; no hosted connection
+PASS standard: COMMIT then exact nine-boolean receipt; no backfill or extra history
+PASS standard: expected failure, full database dump unchanged
+PASS version_only: COMMIT then exact nine-boolean receipt; no backfill or extra history
+PASS version_only: expected failure, full database dump unchanged
+PASS name_only: COMMIT then exact nine-boolean receipt; no backfill or extra history
+PASS name_only: expected failure, full database dump unchanged
+PASS statements_only: COMMIT then exact nine-boolean receipt; no backfill or extra history
+PASS statements_only: expected failure, full database dump unchanged
+PASS absent: COMMIT then exact nine-boolean receipt; no backfill or extra history
+PASS absent: expected failure, full database dump unchanged
+PASS column_collision: expected failure, full database dump unchanged
+PASS function_collision: expected failure, full database dump unchanged
+PASS signature_collision: expected failure, full database dump unchanged
+PASS constraint_collision: expected failure, full database dump unchanged
+PASS version_collision: expected failure, full database dump unchanged
+PASS unknown_column: expected failure, full database dump unchanged
+PASS required_column: expected failure, full database dump unchanged
+PASS wrong_type: expected failure, full database dump unchanged
+PASS missing_pk: expected failure, full database dump unchanged
+PASS history_default: expected failure, full database dump unchanged
+PASS extra_index: expected failure, full database dump unchanged
+PASS history_view: expected failure, full database dump unchanged
+PASS history_rls: expected failure, full database dump unchanged
+PASS history_trigger: expected failure, full database dump unchanged
+PASS rls_disabled: expected failure, full database dump unchanged
+PASS rls_forced: expected failure, full database dump unchanged
+PASS unknown_policy: expected failure, full database dump unchanged
+PASS missing_update: expected failure, full database dump unchanged
+PASS nullable_owner: expected failure, full database dump unchanged
+PASS limited_operator: expected failure, full database dump unchanged
+PASS history_privileges: expected failure, full database dump unchanged
+PASS bad_defaults: expected failure, full database dump unchanged
+PASS late_failure: expected failure, full database dump unchanged
+PASS late_failure: COMMIT then exact nine-boolean receipt; no backfill or extra history
+PASS late_absent: expected failure, full database dump unchanged
+PASS late_absent: COMMIT then exact nine-boolean receipt; no backfill or extra history
+PASS wrong_validator: expected failure, full database dump unchanged
+PASS wrong_column: expected failure, full database dump unchanged
+PASS changed_acl: expected failure, full database dump unchanged
+PASS changed_old_history: expected failure, full database dump unchanged
+PASS owner writes; admin and guest cannot write; guest reads; all finite/shape/order/null vectors; full dump unchanged
+PASS bypass_role: expected failure, full database dump unchanged
+PASS owned PostgreSQL stopped; socket directory removed; no postmaster.pid
+EXIT=0

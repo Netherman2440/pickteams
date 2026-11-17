@@ -1,0 +1,10 @@
+{
+  "deliveryCommit": "3047fd512bb3b729022e5b4140b87d4a597b6cb9",
+  "applicationSource": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "rawUrl": "https://raw.githubusercontent.com/Netherman2440/pickteams/3047fd512bb3b729022e5b4140b87d4a597b6cb9/supabase/tools/squad_star_thresholds_operator.sql",
+  "httpStatus": 200,
+  "bytes": 19173,
+  "sha256": "f26b6a1b597e83c9a989bc73f6ae6bf1302370ddbf1bfe25d90a5dfa09c7cfba",
+  "matchesIndependentReviewedCopy": true,
+  "productionExecutionPerformed": false
+}
