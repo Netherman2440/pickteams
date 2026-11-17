@@ -1,0 +1,13 @@
+{
+  "head": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "base": "1377d580307959b8dc25594bff9e61370c539564",
+  "expectedLandedTree": "895778801a6d96e79462f2b5f1960a52f7171fec",
+  "requiredContexts": [],
+  "allProjectRequiredFeatureSourceCandidateSchemaApiGatesPassed": true,
+  "vercelNonrequiredFailureRetained": true,
+  "vercelRawCauseProven": false,
+  "statusOverrideOrRuleChangePermitted": false,
+  "squashAllowed": true,
+  "mergePerformed": false,
+  "releaseComplete": false
+}

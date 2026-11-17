@@ -1,0 +1,12 @@
+{
+  "pr": 66,
+  "state": "merged",
+  "reviewedFeatureHead": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "actualLandedRuntime": "492f3f3eb1a19c380fd4f4066695423fcd506609",
+  "actualParent": "1377d580307959b8dc25594bff9e61370c539564",
+  "actualTree": "895778801a6d96e79462f2b5f1960a52f7171fec",
+  "rootTreeEqualsAcceptedCandidate": true,
+  "method": "squash-with-exact-head-lease-no-admin-no-branch-delete",
+  "versionStillOldUntilSeparateDescriptor": true,
+  "productionReleaseComplete": false
+}

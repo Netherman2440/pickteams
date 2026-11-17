@@ -1,0 +1,99 @@
+{
+  "name": "main",
+  "commit": {
+    "sha": "1377d580307959b8dc25594bff9e61370c539564",
+    "node_id": "C_kwDOQUjztdoAKDEzNzdkNTgwMzA3OTU5YjhkYzI1NTk0YmZmOWU2MTM3MGM1Mzk1NjQ",
+    "commit": {
+      "author": {
+        "name": "Ignacy Zaj\u0105c",
+        "email": "94918888+Netherman2440@users.noreply.github.com",
+        "date": "2026-11-17T07:29:47Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2026-11-17T07:29:47Z"
+      },
+      "message": "chore(release): prepare verified Pickteams 1.0.6 builds\n\n* chore(release): prepare 1.0.6 from accepted display runtime\n\n* ci(release): complete hosted validation artifacts\n\n* fix(release): validate observed web control materialization\n\n* fix(release): check metadata directories and shallow CI fixtures\n\n* fix(release): honor Git owner-execute mode across umasks\n\n* fix(release): accept nullable vendor Node metadata\n\n* fix(release): verify Vercel checkouts without origin",
+      "tree": {
+        "sha": "6e0c309a0f0ccf4e1e3d611252b80bebcf76b4b7",
+        "url": "https://api.github.com/repos/Netherman2440/pickteams/git/trees/6e0c309a0f0ccf4e1e3d611252b80bebcf76b4b7"
+      },
+      "url": "https://api.github.com/repos/Netherman2440/pickteams/git/commits/1377d580307959b8dc25594bff9e61370c539564",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq/AJrCRC1aQ7uu5UhlAAAb+QQAENZlEw2tMnmcCASeZAm7AL8\noJspelo9f/+46polYOzS3YuU9zx+rY02SieR62u60DgGd4IJspTzrCK+RQGhHYsJ\nhXOOqdytNxh9jF0q9zERz6hFoAOHo6cSMghu6npK4T24QFdx9pwV5PBpRht23xds\nQu2NlqdC438yAuyBs025Mav2AnV2QY7CLFIMXczzXJdXX5BcIf5mGeAzR8DiO8sE\neW30BMkvorvBlQ8kGEtm1uX+Etd90MBXxuK51WObMGY0/KLr09NivqT/a+0S8Eqo\n+dMVMHFNQ3ofitbKIzDGWbQtDcvpIox0lLbmtwDe0cmHXKc9az30RfD2kFrhAJG2\n7OyPyF2EkPLKzqmHWmkNEABwPC/k5rWg6wR5ZHBjl9UUUsA3cIWBp4BuhwI4zs4m\nRMYQwYVkOu8ICElbzjg3hRSX8oYy5eB0wEuY2SLMe5v26tDIOFFFNHl5DGAPzudc\nYOTODILkM7Q0VpTjLi9XJK7ga0ZoInPa+TWakkBd1fvbLKP49TsW0a1QVFWOaq4f\nvQt7/YJdJnKT1sRrHiBgl+/N807HG+a4K2c4T9WP2ucDj+b56LqjDdKb3zzOOeOy\nVRkcPNOTzGn0O+2WaB6BmnjPWU07XZ2Ctq+RxGgVYUndF8XwqeaewAkCygADPGMT\n+ceuVq7ouyXzhyBDTzZ5\n=U+ZI\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 6e0c309a0f0ccf4e1e3d611252b80bebcf76b4b7\nparent 4fe251fc2dadf5cd0e9abc70a25b2220096ded02\nauthor Ignacy Zaj\u0105c <94918888+Netherman2440@users.noreply.github.com> 1794900587 +0100\ncommitter GitHub <noreply@github.com> 1794900587 +0100\n\nchore(release): prepare verified Pickteams 1.0.6 builds\n\n* chore(release): prepare 1.0.6 from accepted display runtime\n\n* ci(release): complete hosted validation artifacts\n\n* fix(release): validate observed web control materialization\n\n* fix(release): check metadata directories and shallow CI fixtures\n\n* fix(release): honor Git owner-execute mode across umasks\n\n* fix(release): accept nullable vendor Node metadata\n\n* fix(release): verify Vercel checkouts without origin",
+        "verified_at": "2026-11-17T07:29:48Z"
+      }
+    },
+    "url": "https://api.github.com/repos/Netherman2440/pickteams/commits/1377d580307959b8dc25594bff9e61370c539564",
+    "html_url": "https://github.com/Netherman2440/pickteams/commit/1377d580307959b8dc25594bff9e61370c539564",
+    "comments_url": "https://api.github.com/repos/Netherman2440/pickteams/commits/1377d580307959b8dc25594bff9e61370c539564/comments",
+    "author": {
+      "login": "Netherman2440",
+      "id": 94918888,
+      "node_id": "U_kgDOBahY6A",
+      "avatar_url": "https://avatars.githubusercontent.com/u/94918888?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Netherman2440",
+      "html_url": "https://github.com/Netherman2440",
+      "followers_url": "https://api.github.com/users/Netherman2440/followers",
+      "following_url": "https://api.github.com/users/Netherman2440/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Netherman2440/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Netherman2440/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Netherman2440/subscriptions",
+      "organizations_url": "https://api.github.com/users/Netherman2440/orgs",
+      "repos_url": "https://api.github.com/users/Netherman2440/repos",
+      "events_url": "https://api.github.com/users/Netherman2440/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Netherman2440/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "4fe251fc2dadf5cd0e9abc70a25b2220096ded02",
+        "url": "https://api.github.com/repos/Netherman2440/pickteams/commits/4fe251fc2dadf5cd0e9abc70a25b2220096ded02",
+        "html_url": "https://github.com/Netherman2440/pickteams/commit/4fe251fc2dadf5cd0e9abc70a25b2220096ded02"
+      }
+    ]
+  },
+  "_links": {
+    "self": "https://api.github.com/repos/Netherman2440/pickteams/branches/main",
+    "html": "https://github.com/Netherman2440/pickteams/tree/main"
+  },
+  "protected": true,
+  "protection": {
+    "enabled": true,
+    "required_status_checks": {
+      "enforcement_level": "off",
+      "contexts": [],
+      "checks": []
+    }
+  },
+  "protection_url": "https://api.github.com/repos/Netherman2440/pickteams/branches/main/protection"
+}
