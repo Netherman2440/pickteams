@@ -608,18 +608,19 @@ def build_candidate(app, env, flutter):
                     chunks.append(chunk)
                 raw = b''.join(chunks)
             assert raw_config not in raw and base64.b64encode(raw_config) not in raw, 'Raw client configuration in candidate output'
-            if path.suffix == '.json':
-                try:
-                    value = json.loads(raw)
-                except (ValueError, UnicodeError):
-                    value = None
+            # Classify content, not a caller-chosen suffix: pretty/raw JSON
+            # remains private when renamed or written with an uppercase suffix.
+            try:
+                value = json.loads(raw)
+            except (ValueError, UnicodeError):
+                value = None
 
-                def raw_client(value):
-                    if isinstance(value, dict):
-                        return set(config) <= value.keys() or any(raw_client(child) for child in value.values())
-                    return isinstance(value, list) and any(raw_client(child) for child in value)
+            def raw_client(value):
+                if isinstance(value, dict):
+                    return set(config) <= value.keys() or any(raw_client(child) for child in value.values())
+                return isinstance(value, list) and any(raw_client(child) for child in value)
 
-                assert not raw_client(value), 'Raw client configuration object in candidate output'
+            assert not raw_client(value), 'Raw client configuration object in candidate output'
             files['web/' + relative] = hashlib.sha256(raw).hexdigest()
     assert {'web/index.html', 'web/main.dart.js'} <= files.keys(), 'Missing runnable candidate entrypoint'
     manifest = {'schemaVersion': 1, 'kind': 'pickteams-unaccepted-web-candidate',

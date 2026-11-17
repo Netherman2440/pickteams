@@ -1042,7 +1042,8 @@ class CandidatePolicyTest(unittest.TestCase):
         self.reject()  # Stale evidence cannot be silently reused by a new run.
 
     def test_candidate_privacy_links_and_release_metadata_reject(self):
-        for mutation in ('release.json', 'raw-json', 'renamed-raw', 'encoded-raw', 'link', 'directory-link'):
+        for mutation in ('release.json', 'raw-json', 'renamed-raw', 'pretty-renamed-raw',
+                         'upper-json', 'encoded-raw', 'link', 'directory-link'):
             with self.subTest(mutation=mutation):
                 self.reset_fixture()
 
@@ -1053,6 +1054,9 @@ class CandidatePolicyTest(unittest.TestCase):
                         self.put('app/build/web/leaked.json', json.dumps(release.client_config(self.env), indent=2))
                     elif mutation == 'renamed-raw':
                         self.put('app/build/web/renamed.bin', self.config_bytes)
+                    elif mutation in ('pretty-renamed-raw', 'upper-json'):
+                        name = 'renamed.bin' if mutation == 'pretty-renamed-raw' else 'LEAKED.JSON'
+                        self.put('app/build/web/' + name, json.dumps(release.client_config(self.env), indent=2))
                     elif mutation == 'encoded-raw':
                         self.put('app/build/web/encoded.bin', base64.b64encode(self.config_bytes))
                     elif mutation == 'link':
