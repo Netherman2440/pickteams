@@ -1,6 +1,6 @@
 # Match-level stars: exact-candidate evidence
 
-Current PR66 source is `f0384d6e38673bf0f44423514e7749cb316c83d3`, based on accepted main `1377d580307959b8dc25594bff9e61370c539564`. See [the real context-failure correction and independent executed SECURITY proof](context-f0384d6/README.md). Full local Python was denied before execution; hosted full-suite/compiler/artifact/browser gates remain open.
+Current PR66 source is `f0384d6e38673bf0f44423514e7749cb316c83d3`, based on accepted main `1377d580307959b8dc25594bff9e61370c539564`. See [the real context-failure correction and independent executed SECURITY proof](context-f0384d6/README.md). Full local Python was denied before execution. [Actual hosted Main44100639905 passed the full suite and configured compiler](hosted-f038/README.md); the downloaded archive matches the external GitHub digest. Complete inner artifact verification, real browser startup and final artifact review remain open.
 
 The prior [integrated source/security receipt](integration-7ed7651/README.md) applies to parent `7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd`; its actual candidate admission failure is preserved in [candidate-ci-7ed7651](candidate-ci-7ed7651/blocker.md).
 

@@ -1,0 +1,10 @@
+Selected actual producer lines; full job: https://github.com/Netherman2440/pickteams/actions/runs/44100639905/job/134103461364
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:19:54.2336194Z Candidate source check: before-sdk
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:19:54.5659242Z Candidate source check: after-sdk-before-pub-get
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:20:05.7636022Z Candidate source check: after-pub-get-and-checked-analysis-restore
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:20:47.7558999Z Compiling lib/main.dart for the Web...                          
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:20:48.1669682Z Compiling lib/main.dart for the Web...                             42.0s
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:20:48.1680140Z ✓ Built build/web
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:20:48.1770860Z Candidate source check: after-compiler-and-checked-analysis-restore
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:20:49.3900823Z Candidate source check: after-compiler-and-checked-analysis-restore
+web-build	Build NONPROMOTABLE configured PR candidate	2026-11-17T14:20:49.4597189Z Built NONPROMOTABLE candidate b441ac4abfccd840b45b3f182f1c1c2a084795a8 from PR 66

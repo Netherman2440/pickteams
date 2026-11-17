@@ -1,0 +1,12 @@
+{
+  "artifactId": 14336672484,
+  "runId": 44100639905,
+  "head": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "externalGitHubDigest": "sha256:6987795f4ef31e7fbfdbe2f85a5c7c1d316d8755887d3ab10fe120e6bb28391e",
+  "downloadedArchiveDigest": "sha256:6987795f4ef31e7fbfdbe2f85a5c7c1d316d8755887d3ab10fe120e6bb28391e",
+  "archiveDigestMatchesAuthenticatedAPI": true,
+  "archiveEntries": 50,
+  "archiveUncompressedBytes": 48217956,
+  "promoted": false,
+  "validationScope": "Archive authentication and entry safety only; inner envelope/source/config/browser checks remain."
+}
