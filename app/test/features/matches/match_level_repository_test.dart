@@ -9,13 +9,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 SupabaseClient fixture(
   Object? Function(http.Request) respond, {
   int status = 200,
+  String Function(String)? transform,
 }) {
   final client = SupabaseClient(
     'https://fixture.invalid',
     'fixture-key',
     httpClient: MockClient(
       (r) async => http.Response(
-        jsonEncode(respond(r)),
+        transform?.call(jsonEncode(respond(r))) ?? jsonEncode(respond(r)),
         status,
         headers: {'content-type': 'application/json'},
         request: r,
@@ -118,7 +119,7 @@ void main() {
     );
   }
   test(
-    'settings persist, reread and remain squad-specific; unconfigured has no defaults',
+    'settings persist independently; null remains the baseline marker, not a database default',
     () async {
       final settings = <String, Object?>{};
       final client = fixture((r) {
@@ -161,15 +162,108 @@ void main() {
       }
     },
   );
-  test('history reads page beyond server row cap', () async {
-    final offsets = <String>[];
-    final client = fixture((r) {
-      if (r.url.pathSegments.last != 'matches') return [];
-      offsets.add(r.url.queryParameters['offset']!);
-      return matches(offsets.length == 1 ? 500 : 1);
-    });
-    final data = await SupabaseMatchLevelRepository(client).loadHistory('a');
-    expect(data.completedMatches, 501);
-    expect(offsets, ['0', '500']);
-  });
+  for (final invalid in <Object?>[
+    'NaN',
+    'Infinity',
+    '-Infinity',
+    'invalid',
+    true,
+    {'bad': 50},
+    null,
+    'overflow',
+  ]) {
+    test(
+      'HTTP-decoded invalid history hides only its match: $invalid',
+      () async {
+        final client = fixture(
+          (r) => switch (r.url.pathSegments.last) {
+            'matches' => matches(26),
+            'team_players' => [
+              for (final id in ['m0', 'm1']) {'match_id': id, 'player_id': 'p'},
+            ],
+            'ranking_history' => [
+              {'match_id': 'm0', 'player_id': 'p', 'ranking': invalid},
+              {'match_id': 'm1', 'player_id': 'p', 'ranking': 60},
+            ],
+            _ => throw StateError('Unexpected history fallback'),
+          },
+          transform: (body) => body.replaceAll('"overflow"', '1e999'),
+        );
+        final data = await SupabaseMatchLevelRepository(
+          client,
+        ).loadHistory('s');
+        expect(data.means['m0'], isNull);
+        expect(data.means['m1'], 60);
+      },
+    );
+  }
+  test(
+    '501 matches, child pages over 500, disjoint 100-ID chunks and unrelated history',
+    () async {
+      final all = [
+        for (var i = 0; i < 501; i++) 'm${i.toString().padLeft(3, '0')}',
+      ];
+      final requests = <Uri>[];
+      final client = fixture((r) {
+        requests.add(r.url);
+        final q = r.url.queryParameters;
+        final table = r.url.pathSegments.last;
+        final offset = int.parse(q['offset']!);
+        if (table == 'matches') {
+          expect(q['squad_id'], 'eq.target-squad');
+          return all
+              .skip(offset)
+              .take(500)
+              .map((id) => {'match_id': id, 'home_score': 0, 'away_score': 0})
+              .toList();
+        }
+        final selected = q['match_id']!
+            .substring(4, q['match_id']!.length - 1)
+            .split(',')
+            .map((id) => id.replaceAll('"', ''))
+            .toList();
+        expect(selected.length, lessThanOrEqualTo(100));
+        expect(selected.every(all.contains), isTrue);
+        final rows = [
+          for (final id in selected) ...[
+            for (var p = 0; p < 7; p++)
+              {
+                'match_id': id,
+                'player_id': '$id-p$p',
+                if (table == 'ranking_history')
+                  'ranking': int.parse(id.substring(1)) + p,
+              },
+            if (table == 'ranking_history')
+              {'match_id': id, 'player_id': 'not-in-roster', 'ranking': 999999},
+          ],
+        ];
+        return rows.skip(offset).take(500).toList();
+      });
+      final data = await SupabaseMatchLevelRepository(
+        client,
+      ).loadHistory('target-squad');
+      expect(data.completedMatches, 501);
+      expect(data.means.length, 501);
+      for (var i = 0; i < 501; i++) {
+        expect(data.means[all[i]], closeTo(i + 3, 1e-10));
+      }
+      expect(
+        requests
+            .where((r) => r.pathSegments.last == 'matches')
+            .map((r) => r.queryParameters['offset']),
+        ['0', '500'],
+      );
+      for (final table in ['team_players', 'ranking_history']) {
+        final calls = requests.where((r) => r.pathSegments.last == table);
+        expect(
+          calls.where((r) => r.queryParameters['offset'] == '500').length,
+          5,
+        );
+        expect(
+          calls.where((r) => r.queryParameters['offset'] == '0').length,
+          6,
+        );
+      }
+    },
+  );
 }

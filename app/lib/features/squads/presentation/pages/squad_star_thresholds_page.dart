@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:app/core/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app/features/matches/application/match_level_providers.dart';
-import 'package:app/features/matches/application/save_star_thresholds.dart';
 import 'package:app/features/matches/domain/match_level.dart';
 import '../../domain/entities/user_squad_role.dart';
 import '../state/squad_detail_notifier.dart';
@@ -59,20 +58,20 @@ class _SquadStarThresholdsPageState
   Future<void> _save() async {
     final draft = _draft;
     if (draft == null || _saving) return;
+    final squadId = widget.squadId;
+    final save = ref.read(saveStarThresholdsProvider);
+    final role = ref.read(squadDetailProvider(squadId)).asData?.value.role;
     setState(() {
       _saving = true;
       _message = null;
     });
     try {
-      await SaveStarThresholds(ref.read(matchLevelRepositoryProvider)).execute(
-        squadId: widget.squadId,
-        role: ref.read(squadDetailProvider(widget.squadId)).asData?.value.role,
-        values: draft.full,
-      );
-      ref.invalidate(starThresholdsProvider(widget.squadId));
-      if (mounted) setState(() => _message = 'Zapisano progi gwiazdek.');
+      await save.execute(squadId: squadId, role: role, values: draft.full);
+      if (mounted && widget.squadId == squadId) {
+        setState(() => _message = 'Zapisano progi gwiazdek.');
+      }
     } catch (_) {
-      if (mounted) {
+      if (mounted && widget.squadId == squadId) {
         setState(
           () => _message = 'Nie udało się zapisać progów. Spróbuj ponownie.',
         );
@@ -130,11 +129,14 @@ class _SquadStarThresholdsPageState
                 ),
               ),
               data: (thresholds) {
+                final effective =
+                    thresholds ?? MatchLevelThresholds.calibratedBaseline;
                 if (!_initialized) {
                   for (var i = 0; i < 5; i++) {
-                    _fields[i].text =
-                        thresholds?.full[i].toString().replaceAll('.', ',') ??
-                        '';
+                    _fields[i].text = effective.full[i].toString().replaceAll(
+                      '.',
+                      ',',
+                    );
                   }
                   _initialized = true;
                 }
@@ -151,10 +153,11 @@ class _SquadStarThresholdsPageState
                             'Pięć progów pełnych gwiazdek musi być liczbowych i ściśle rosnących. Połówki wyliczamy automatycznie w połowie sąsiednich progów.',
                           ),
                           const SizedBox(height: 12),
-                          if (thresholds == null)
-                            const Text(
-                              'Progi nie są skonfigurowane. Gwiazdki pozostają ukryte do zapisu progów i rozegrania ponad 25 zakończonych meczów. Brak skalibrowanych wartości domyślnych.',
-                            ),
+                          Text(
+                            thresholds == null
+                                ? 'Progi bazowe skalibrowane dla Politechniki Lubelskiej. Możesz zapisać własne wartości dla tego składu.'
+                                : 'Własne progi tego składu. Zmiana nie wpływa na ustawienia innych składów.',
+                          ),
                           for (var i = 0; i < 5; i++)
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8),

@@ -93,9 +93,10 @@ class SupabaseMatchLevelRepository implements MatchLevelRepository {
     final byMatch = <String, Map<String, List<double?>>>{};
     for (final row in history) {
       final players = byMatch.putIfAbsent(row['match_id'] as String, () => {});
+      final raw = row['ranking'];
       players
           .putIfAbsent(row['player_id'] as String, () => [])
-          .add((row['ranking'] as num?)?.toDouble());
+          .add(raw is num && raw.isFinite ? raw.toDouble() : null);
     }
     final rosters = <String, Set<String>>{};
     for (final row in participants) {

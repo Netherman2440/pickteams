@@ -32,7 +32,7 @@ def run(build, output):
                     ('settings', {'screen': 'settings'}, 'Zmiana progów gwiazdek'),
                     ('thresholds', {'screen': 'stars'}, 'Automatyczne połówki'),
                     ('hidden-25', {'screen': 'list', 'completed': '25'}, 'ZIELONI'),
-                    ('unconfigured', {'screen': 'stars', 'configured': 'false'}, 'Progi nie są skonfigurowane.'),
+                    ('baseline', {'screen': 'stars', 'configured': 'false'}, 'Progi bazowe skalibrowane'),
                     ('permission', {'screen': 'stars', 'guest': 'true'}, 'Brak uprawnień.'),
                     ('load-failure', {'screen': 'stars', 'failLoad': 'true'}, 'Nie udało się wczytać progów.'),
                 ]
@@ -67,8 +67,11 @@ def run(build, output):
                         assert metrics['ratings'] == [3.5], metrics
                     if name in ('hidden-25', 'permission'):
                         assert metrics['ratings'] == [], metrics
-                    if name == 'thresholds':
+                    if name in ('thresholds', 'baseline'):
                         assert len(metrics['fields']) == 5, metrics
+                    if name == 'baseline':
+                        assert [f['text'] for f in metrics['fields']] == ['49,8', '56,1', '58,0', '59,8', '62,9'], metrics
+                        assert metrics['saves'] == 0 and metrics['thresholds'] is None, metrics
                     image = out / f'{name}.png'
                     page.screenshot(path=str(image))
                     records.append({'case': name, 'query': query, 'image': image.name, 'sha256': hashlib.sha256(image.read_bytes()).hexdigest(), **metrics, 'pageErrors': list(errors)})
@@ -91,7 +94,7 @@ def run(build, output):
         server.server_close()
         thread.join()
         (out / 'browser.json').write_text(json.dumps(records, indent=2, ensure_ascii=False))
-    print('Captured and checked 9 SYNTHETIC mobile browser frames (390x1000).')
+    print(f'Captured and checked {len(records)} SYNTHETIC mobile browser frames (390x1000).')
 
 
 if __name__ == '__main__':
