@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/private-native-candidate.yml'
       - 'app/tool/*native_candidate.py'
+      - 'app/tool/*release_contract.py'
+      - 'app/pubspec.yaml'
 
 permissions:
   contents: read
@@ -22,13 +24,14 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
-      - name: Require corrected coordinator-approved source pin
+      - name: Require accepted runtime and joint release version
         run: |
           python3 - <<'PY'
           import sys
           sys.path.insert(0, 'app/tool')
-          from build_native_candidate import UI_SOURCE
-          assert UI_SOURCE is not None, 'Await corrected coordinator-approved UI source pin'
+          from pathlib import Path
+          from release_contract import verify_source
+          verify_source(Path.cwd())
           PY
       - uses: actions/setup-java@v4
         with:
@@ -38,8 +41,10 @@ jobs:
         with:
           cmdline-tools-version: '13114758'
           packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358'
-      - name: Test artifact privacy rejection
-        run: python3 -m unittest discover -s app/tool -p test_build_native_candidate.py
+      - name: Test source contract and artifact privacy rejection
+        run: |
+          python3 -m unittest discover -s app/tool -p test_release_contract.py
+          python3 -m unittest discover -s app/tool -p test_build_native_candidate.py
       - name: Build and audit artifact allowlist
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

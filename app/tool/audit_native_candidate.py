@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 from build_native_candidate import ABIS, audit_apk
+from release_contract import VERSION, VERSION_CODE
 
 # The 1.0.3 development identity. It is not the production signing identity
 # and must never sign or appear inside a release candidate.
@@ -99,8 +100,8 @@ def audit(apk, source, base, evidence, verified_inputs=()):
     m = ET.fromstring((evidence/'manifest.stdout').read_text())
     app, sdk = m.find('application'), m.find('uses-sdk')
     check('package/version/min24/target36/nondebuggable',
-          m.get('package') == 'pl.pickteams.app' and m.get(a+'versionName') == '1.0.4'
-          and m.get(a+'versionCode') == '2026111301' and sdk.get(a+'minSdkVersion') == '24'
+          m.get('package') == 'pl.pickteams.app' and m.get(a+'versionName') == VERSION
+          and m.get(a+'versionCode') == str(VERSION_CODE) and sdk.get(a+'minSdkVersion') == '24'
           and sdk.get(a+'targetSdkVersion') == '36' and app.get(a+'debuggable', 'false') == 'false')
     check('exact permissions', sorted(x.get(a+'name') for x in m.findall('uses-permission')) == [
         'android.permission.INTERNET', 'pl.pickteams.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'])
