@@ -66,12 +66,21 @@ void main() {
         'm': 2.5,
       });
       expect(repo.reads, 1);
+      expect(await container.read(squadMatchLevelsProvider('b').future), {
+        'm': 1,
+      });
       expect(
-        await container.read(squadMatchLevelsProvider('b').future),
-        isEmpty,
+        repo.settings['b'],
+        isNull,
+        reason: 'Baseline never writes an override',
       );
-      repo.settings['a'] = MatchLevelThresholds([1, 2, 3, 4, 5]);
-      container.invalidate(starThresholdsProvider('a'));
+      await container
+          .read(saveStarThresholdsProvider)
+          .execute(
+            squadId: 'a',
+            role: SquadRole.owner,
+            values: [1, 2, 3, 4, 5],
+          );
       expect(await container.read(squadMatchLevelsProvider('a').future), {
         'm': 5,
       });

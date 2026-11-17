@@ -23,6 +23,7 @@ import 'package:app/features/squads/presentation/state/squad_invite_link_provide
 import 'package:app/features/squads/presentation/state/squad_settings_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -42,13 +43,14 @@ class MatchLevelData {
       httpClient: MockClient(_respond),
     );
   }
-  final int completed;
+  int completed;
   final SquadRole? role;
   final lineup = HistoricalMatchData();
   late final SupabaseClient client;
   List<num>? thresholds;
   bool failLoad = false;
   bool failSave = false;
+  bool hasResult = true;
   int saves = 0;
   final requests = <String>[];
 
@@ -56,8 +58,8 @@ class MatchLevelData {
     matchId: 'match',
     squadId: 'fixture',
     createdAt: DateTime(2026, 11, 13),
-    homeScore: 3,
-    awayScore: 1,
+    homeScore: hasResult ? 3 : null,
+    awayScore: hasResult ? 1 : null,
     homeWinProbability: .6,
     homeTeam: Team(
       teamId: 'home',
@@ -96,11 +98,15 @@ class MatchLevelData {
         rows = [
           for (var i = 0; i < completed; i++)
             {
-              'match_id': i == 0 ? 'match' : 'm$i',
+              'match_id': hasResult && i == 0 ? 'match' : 'm$i',
               'home_score': 3,
               'away_score': 1,
             },
-          {'match_id': 'pending', 'home_score': null, 'away_score': null},
+          {
+            'match_id': hasResult ? 'pending' : 'match',
+            'home_score': null,
+            'away_score': null,
+          },
         ];
       case 'team_players':
         rows = [
@@ -122,6 +128,9 @@ class MatchLevelData {
       request: r,
     );
   }
+
+  GetMatchUseCase get reader =>
+      GetMatchUseCase(_Read(this), SupabaseTeamRepository(lineup.client));
 
   Future<void> dispose() async {
     await client.dispose();
@@ -153,9 +162,17 @@ class _Read implements MatchRepository {
 }
 
 class MatchLevelApp extends StatefulWidget {
-  const MatchLevelApp({super.key, required this.data, this.screen = 'list'});
+  const MatchLevelApp({
+    super.key,
+    required this.data,
+    this.screen = 'list',
+    this.retainList = false,
+    this.providerOverrides = const [],
+  });
   final MatchLevelData data;
   final String screen;
+  final bool retainList;
+  final List<Override> providerOverrides;
   @override
   State<MatchLevelApp> createState() => _MatchLevelAppState();
 }
@@ -205,12 +222,7 @@ class _MatchLevelAppState extends State<MatchLevelApp> {
         SupabaseMatchLevelRepository(widget.data.client),
       ),
       squadMatchesProvider.overrideWith(() => _Matches(widget.data)),
-      getMatchUseCaseProvider.overrideWithValue(
-        GetMatchUseCase(
-          _Read(widget.data),
-          SupabaseTeamRepository(widget.data.lineup.client),
-        ),
-      ),
+      getMatchUseCaseProvider.overrideWithValue(widget.data.reader),
       squadDetailProvider.overrideWith(
         (ref, id) async => Squad(
           squadId: id,
@@ -224,6 +236,7 @@ class _MatchLevelAppState extends State<MatchLevelApp> {
       ),
       squadSettingsProvider.overrideWith(_Members.new),
       squadInviteLinkProvider.overrideWith((ref, id) async => null),
+      ...widget.providerOverrides,
     ],
     child: MaterialApp.router(
       theme: AppTheme.darkTheme,
@@ -245,6 +258,18 @@ class _MatchLevelAppState extends State<MatchLevelApp> {
             ),
           ),
           Expanded(child: child!),
+          if (widget.retainList)
+            Offstage(
+              child: SizedBox(
+                width: 600,
+                height: 1000,
+                child: Navigator(
+                  onGenerateRoute: (_) => MaterialPageRoute<void>(
+                    builder: (_) => const SquadMatchesPage(squadId: 'fixture'),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     ),

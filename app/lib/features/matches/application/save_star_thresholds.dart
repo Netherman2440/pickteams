@@ -3,8 +3,9 @@ import '../domain/match_level.dart';
 import '../domain/repositories/match_level_repository.dart';
 
 class SaveStarThresholds {
-  const SaveStarThresholds(this.repository);
+  const SaveStarThresholds(this.repository, {this.onSaved});
   final MatchLevelRepository repository;
+  final void Function(String squadId)? onSaved;
 
   Future<void> execute({
     required String squadId,
@@ -13,5 +14,6 @@ class SaveStarThresholds {
   }) async {
     if (role != SquadRole.owner) throw StateError('Brak uprawnień.');
     await repository.saveThresholds(squadId, MatchLevelThresholds(values));
+    onSaved?.call(squadId);
   }
 }

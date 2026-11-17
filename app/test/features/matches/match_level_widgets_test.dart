@@ -13,6 +13,7 @@ void main() {
     int completed = 26,
     bool guest = false,
     bool failLoad = false,
+    bool configured = true,
   }) async {
     tester.view.physicalSize = const Size(390, 1000);
     tester.view.devicePixelRatio = 1;
@@ -22,6 +23,7 @@ void main() {
     final data = (await tester.runAsync(
       () async => MatchLevelData(
         completed: completed,
+        configured: configured,
         role: guest ? null : SquadRole.owner,
       )..failLoad = failLoad,
     ))!;
@@ -82,6 +84,15 @@ void main() {
       expect(data.thresholds!.first, 12.5);
       expect(data.saves, 1);
       expect(find.text('Zapisano progi gwiazdek.'), findsOneWidget);
+      await tester.tap(find.byTooltip('Powrót do ustawień'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Zmiana progów gwiazdek'));
+      await tester.tap(find.text('Zmiana progów gwiazdek'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+        '12,5',
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -111,6 +122,33 @@ void main() {
         tester.widget<TextField>(find.byType(TextField).first).controller!.text,
         '12',
       );
+    },
+  );
+  testWidgets(
+    'null override shows calibrated fields, without a write; direct back returns to settings',
+    (tester) async {
+      final data = await mount(tester, 'stars', configured: false);
+      expect(find.textContaining('Progi bazowe skalibrowane'), findsOneWidget);
+      expect(
+        tester
+            .widgetList<TextField>(find.byType(TextField))
+            .map((f) => f.controller!.text),
+        ['49,8', '56,1', '58,0', '59,8', '62,9'],
+      );
+      expect(data.thresholds, isNull);
+      expect(data.saves, 0);
+      await tester.tap(find.byTooltip('Powrót do ustawień'));
+      await tester.pumpAndSettle();
+      expect(find.text('Zmiana progów gwiazdek'), findsOneWidget);
+    },
+  );
+  testWidgets(
+    'null override applies calibrated level to match view without configuration writes',
+    (tester) async {
+      final data = await mount(tester, 'list', configured: false);
+      expect(find.text('1,5'), findsOneWidget);
+      expect(data.thresholds, isNull);
+      expect(data.saves, 0);
     },
   );
   for (final screen in ['settings', 'stars']) {
