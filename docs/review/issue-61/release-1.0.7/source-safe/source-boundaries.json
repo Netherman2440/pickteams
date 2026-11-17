@@ -1,0 +1,41 @@
+{
+  "allOtherSourceBlobsAndModesIdenticalToLandedBase": true,
+  "baseAndPin": "492f3f3eb1a19c380fd4f4066695423fcd506609",
+  "changedFiles": [
+    "app/pubspec.yaml",
+    "app/tool/release_contract.py",
+    "app/tool/test_build_web_release.py",
+    "app/tool/test_release_contract.py"
+  ],
+  "clean": true,
+  "committedHashesMatchDeniedAttemptInputs": true,
+  "descriptorBranch": "limen/issue-61-release-preparation",
+  "descriptorHead": "aa487948599e5ebd832d65c6ef5822a07c4a9db9",
+  "focusedPythonExecuted": false,
+  "fullPythonExecuted": false,
+  "metadataOnlyIdentityReceiptNotSecurityAcceptance": true,
+  "oldPublicReleaseOrServerModified": false,
+  "originalApplicationHead": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "originalOverlayUnchanged": true,
+  "postlandingMain": {
+    "conclusion": "failure",
+    "event": "push",
+    "head_sha": "492f3f3eb1a19c380fd4f4066695423fcd506609",
+    "id": 44140661208,
+    "path": ".github/workflows/main.yml",
+    "status": "completed"
+  },
+  "pubspecVersionOnly": true,
+  "releaseContractOnlyThreeLiteralChanges": true,
+  "releaseFilesAndAllGuardAlgorithmsUnchanged": true,
+  "sourceSha256": {
+    "app/pubspec.yaml": "5e2106ac7807836c3f3c05828107fd2cc6da74e5a037f0d940a9d7a7301fde09",
+    "app/tool/release_contract.py": "52e4f888422d090c015dffcd3d1dcfac7dbac34fe8745ecb612cebeec8ef7c4a",
+    "app/tool/test_build_web_release.py": "c47d112a6bfaf4095c51fba471c45564c4a37bca8f4db3a24450622bec89ec85",
+    "app/tool/test_release_contract.py": "840d489773122206aa5115215acee9e3355620eff6ef420a625cf0811634b9fc"
+  },
+  "validation": "UNVALIDATED: immediate memory admission exited76 before Python",
+  "version": "1.0.7",
+  "versionCode": 2026111701,
+  "worktree": "/home/agents/.local/share/pickteams-validation/issue-61-release"
+}

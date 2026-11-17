@@ -1,0 +1,5 @@
+DESCRIPTOR_HEAD=492f3f3eb1a19c380fd4f4066695423fcd506609
+ORIGINAL_HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+COMMAND=env PYTHONPATH=app/tool /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python -m unittest -v test_build_web_release.CandidatePolicyTest.test_unaccepted_runtime_passes_only_the_bound_candidate_policy 
+Denial exit=76
+Return idle; no polling/retry/helper.

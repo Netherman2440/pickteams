@@ -1,0 +1,128 @@
+diff --git a/app/pubspec.yaml b/app/pubspec.yaml
+index cb4f60b..101ee04 100644
+--- a/app/pubspec.yaml
++++ b/app/pubspec.yaml
+@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+ # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+ # In Windows, build-name is used as the major, minor, and patch parts
+ # of the product and file versions while build-number is used as the build suffix.
+-version: 1.0.6+2026111602
++version: 1.0.7+2026111701
+ 
+ environment:
+   sdk: ^3.9.2
+diff --git a/app/tool/release_contract.py b/app/tool/release_contract.py
+index 894d462..4a06318 100644
+--- a/app/tool/release_contract.py
++++ b/app/tool/release_contract.py
+@@ -2,9 +2,9 @@
+ import re
+ import subprocess
+ 
+-ACCEPTED_SOURCE = '4fe251fc2dadf5cd0e9abc70a25b2220096ded02'
+-VERSION = '1.0.6'
+-VERSION_CODE = 2026111602
++ACCEPTED_SOURCE = '492f3f3eb1a19c380fd4f4066695423fcd506609'
++VERSION = '1.0.7'
++VERSION_CODE = 2026111701
+ # These files cannot change runtime behavior. Each remains subject to review.
+ RELEASE_FILES = (
+     'app/tool/release_contract.py',
+diff --git a/app/tool/test_build_web_release.py b/app/tool/test_build_web_release.py
+index e13dcaf..3a36c84 100644
+--- a/app/tool/test_build_web_release.py
++++ b/app/tool/test_build_web_release.py
+@@ -901,6 +901,41 @@ class CandidatePolicyTest(unittest.TestCase):
+         self.git('checkout', '-q', '--detach', self.base)
+         self.assertEqual(release.verify_web_source(self.root, {}), self.base)
+         self.reject()  # A clean accepted tree is not the declared PR merge.
++        self.reset_fixture()
++        # Prelanding: even the declared feature head cannot become a pin when
++        # it is not an ancestor of the declared PR base.
++        with patch.object(release, 'ACCEPTED_SOURCE', self.head):
++            with self.assertRaises(subprocess.CalledProcessError) as error:
++                self.check()
++            self.assertEqual(error.exception.cmd[-2:], [self.head, self.base])
++        # A squash landing has the same tree, but a distinct history identity.
++        tree = self.git('rev-parse', self.head + '^{tree}').decode().strip()
++        landed = self.git('commit-tree', tree, '-p', self.base,
++                          input=b'landed synthetic runtime\n').decode().strip()
++        self.assertNotEqual(landed, self.head)
++        self.assertEqual(self.git('diff', '--name-only', landed, self.head), b'')
++        with patch.object(contract, 'ACCEPTED_SOURCE', landed), patch.object(release, 'ACCEPTED_SOURCE', landed):
++            # Byte equality cannot authorize the old feature/merge branch.
++            with self.assertRaises(subprocess.CalledProcessError):
++                contract.verify_source(self.root)
++            with self.assertRaises(subprocess.CalledProcessError):
++                self.check()
++            self.git('checkout', '-q', '--detach', landed)
++            self.put('app/tool/release_contract.py', 'reviewed synthetic release metadata\n')
++            self.commit()
++            descriptor = self.sha()
++            self.git('checkout', '-q', '--detach', landed)
++            self.git('merge', '-q', '--no-ff', '--no-edit', descriptor)
++            checkout = self.sha()
++            self.event['pull_request'].update(merge_commit_sha=checkout)
++            self.event['pull_request']['base']['sha'] = landed
++            self.event['pull_request']['head']['sha'] = descriptor
++            self.event_path.write_text(json.dumps(self.event))
++            # Landed pin -> actual PR base now passes the unchanged rule.
++            self.assertEqual(self.check(dict(self.env, GITHUB_SHA=checkout)), checkout)
++            self.assertEqual(contract.verify_source(self.root), checkout)
++            self.assertEqual(native.verify_source(self.root), checkout)
++            self.assertEqual(release.verify_web_source(self.root, {}), checkout)
+ 
+     def advisory_variation(self):
+         # Deliberately different from the runner merge SHA; not a stale-cause claim.
+diff --git a/app/tool/test_release_contract.py b/app/tool/test_release_contract.py
+index c5d7f10..5e48626 100644
+--- a/app/tool/test_release_contract.py
++++ b/app/tool/test_release_contract.py
+@@ -60,7 +60,7 @@ class ReleaseContractTest(unittest.TestCase):
+ 
+     def test_wrong_version_or_code_is_rejected(self):
+         for version in ('1.0.4+2026111301', '1.0.5+2026111501',
+-                        '1.0.6+2026111601', '1.0.7+2026111602'):
++                        '1.0.6+2026111602', '1.0.7+2026111602'):
+             with self.subTest(version=version):
+                 self.put('app/pubspec.yaml', 'name: app\nversion: ' + version + '\n')
+                 self.commit()
+@@ -221,25 +221,28 @@ class ReleaseContractTest(unittest.TestCase):
+             release.restore_analysis(path, original)
+ 
+ 
+-class AcceptedDisplayReleaseTest(unittest.TestCase):
+-    def test_shared_version_and_runtime_pin_replace_old_native_contract(self):
++class AcceptedStarsReleaseTest(unittest.TestCase):
++    def test_shared_version_and_landed_pin_replace_prior_release_contract(self):
+         import audit_native_candidate
+         import build_native_candidate
+         import sign_native_candidate
+ 
+-        self.assertEqual(release.ACCEPTED_SOURCE, '4fe251fc2dadf5cd0e9abc70a25b2220096ded02')
+-        self.assertEqual((release.VERSION, release.VERSION_CODE), ('1.0.6', 2026111602))
++        self.assertEqual(release.ACCEPTED_SOURCE, '492f3f3eb1a19c380fd4f4066695423fcd506609')
++        self.assertEqual((release.VERSION, release.VERSION_CODE), ('1.0.7', 2026111701))
+         for module in (audit_native_candidate, build_native_candidate, sign_native_candidate):
+             self.assertEqual((module.VERSION, module.VERSION_CODE), (release.VERSION, release.VERSION_CODE))
+         self.assertEqual(build_native_candidate.UI_SOURCE, release.ACCEPTED_SOURCE)
+-        # Old prepared APK metadata must not be accepted as the new runtime.
+-        with self.assertRaisesRegex(AssertionError, 'Unaccepted runtime source'):
+-            release.validate_metadata(dict(reviewed_ui_source='01f03757c48c44a5fd9b49d7ce393ebf91a61e96',
+-                                           build_name='1.0.6', build_number=2026111601,
+-                                           entrypoint='lib/main.dart'))
++        # Prior runtime, same-tree feature and operator delivery are not the pin.
++        for source in ('4fe251fc2dadf5cd0e9abc70a25b2220096ded02',
++                       'f0384d6e38673bf0f44423514e7749cb316c83d3',
++                       '3047fd512bb3b729022e5b4140b87d4a597b6cb9'):
++            with self.subTest(source=source), self.assertRaisesRegex(AssertionError, 'Unaccepted runtime source'):
++                release.validate_metadata(dict(reviewed_ui_source=source,
++                                               build_name=release.VERSION, build_number=release.VERSION_CODE,
++                                               entrypoint='lib/main.dart'))
+         with self.assertRaisesRegex(AssertionError, 'Release version mismatch'):
+             release.validate_metadata(dict(reviewed_ui_source=release.ACCEPTED_SOURCE,
+-                                           build_name='1.0.6', build_number=2026111601,
++                                           build_name='1.0.6', build_number=2026111602,
+                                            entrypoint='lib/main.dart'))
+ 
+ 
