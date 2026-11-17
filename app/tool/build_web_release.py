@@ -587,6 +587,73 @@ def build(app, env, flutter):
     return manifest
 
 
+class _CandidateJsonError(AssertionError):
+    """Structured candidate data is ambiguous, invalid or over budget.
+
+    Deliberately not ValueError: the non-JSON/compiled-code fallback must never
+    swallow duplicate members or other semantic JSON failures.
+    """
+
+
+def _candidate_json(data):
+    """One lossless, bounded JSON profile for all candidate root formats.
+
+    Syntax errors stay JSONDecodeError so the classifier can distinguish real
+    non-JSON code/binary data. Semantic failures always propagate fail-closed.
+    """
+    import math
+
+    try:
+        size = len(data.encode('utf-8')) if isinstance(data, str) else len(data)
+    except UnicodeError:
+        raise _CandidateJsonError('Invalid candidate JSON Unicode') from None
+    if size > 1048576:
+        raise _CandidateJsonError('Candidate JSON size exceeded')
+
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise _CandidateJsonError('Duplicate candidate JSON member')
+            result[key] = value
+        return result
+
+    def constant(value):
+        raise _CandidateJsonError('Non-finite candidate JSON constant')
+
+    def floating(value):
+        result = float(value)
+        if not math.isfinite(result):
+            raise _CandidateJsonError('Non-finite candidate JSON number')
+        return result
+
+    try:
+        value = json.loads(data, object_pairs_hook=pairs, parse_constant=constant,
+                           parse_float=floating)
+    except json.JSONDecodeError:
+        raise
+    except (ValueError, UnicodeError, RecursionError):
+        raise _CandidateJsonError('Invalid or excessive candidate JSON') from None
+    pending = [(value, 0)]
+    nodes = 0
+    while pending:
+        item, depth = pending.pop()
+        nodes += 1
+        if nodes > 1024 or depth > 16:
+            raise _CandidateJsonError('Candidate JSON structure budget exceeded')
+        if isinstance(item, (dict, list)) and len(item) + nodes + len(pending) > 1024:
+            raise _CandidateJsonError('Candidate JSON structure budget exceeded')
+        strings = item.keys() if isinstance(item, dict) else (item,) if isinstance(item, str) else ()
+        for text in strings:
+            try:
+                text.encode('utf-8')
+            except UnicodeError:
+                raise _CandidateJsonError('Invalid candidate JSON Unicode') from None
+        children = item.values() if isinstance(item, dict) else item if isinstance(item, list) else ()
+        pending.extend((child, depth + 1) for child in children)
+    return value
+
+
 def _candidate_public_payload(app):
     """Closed Flutter 3.47.9 dart2js payload, not a directory/suffix exemption.
 
@@ -626,7 +693,7 @@ def _candidate_public_payload(app):
     def literal(value):
         value = value.strip()
         if value.startswith('"'):
-            value = json.loads(value)
+            value = _candidate_json(value)
         elif value.startswith("'"):
             assert value.endswith("'"), 'Invalid public asset literal'
             value = value[1:-1].replace("''", "'")
@@ -739,17 +806,19 @@ def _candidate_private_content(raw, code=False):
         assert env_fields != fields, 'Client environment dump'
         stripped = data.strip()
         base64_data = len(stripped) >= 16 and re.fullmatch(rb'[A-Za-z0-9+/_=\s-]+', stripped)
-        structured = stripped.startswith((b'{', b'[', b'"', b'\xef\xbb\xbf', b'\xff\xfe', b'\xfe\xff', b'{\0', b'\0{'))
+        sniff = stripped[3:].lstrip() if stripped.startswith(b'\xef\xbb\xbf') else stripped
+        structured = sniff.startswith((b'{', b'[', b'"', b'\xff\xfe', b'\xfe\xff', b'{\0', b'\0{')) or sniff in (b'NaN', b'Infinity', b'-Infinity')
         if not (structured or base64_data):
             return
         assert len(data) <= 1048576, 'Candidate serialized data too large'
         budget[1] += len(data)
         assert budget[1] <= 4194304, 'Candidate decoded data budget exceeded'
         try:
-            value = json.loads(data)
-        except RecursionError:
-            raise AssertionError('Candidate JSON nesting exceeded') from None
-        except (ValueError, UnicodeError):
+            value = _candidate_json(data)
+        except (json.JSONDecodeError, UnicodeError):
+            directive = code and re.match(rb'^"(?:use strict|use asm)"\s*;', stripped)
+            if structured and not directive:
+                raise _CandidateJsonError('Invalid candidate structured data') from None
             value = None
         if value is not None:
             walk(value, depth + 1)
@@ -851,13 +920,10 @@ def _candidate_public_type(raw, kind, asset_keys=()):
         if kind in json_kinds:
             assert len(raw) <= 1048576, 'Generated/public JSON too large'
 
-            def invalid_constant(value):
-                raise ValueError('Non-JSON public constant')
-
             try:
-                value = json.loads(text, parse_constant=invalid_constant)
-            except (ValueError, RecursionError):
-                raise AssertionError('Invalid public JSON') from None
+                value = _candidate_json(text)
+            except json.JSONDecodeError:
+                raise _CandidateJsonError('Invalid public JSON') from None
             if kind == 'asset-manifest-json':
                 assert isinstance(value, str), 'Invalid JSON asset manifest'
                 try:
@@ -935,6 +1001,14 @@ def build_candidate(app, env, flutter):
     raw_config = json.dumps(config).encode()
     allowed, source_hashes, public_revision = _candidate_public_payload(app)
     assert public_revision == source.identity['checkoutCommit'], 'Public input source context changed'
+    pubspec = subprocess.check_output(['git', 'show', public_revision + ':app/pubspec.yaml'],
+                                      cwd=app.parent, stderr=subprocess.DEVNULL).decode()
+    names = re.findall(r'^name:\s*([a-z_][a-z0-9_]*)\s*$', pubspec, re.M)
+    versions = re.findall(r'^version:\s*(\d+\.\d+\.\d+\+\d+)\s*$', pubspec, re.M)
+    assert len(names) == 1 and versions == [version], 'Ambiguous candidate build metadata source'
+    version_name, build_number = version.split('+')
+    build_metadata = {'app_name': names[0], 'package_name': names[0],
+                      'version': version_name, 'build_number': build_number}
     files = {}
     total = 0
     asset_keys = frozenset(path[7:] for path in allowed if path.startswith('assets/'))
@@ -970,6 +1044,8 @@ def build_candidate(app, env, flutter):
             assert source_digest is None or digest == source_digest, 'Public source payload differs from immutable input'
             _candidate_private_content(raw, code=kind == 'code')
             metadata = _candidate_public_type(raw, kind, asset_keys)
+            if kind == 'version':
+                assert _candidate_json(raw) == build_metadata, 'Compiler metadata differs from immutable source/build'
             if metadata is not None:
                 asset_manifest, refs = metadata
                 if asset_manifest is not None:

@@ -1197,6 +1197,76 @@ class CandidatePolicyTest(unittest.TestCase):
                     with self.assertRaises(AssertionError):
                         release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
 
+    def test_candidate_json_duplicates_reject_across_composed_paths(self):
+        duplicates = (b'{"x":1,"x":2}', b'{"x":1,"\\u0078":2}',
+                      b'[{"outer":{"x":1,"x":2}}]', b'{"x":{"y":1,"y":2}}')
+        for raw in duplicates:
+            with self.subTest(raw=raw):
+                with self.assertRaises(release._CandidateJsonError):
+                    release._candidate_json(raw)
+                with self.assertRaises(release._CandidateJsonError):
+                    release._candidate_public_type(raw, 'json')
+                for wrapped in (raw, json.dumps(raw.decode()).encode(),
+                                base64.b64encode(raw),
+                                base64.urlsafe_b64encode(json.dumps(raw.decode()).encode()).rstrip(b'='),
+                                json.dumps({'payload': base64.b64encode(raw).decode()}).encode()):
+                    for code in (False, True):
+                        with self.assertRaises(release._CandidateJsonError):
+                            release._candidate_private_content(wrapped, code=code)
+
+    def test_candidate_json_profile_preserves_roots_and_rejects_ambiguity(self):
+        for raw, value in ((b'null', None), (b'true', True), (b'3', 3), (b'1.5', 1.5),
+                           (b'"public"', 'public'), (b'[]', []), (b'{}', {}),
+                           (b'[{"a":"public"}]', [{'a': 'public'}])):
+            self.assertEqual(release._candidate_json(raw), value)
+        for raw in (b'NaN', b'Infinity', b'-Infinity', b'1e400', b'{"a":NaN}',
+                    b'"\\ud800"', b'[{"a":1,"\\u0061":2}]'):
+            with self.assertRaises(release._CandidateJsonError):
+                release._candidate_json(raw)
+            # Arrays exercise a nested scalar through the same classifier.
+            with self.assertRaises(release._CandidateJsonError):
+                release._candidate_private_content(b'[' + raw + b']')
+        for raw in (b'{"x":1} trailing', b'{"x":1}{"y":2}', b'[1,',
+                    json.dumps('{"x":1,').encode(), base64.b64encode(b'{"x":1} trailing')):
+            with self.assertRaises(release._CandidateJsonError):
+                release._candidate_private_content(raw, code=True)
+        for raw in (b'public license text.', b'\xef\xbb\xbf<svg></svg>',
+                    b'\0asm\x01\0\0\0', b'OTTOSYNTHETIC_FONT'):
+            release._candidate_private_content(raw)
+        defines = ('const defines = ' + json.dumps(release.client_config(self.env)) + ';').encode()
+        for raw in (defines, b'"use strict"; ' + defines, b'const jsObject = {x:1,x:2};'):
+            release._candidate_private_content(raw, code=True)
+
+    def test_shadowed_generated_metadata_payloads_reject(self):
+        valid = {'app_name': 'app', 'package_name': 'app', 'version': VERSION,
+                 'build_number': str(VERSION_CODE)}
+        payloads = (json.dumps(release.client_config(self.env)).replace('SUPABASE', r'\u0053UPABASE').encode(),
+                    b'-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY',
+                    (release.APP / 'tool/release_contract.py').read_bytes())
+        for payload in payloads:
+            for field in ('app_name', 'package_name', 'version', 'build_number'):
+                self.reset_fixture()
+                encoded = base64.b64encode(payload).decode()
+                raw = ('{' + json.dumps(field) + ':' + json.dumps(encoded) + ',' + json.dumps(valid)[1:]).encode()
+                with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/version.json', raw))), redirect_stdout(StringIO()):
+                    with self.assertRaises(release._CandidateJsonError):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_generated_version_metadata_binds_source_build_values(self):
+        valid = {'app_name': 'app', 'package_name': 'app', 'version': VERSION,
+                 'build_number': str(VERSION_CODE)}
+        for field, value in (('app_name', 'synthetic_other'), ('package_name', 'synthetic_other'),
+                             ('version', '9.9.9'), ('build_number', '12345')):
+            self.reset_fixture()
+            raw = json.dumps(dict(valid, **{field: value})).encode()
+            with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/version.json', raw))), redirect_stdout(StringIO()):
+                with self.assertRaisesRegex(AssertionError, 'differs from immutable source/build'):
+                    release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.reset_fixture()
+        with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/version.json', json.dumps(valid)))), redirect_stdout(StringIO()):
+            manifest = release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.assertIn('web/version.json', manifest['files'])
+
     def test_generated_metadata_cannot_be_untyped_source_channels(self):
         for path, raw in (
             ('assets/AssetManifest.bin', b'# SYNTHETIC source data, never executed\n'),
@@ -1251,7 +1321,7 @@ class CandidatePolicyTest(unittest.TestCase):
                     release._candidate_private_content(value)
         for raw, kind in ((b'not a font', 'font'), (b'not wasm', 'wasm'), (b'not png', 'png'),
                           (b'\xff', 'text'), (b'# Python source', 'code'), (b'not html', 'html'),
-                          (b'NaN', 'json'), (b'{"value":Infinity}', 'json')):
+                          (b'{"truncated":', 'json'), (b'{"duplicate":1,"duplicate":2}', 'json')):
             with self.assertRaises((AssertionError, UnicodeError)):
                 release._candidate_public_type(raw, kind)
 
