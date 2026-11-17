@@ -1,0 +1,29 @@
+web-build	Build configured production entrypoint with pinned SDK	﻿2026-11-17T17:53:37.7921012Z ##[group]Run PICKTEAMS_FLUTTER_ROOT="$FLUTTER_ROOT" python3 tool/build_web_release.py
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7922036Z ^[[36;1mPICKTEAMS_FLUTTER_ROOT="$FLUTTER_ROOT" python3 tool/build_web_release.py^[[0m
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7952153Z shell: /usr/bin/bash -e {0}
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7952467Z env:
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7952826Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.47.9-x64/flutter
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7953212Z   PUB_CACHE: /home/runner/.pub-cache
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7954066Z   SUPABASE_URL: ***
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7954440Z   SUPABASE_ANON_KEY: ***
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7954746Z   VERCEL_GIT_COMMIT_SHA: 492f3f3eb1a19c380fd4f4066695423fcd506609
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.7955146Z ##[endgroup]
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.8564214Z Release source check: before-sdk
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:37.9733330Z Web control diagnostics: {"projectMetadata": {"classification": "unsafe-or-missing"}, "rootConfig": {"classification": "head-bytes", "differsFromHead": [], "unknownFieldCount": 0}}
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2404515Z Traceback (most recent call last):
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2408548Z   File "/home/runner/work/pickteams/pickteams/app/tool/build_web_release.py", line 1106, in <module>
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2409139Z     main()
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2409358Z     ~~~~^^
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2409759Z   File "/home/runner/work/pickteams/pickteams/app/tool/build_web_release.py", line 1099, in main
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2410269Z     verify_source_stage(APP.parent, "before-sdk")
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2410590Z     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2411216Z   File "/home/runner/work/pickteams/pickteams/app/tool/build_web_release.py", line 420, in verify_source_stage
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2411736Z     commit = verify_web_source(root, os.environ)
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2412249Z   File "/home/runner/work/pickteams/pickteams/app/tool/build_web_release.py", line 282, in verify_web_source
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2412791Z     assert verify_source_history(root) == head, 'Source HEAD changed'
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2413691Z            ~~~~~~~~~~~~~~~~~~~~~^^^^^^
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2414236Z   File "/home/runner/work/pickteams/pickteams/app/tool/release_contract.py", line 82, in verify_source_history
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2415058Z     assert set(changed) <= set(RELEASE_FILES) | {'app/pubspec.yaml', 'app/.gitignore'}, 'Unapproved source differences'
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2415663Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2416013Z AssertionError: Unapproved source differences
+web-build	Build configured production entrypoint with pinned SDK	2026-11-17T17:53:38.2629996Z ##[error]Process completed with exit code 1.
