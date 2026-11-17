@@ -809,5 +809,620 @@ class WebSourceBoundaryTest(unittest.TestCase):
                 self.assertEqual(release.verify_source_stage(self.root, stage), self.head)
 
 
+class CandidatePolicyTest(unittest.TestCase):
+    """Synthetic Git/GitHub fixtures, not hosted compiler or authentication proof."""
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name) / 'source'
+        self.root.mkdir()
+        self.git('init', '-q')
+        self.git('config', 'user.name', 'Synthetic')
+        self.git('config', 'user.email', 'fixture@invalid')
+        self.git('remote', 'add', 'origin', 'https://github.com/Netherman2440/pickteams')
+        self.put('app/pubspec.yaml', 'name: app\nversion: 1.0.5+2026111501\n')
+        self.put('app/.gitignore', '/build/\n')
+        self.put('app/analysis_options.yaml', 'include: package:flutter_lints/flutter.yaml\n')
+        self.put('app/lib/main.dart', 'accepted synthetic runtime\n')
+        self.put('scripts/checked.sh', '#!/bin/sh\ntrue\n')
+        (self.root / 'scripts/checked.sh').chmod(0o755)
+        for path in ('vercel.json', 'app/vercel.json'):
+            self.put(path, (release.APP.parent / path).read_bytes())
+        self.commit()
+        accepted = self.sha()
+        for module in (contract, release):
+            pin = patch.object(module, 'ACCEPTED_SOURCE', accepted)
+            pin.start()
+            self.addCleanup(pin.stop)
+        self.put('app/pubspec.yaml', f'name: app\nversion: {RELEASE_VERSION}\n')
+        self.commit()
+        self.base = self.sha()
+        self.git('checkout', '-qb', 'synthetic-feature')
+        self.put('app/lib/main.dart', 'unaccepted stars-like synthetic runtime\n')
+        self.commit()
+        self.head = self.sha()
+        self.git('checkout', '-q', '--detach', self.base)
+        self.git('merge', '-q', '--no-ff', '--no-edit', self.head)
+        self.checkout = self.sha()
+        repo = {'full_name': 'Netherman2440/pickteams', 'fork': False}
+        self.event = {'repository': repo, 'number': 7, 'pull_request': {
+            'number': 7, 'merge_commit_sha': self.checkout,
+            'head': {'sha': self.head, 'repo': repo},
+            'base': {'sha': self.base, 'ref': 'main', 'repo': repo}}}
+        self.event_path = self.root / '.git/event.json'
+        self.event_path.write_text(json.dumps(self.event))
+        self.env = dict(config(), GITHUB_ACTIONS='true', GITHUB_EVENT_NAME='pull_request',
+                        GITHUB_REPOSITORY='Netherman2440/pickteams', GITHUB_SERVER_URL='https://github.com',
+                        GITHUB_SHA=self.checkout, GITHUB_REF='refs/pull/7/merge',
+                        GITHUB_RUN_ID='123456', GITHUB_RUN_ATTEMPT='1',
+                        GITHUB_EVENT_PATH=str(self.event_path),
+                        GITHUB_WORKFLOW_REF='Netherman2440/pickteams/.github/workflows/main.yml@refs/pull/7/merge')
+        del self.env['VERCEL_GIT_COMMIT_SHA']
+
+    def git(self, *args, **kwargs):
+        return subprocess.check_output(['git', *args], cwd=self.root, stderr=subprocess.PIPE, **kwargs)
+
+    def sha(self):
+        return self.git('rev-parse', 'HEAD').decode().strip()
+
+    def put(self, path, raw):
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(raw if isinstance(raw, bytes) else raw.encode())
+
+    def commit(self):
+        self.git('add', '.')
+        self.git('commit', '-qm', 'synthetic fixture')
+
+    def reset_fixture(self):
+        # Only this disposable fixture, never a task/source checkout.
+        self.git('reset', '--hard', self.checkout)
+        self.git('clean', '-fdxq')
+        self.event_path.write_text(json.dumps(self.event))
+
+    def check(self, env=None, stage='before-sdk'):
+        with redirect_stdout(StringIO()):
+            return release.CandidateSource(self.root, self.env if env is None else env).verify_stage(self.root, stage)
+
+    def reject(self, env=None):
+        with self.assertRaises((AssertionError, ValueError, OSError, subprocess.CalledProcessError)):
+            self.check(env)
+
+    def test_unaccepted_runtime_passes_only_the_bound_candidate_policy(self):
+        self.assertEqual(self.check(), self.checkout)
+        identity = release.candidate_context(self.root, self.env)
+        self.assertEqual(identity['mergeParents'], [self.base, self.head])
+        self.assertEqual(identity['runtimeTree'], self.git('rev-parse', 'HEAD^{tree}').decode().strip())
+        for strict in (contract.verify_source, native.verify_source):
+            with self.assertRaisesRegex(AssertionError, 'Unapproved source differences'):
+                strict(self.root)
+        with self.assertRaisesRegex(AssertionError, 'Unapproved source differences'):
+            release.verify_web_source(self.root, {})
+        self.git('checkout', '-q', '--detach', self.base)
+        self.assertEqual(release.verify_web_source(self.root, {}), self.base)
+        self.reject()  # A clean accepted tree is not the declared PR merge.
+
+    def advisory_variation(self):
+        # Deliberately different from the runner merge SHA; not a stale-cause claim.
+        self.event['pull_request']['merge_commit_sha'] = self.base
+        self.event_path.write_text(json.dumps(self.event))
+
+    def test_optional_merge_metadata_is_typed_but_never_checkout_authority(self):
+        expected = release.candidate_context(self.root, self.env)
+        for auxiliary in (None, self.base, self.head, self.checkout, 'a' * 40):
+            with self.subTest(auxiliary=auxiliary):
+                self.event['pull_request']['merge_commit_sha'] = auxiliary
+                self.event_path.write_text(json.dumps(self.event))
+                self.assertEqual(release.candidate_context(self.root, self.env), expected)
+                for stage in ('before-sdk', 'after-sdk-before-pub-get',
+                              'after-pub-get-and-checked-analysis-restore',
+                              'after-compiler-and-checked-analysis-restore'):
+                    self.assertEqual(self.check(stage=stage), self.checkout)
+        del self.event['pull_request']['merge_commit_sha']
+        self.event_path.write_text(json.dumps(self.event))
+        self.assertEqual(self.check(), self.checkout)
+
+    def test_advisory_metadata_cannot_relax_invalid_or_ambiguous_controls(self):
+        for auxiliary in (True, False, 0, 1, [], {}, '', 'A' * 40, '0' * 39, '0' * 40 + '\n', float('nan')):
+            with self.subTest(auxiliary=auxiliary):
+                self.event['pull_request']['merge_commit_sha'] = auxiliary
+                self.event_path.write_text(json.dumps(self.event))
+                self.reject()
+        self.advisory_variation()
+        raw = json.dumps(self.event)
+        duplicate = '{"pull_request":' + json.dumps(self.event['pull_request']) + ',' + raw[1:]
+        self.event_path.write_text(duplicate)
+        self.reject()
+
+    def test_well_formed_wrong_runner_sha_is_not_rescued_by_metadata(self):
+        self.advisory_variation()
+        with self.assertRaisesRegex(AssertionError, 'Candidate checkout SHA mismatch'):
+            self.check(dict(self.env, GITHUB_SHA=self.head))
+
+    def test_context_rejects_missing_wrong_sha_repository_ref_workflow_and_run(self):
+        self.advisory_variation()
+        for key in ('GITHUB_ACTIONS', 'GITHUB_EVENT_NAME', 'GITHUB_REPOSITORY', 'GITHUB_SERVER_URL',
+                    'GITHUB_SHA', 'GITHUB_REF', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT',
+                    'GITHUB_EVENT_PATH', 'GITHUB_WORKFLOW_REF'):
+            for value in (None, '', 'SYNTHETIC_WRONG'):
+                with self.subTest(key=key, value=value):
+                    env = dict(self.env)
+                    if value is None:
+                        del env[key]
+                    else:
+                        env[key] = value
+                    self.reject(env)
+        baseline = json.dumps(self.event)
+        for target, field, value in (
+            ('event', 'repository', {'full_name': 'other/repository'}),
+            ('event', 'number', True), ('pr', 'number', False),
+            ('pr', 'merge_commit_sha', 'not-a-sha'),
+            ('head', 'sha', self.base), ('base', 'sha', self.head),
+            ('base', 'ref', 'other'), ('head', 'repo', {'full_name': 'other/repo', 'fork': True}),
+            ('head', 'repo', {'full_name': 'Netherman2440/pickteams', 'fork': True}),
+            ('base', 'repo', {'full_name': 'Netherman2440/pickteams', 'fork': True}),
+        ):
+            with self.subTest(target=target, field=field):
+                event = json.loads(baseline)
+                obj = event if target == 'event' else event['pull_request'] if target == 'pr' else event['pull_request'][target]
+                obj[field] = value
+                self.event_path.write_text(json.dumps(event))
+                self.reject()
+        self.event_path.write_text(baseline)
+        self.git('remote', 'set-url', 'origin', 'https://untrusted.invalid/repo')
+        self.reject()
+        self.git('remote', 'remove', 'origin')
+        self.reject()
+
+    def test_index_dirty_cached_bytes_modes_and_links_reject(self):
+        self.advisory_variation()
+        for path in ('app/lib/main.dart', 'app/vercel.json', 'untracked'):
+            with self.subTest(path=path):
+                self.put(path, 'SYNTHETIC_MUTATION')
+                self.reject()
+                self.reset_fixture()
+        for flag in ('--assume-unchanged', '--skip-worktree'):
+            self.git('update-index', flag, 'app/lib/main.dart')
+            self.put('app/lib/main.dart', 'HIDDEN_MUTATION')
+            self.assertEqual(self.git('status', '--porcelain'), b'')
+            self.reject()
+            self.git('update-index', '--no-assume-unchanged', 'app/lib/main.dart')
+            self.git('update-index', '--no-skip-worktree', 'app/lib/main.dart')
+            self.reset_fixture()
+        self.put('app/lib/main.dart', 'INDEX_MUTATION')
+        self.git('add', 'app/lib/main.dart')
+        self.put('app/lib/main.dart', self.git('show', 'HEAD:app/lib/main.dart'))
+        self.reject()
+        self.reset_fixture()
+        self.git('config', 'core.fileMode', 'false')
+        for path, modes in (('app/lib/main.dart', (0o601, 0o610, 0o700, 0o4644, 0o2644, 0o1644)),
+                            ('scripts/checked.sh', (0o600, 0o611, 0o4755, 0o2755, 0o1755))):
+            original = (self.root / path).stat().st_mode & 0o7777
+            for mode in modes:
+                with self.subTest(path=path, mode=oct(mode)):
+                    (self.root / path).chmod(mode)
+                    self.assertEqual(self.git('status', '--porcelain'), b'')
+                    self.reject()
+            (self.root / path).chmod(original)
+        self.git('update-index', '--assume-unchanged', 'app/lib/main.dart')
+        (self.root / 'app/lib/main.dart').unlink()
+        (self.root / 'app/lib/main.dart').symlink_to(self.root / 'app/pubspec.yaml')
+        self.assertEqual(self.git('status', '--porcelain'), b'')
+        self.reject()
+
+    def test_merge_tree_ordered_parents_and_complete_history_with_metadata_variation(self):
+        self.advisory_variation()
+        correct_tree = self.git('rev-parse', 'HEAD^{tree}').decode().strip()
+        self.put('untrusted-merge-addition', 'not in either declared parent')
+        self.git('add', '.')
+        bad_tree = self.git('write-tree').decode().strip()
+        self.reset_fixture()
+        for tree, parents, expected in (
+            (bad_tree, (self.base, self.head), 'Candidate merge tree mismatch'),
+            (correct_tree, (self.head, self.base), 'Candidate merge parents mismatch'),
+            (correct_tree, (self.head,), 'Candidate merge parents mismatch'),
+        ):
+            with self.subTest(parents=parents, expected=expected):
+                args = [part for parent in parents for part in ('-p', parent)]
+                bad = self.git('commit-tree', tree, *args, input=b'hostile merge fixture\n').decode().strip()
+                self.git('reset', '--hard', bad)
+                with self.assertRaisesRegex(AssertionError, expected):
+                    self.check(dict(self.env, GITHUB_SHA=bad))
+                self.reset_fixture()
+        self.git('checkout', '-q', '--detach', self.head)
+        with self.assertRaisesRegex(AssertionError, 'Candidate merge parents mismatch'):
+            self.check(dict(self.env, GITHUB_SHA=self.head))
+        self.reset_fixture()
+        self.put('.git/shallow', self.base + '\n')
+        with self.assertRaisesRegex(AssertionError, 'Candidate requires complete history'):
+            self.check()
+
+    def fake_compile(self, extra=None):
+        def execute(command, *, cwd, env):
+            self.assertEqual(cwd, self.root / 'app')
+            if 'get' in command:
+                self.assertIn('--enforce-lockfile', command)
+                analysis = cwd / 'analysis_options.yaml'
+                analysis.write_bytes(ANALYSIS_MIGRATION + analysis.read_bytes())
+            if 'build' in command:
+                self.assertIn('--no-pub', command)
+                self.assertIn('--target=lib/main.dart', command)
+                self.assertEqual((cwd / 'analysis_options.yaml').read_text(), 'include: package:flutter_lints/flutter.yaml\n')
+                option = next(arg for arg in command if str(arg).startswith('--dart-define-from-file='))
+                temporary = Path(str(option).split('=', 1)[1])
+                self.assertEqual(temporary.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(json.loads(temporary.read_bytes()), release.client_config(self.env))
+                self.config_path = temporary
+                self.config_bytes = temporary.read_bytes()
+                self.put('app/build/web/index.html', '<html>synthetic runnable fixture</html>')
+                self.put('app/build/web/main.dart.js', 'synthetic compiled public client')
+                self.put('app/build/web/assets/FontManifest.json', '[]')
+                if extra:
+                    extra()
+        return execute
+
+    def test_shared_compilation_seals_separate_full_payload_and_private_config_binding(self):
+        stdout = StringIO()
+        with patch.object(release, 'run', side_effect=self.fake_compile()), redirect_stdout(stdout):
+            manifest = release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        container = self.root / 'app/build/candidate-web'
+        self.assertFalse(self.config_path.exists())
+        self.assertFalse((self.root / 'app/build/web').exists())
+        self.assertEqual(manifest['kind'], 'pickteams-unaccepted-web-candidate')
+        self.assertIs(manifest['promotable'], False)
+        self.assertIs(manifest['productionAccepted'], False)
+        self.assertEqual(manifest['source']['checkoutCommit'], self.checkout)
+        self.assertEqual(manifest['source']['headCommit'], self.head)
+        self.assertEqual(manifest['configurationSha256'], release.hashlib.sha256(self.config_bytes).hexdigest())
+        actual = {path.relative_to(container).as_posix(): release.hashlib.sha256(path.read_bytes()).hexdigest()
+                  for path in (container / 'web').rglob('*') if path.is_file()}
+        self.assertEqual(manifest['files'], actual)
+        self.assertEqual(len(actual), 3)
+        self.assertEqual(json.loads((container / 'candidate.json').read_bytes()), manifest)
+        digest = release.hashlib.sha256((container / 'candidate.json').read_bytes()).hexdigest()
+        self.assertEqual((container / 'candidate.json.sha256').read_text(), digest + '  candidate.json\n')
+        self.assertFalse(list(container.rglob('release.json')))
+        self.assertNotIn(self.env['SUPABASE_ANON_KEY'], stdout.getvalue())
+        self.assertNotIn(self.env['SUPABASE_URL'], json.dumps(manifest))
+        with self.assertRaises(KeyError):
+            contract.validate_metadata(manifest)
+        self.reject()  # Stale evidence cannot be silently reused by a new run.
+
+    def test_candidate_privacy_links_and_release_metadata_reject(self):
+        for mutation in ('release.json', 'raw-json', 'renamed-raw', 'pretty-renamed-raw',
+                         'upper-json', 'encoded-raw', 'link', 'directory-link'):
+            with self.subTest(mutation=mutation):
+                self.reset_fixture()
+
+                def extra():
+                    if mutation == 'release.json':
+                        self.put('app/build/web/release.json', '{}')
+                    elif mutation == 'raw-json':
+                        self.put('app/build/web/leaked.json', json.dumps(release.client_config(self.env), indent=2))
+                    elif mutation == 'renamed-raw':
+                        self.put('app/build/web/renamed.bin', self.config_bytes)
+                    elif mutation in ('pretty-renamed-raw', 'upper-json'):
+                        name = 'renamed.bin' if mutation == 'pretty-renamed-raw' else 'LEAKED.JSON'
+                        self.put('app/build/web/' + name, json.dumps(release.client_config(self.env), indent=2))
+                    elif mutation == 'encoded-raw':
+                        self.put('app/build/web/encoded.bin', base64.b64encode(self.config_bytes))
+                    elif mutation == 'link':
+                        (self.root / 'app/build/web/leak').symlink_to(self.root / 'app/pubspec.yaml')
+                    else:
+                        (self.root / 'app/build/web/linked').symlink_to(self.root / 'app', target_is_directory=True)
+                with patch.object(release, 'run', side_effect=self.fake_compile(extra)), redirect_stdout(StringIO()):
+                    with self.assertRaises((AssertionError, OSError)):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+                self.assertFalse(self.config_path.exists())
+                self.assertFalse((self.root / 'app/build/candidate-web/candidate.json').exists())
+
+    def test_each_candidate_stage_rechecks_source_and_checked_analysis_restore(self):
+        for mutation in ('source-after-pub', 'unknown-analysis-migration', 'source-after-compiler'):
+            with self.subTest(mutation=mutation):
+                self.reset_fixture()
+                execute = self.fake_compile()
+
+                def run(command, *, cwd, env):
+                    execute(command, cwd=cwd, env=env)
+                    if 'get' in command:
+                        if mutation == 'source-after-pub':
+                            self.put('app/lib/main.dart', 'changed after initial check')
+                        elif mutation == 'unknown-analysis-migration':
+                            self.put('app/analysis_options.yaml', 'unknown migration')
+                    if 'build' in command and mutation == 'source-after-compiler':
+                        self.put('app/lib/main.dart', 'changed by compiler')
+                with patch.object(release, 'run', side_effect=run), redirect_stdout(StringIO()):
+                    with self.assertRaises(AssertionError):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+                self.assertFalse((self.root / 'app/build/candidate-web/candidate.json').exists())
+
+    def declare_public_inputs(self, inputs, declarations=('assets/public/',)):
+        # Real tracked public input and new synthetic PR head/merge, no source
+        # admission override. Never modify the actual worktree or SDK.
+        self._public_source_base_head = getattr(self, '_public_source_base_head', self.head)
+        self.git('checkout', '-q', '--detach', self._public_source_base_head)
+        self.git('clean', '-fdxq')
+        for path, raw in inputs.items():
+            self.put('app/' + path, raw)
+        pubspec = (self.root / 'app/pubspec.yaml').read_text()
+        self.put('app/pubspec.yaml', pubspec + 'flutter:\n  assets:\n' + ''.join('    - ' + item + '\n' for item in declarations))
+        self.commit()
+        self.head = self.sha()
+        self.git('checkout', '-q', '--detach', self.base)
+        self.git('merge', '-q', '--no-ff', '--no-edit', self.head)
+        self.checkout = self.sha()
+        self.event['pull_request']['head']['sha'] = self.head
+        self.event['pull_request']['merge_commit_sha'] = self.checkout
+        self.env['GITHUB_SHA'] = self.checkout
+        self.event_path.write_text(json.dumps(self.event))
+
+    def test_normal_closed_compiler_layout_and_source_bound_public_assets(self):
+        inputs = {'assets/public/logo.png': b'\x89PNG\r\n\x1a\nSYNTHETIC',
+                  'assets/public/font.ttf': b'\0\x01\0\0SYNTHETIC_FONT',
+                  'assets/public/data.json': b'{"label":"public"}',
+                  'assets/public/logo.svg': b'<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+                  'assets/public/photo.jpg': b'\xff\xd8\xffSYNTHETIC',
+                  'assets/public/image.gif': b'GIF89aSYNTHETIC',
+                  'assets/public/image.webp': b'RIFF1234WEBPSYNTHETIC',
+                  'assets/public/icon.ico': b'\0\0\x01\0SYNTHETIC',
+                  'assets/public/other.otf': b'OTTOSYNTHETIC',
+                  'assets/public/web.woff': b'wOFFSYNTHETIC',
+                  'assets/public/web.woff2': b'wOF2SYNTHETIC',
+                  'assets/public/license.txt': b'Synthetic public font license.',
+                  'web/manifest.json': b'{"name":"synthetic app"}',
+                  'web/icons/app.png': b'\x89PNG\r\n\x1a\nSYNTHETIC_ICON'}
+        self.declare_public_inputs(inputs)
+        allowed, source_hashes, revision = release._candidate_public_payload(self.root / 'app')
+        self.assertTrue(source_hashes)
+        self.assertEqual(revision, self.checkout)
+        key = b'assets/public/logo.png'
+        packed_key = b'\x07' + bytes([len(key)]) + key
+        packed = b'\x0d\x01' + packed_key + b'\x0c\x01\x0d\x02\x07\x05asset' + packed_key + b'\x07\x03dpr\x06'
+        import struct
+        packed += b'\0' * (-len(packed) % 8) + struct.pack('<d', 2.0)
+        values = {'code': b'const publicValue = "synthetic";', 'html': b'<html>synthetic</html>',
+                  'text': b'Synthetic public metadata.', 'json': b'[]', 'font-manifest': b'[]',
+                  'font': b'\0\x01\0\0SYNTHETIC_FONT', 'asset-manifest': packed,
+                  'asset-manifest-json': json.dumps(base64.b64encode(packed).decode()).encode(),
+                  'version': json.dumps({'app_name': 'app', 'package_name': 'app', 'version': VERSION,
+                                         'build_number': str(VERSION_CODE)}).encode(),
+                  'shader': json.dumps({'format_version': 2, 'sksl': {'entrypoint': 'synthetic_shader',
+                       'shader': '// This SkSL shader is autogenerated by spirv-cross.\nvoid main() {}',
+                       'stage': 1, 'uniforms': []}}).encode(),
+                  'build-id': b'0' * 32, 'symbols': b'0:synthetic_function\n',
+                  'notices': b'_synthetic_package\n\nCopyright synthetic author.\n',
+                  'wasm': b'\0asm\x01\0\0\0', 'png': b'\x89PNG\r\n\x1a\nSYNTHETIC'}
+
+        def extra():
+            for path, (kind, digest) in allowed.items():
+                if digest:
+                    source = path[7:] if path.startswith('assets/assets/') else 'web/' + path
+                    self.put('app/build/web/' + path, inputs[source])
+                else:
+                    self.put('app/build/web/' + path, values[kind])
+            # Compiled public defines may contain both names AND their public
+            # values. This is JS, not a retained raw configuration asset.
+            self.put('app/build/web/main.dart.js', 'const defines = ' + json.dumps(release.client_config(self.env)) + ';')
+        with patch.object(release, 'run', side_effect=self.fake_compile(extra)), redirect_stdout(StringIO()):
+            manifest = release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.assertEqual(set(manifest['files']), {'web/' + path for path in allowed})
+        self.assertEqual(manifest['payloadPolicy'], 'flutter-3.47.9-dart2js-public-v1')
+        self.assertFalse(self.config_path.exists())
+
+    def test_unknown_payload_and_declared_source_mismatch_reject(self):
+        self.declare_public_inputs({'assets/public/data.json': b'{"label":"public"}'})
+        for path, raw in (('assets/unlisted.json', b'{}'), ('canvaskit/not-a-compiler-file.wasm', b'\0asm\x01\0\0\0'),
+                          ('.hidden', b'private'), ('assets/assets/public/data.json', b'{"changed":true}')):
+            with self.subTest(path=path):
+                self.reset_fixture()
+                with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/' + path, raw))), redirect_stdout(StringIO()):
+                    with self.assertRaisesRegex(AssertionError, 'Unexpected candidate payload|differs from immutable'):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_reviewer_representations_and_key_magic_reject_in_authorized_payload_roles(self):
+        cfg = release.client_config(self.env)
+        pretty = json.dumps(cfg, indent=2)
+        escaped = pretty.replace('SUPABASE', r'\u0053UPABASE')
+        cases = [json.dumps({'payload': escaped}).encode(),
+                 json.dumps({'payload': base64.urlsafe_b64encode(escaped.encode()).decode().rstrip('=')}).encode(),
+                 base64.b64encode(pretty.encode()), json.dumps({'payload': pretty}).encode(),
+                 json.dumps(pretty).encode(), '\n'.join(k + '=' + v for k, v in cfg.items()).encode(),
+                 b'-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY\n-----END PRIVATE KEY-----',
+                 b'\xfe\xed\xfe\xedSYNTHETIC_NOT_A_KEYSTORE',
+                 b'\xce\xce\xce\xceSYNTHETIC_NOT_A_KEYSTORE',
+                 b'storeFile=SYNTHETIC.jks\nstorePassword=SYNTHETIC\n',
+                 json.dumps({'settings': {'storePassword': 'SYNTHETIC'}}).encode(),
+                 json.dumps({'payload': base64.b64encode(pretty.encode()).decode()}).encode()]
+        for raw in cases:
+            with self.subTest(case=cases.index(raw)):
+                with self.assertRaises(AssertionError):
+                    release._candidate_private_content(raw, code=True)
+                self.reset_fixture()
+                # A real generated, authorized opaque payload name: content,
+                # not just the rejection of the reviewer's eight filenames.
+                with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/assets/AssetManifest.bin', raw))), redirect_stdout(StringIO()):
+                    with self.assertRaises(AssertionError):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_candidate_json_duplicates_reject_across_composed_paths(self):
+        duplicates = (b'{"x":1,"x":2}', b'{"x":1,"\\u0078":2}',
+                      b'[{"outer":{"x":1,"x":2}}]', b'{"x":{"y":1,"y":2}}')
+        for raw in duplicates:
+            with self.subTest(raw=raw):
+                with self.assertRaises(release._CandidateJsonError):
+                    release._candidate_json(raw)
+                with self.assertRaises(release._CandidateJsonError):
+                    release._candidate_public_type(raw, 'json')
+                for wrapped in (raw, json.dumps(raw.decode()).encode(),
+                                base64.b64encode(raw),
+                                base64.urlsafe_b64encode(json.dumps(raw.decode()).encode()).rstrip(b'='),
+                                json.dumps({'payload': base64.b64encode(raw).decode()}).encode()):
+                    for code in (False, True):
+                        with self.assertRaises(release._CandidateJsonError):
+                            release._candidate_private_content(wrapped, code=code)
+
+    def test_candidate_json_profile_preserves_roots_and_rejects_ambiguity(self):
+        for raw, value in ((b'null', None), (b'true', True), (b'3', 3), (b'1.5', 1.5),
+                           (b'"public"', 'public'), (b'[]', []), (b'{}', {}),
+                           (b'[{"a":"public"}]', [{'a': 'public'}])):
+            self.assertEqual(release._candidate_json(raw), value)
+        for raw in (b'NaN', b'Infinity', b'-Infinity', b'1e400', b'{"a":NaN}',
+                    b'"\\ud800"', b'[{"a":1,"\\u0061":2}]'):
+            with self.assertRaises(release._CandidateJsonError):
+                release._candidate_json(raw)
+            # Arrays exercise a nested scalar through the same classifier.
+            with self.assertRaises(release._CandidateJsonError):
+                release._candidate_private_content(b'[' + raw + b']')
+        for raw in (b'{"x":1} trailing', b'{"x":1}{"y":2}', b'[1,',
+                    json.dumps('{"x":1,').encode(), base64.b64encode(b'{"x":1} trailing')):
+            with self.assertRaises(release._CandidateJsonError):
+                release._candidate_private_content(raw, code=True)
+        for raw in (b'public license text.', b'\xef\xbb\xbf<svg></svg>',
+                    b'\0asm\x01\0\0\0', b'OTTOSYNTHETIC_FONT'):
+            release._candidate_private_content(raw)
+        defines = ('const defines = ' + json.dumps(release.client_config(self.env)) + ';').encode()
+        for raw in (defines, b'"use strict"; ' + defines, b'const jsObject = {x:1,x:2};'):
+            release._candidate_private_content(raw, code=True)
+
+    def test_shadowed_generated_metadata_payloads_reject(self):
+        valid = {'app_name': 'app', 'package_name': 'app', 'version': VERSION,
+                 'build_number': str(VERSION_CODE)}
+        payloads = (json.dumps(release.client_config(self.env)).replace('SUPABASE', r'\u0053UPABASE').encode(),
+                    b'-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY',
+                    (release.APP / 'tool/release_contract.py').read_bytes())
+        for payload in payloads:
+            for field in ('app_name', 'package_name', 'version', 'build_number'):
+                self.reset_fixture()
+                encoded = base64.b64encode(payload).decode()
+                raw = ('{' + json.dumps(field) + ':' + json.dumps(encoded) + ',' + json.dumps(valid)[1:]).encode()
+                with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/version.json', raw))), redirect_stdout(StringIO()):
+                    with self.assertRaises(release._CandidateJsonError):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_generated_version_metadata_binds_source_build_values(self):
+        valid = {'app_name': 'app', 'package_name': 'app', 'version': VERSION,
+                 'build_number': str(VERSION_CODE)}
+        for field, value in (('app_name', 'synthetic_other'), ('package_name', 'synthetic_other'),
+                             ('version', '9.9.9'), ('build_number', '12345')):
+            self.reset_fixture()
+            raw = json.dumps(dict(valid, **{field: value})).encode()
+            with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/version.json', raw))), redirect_stdout(StringIO()):
+                with self.assertRaisesRegex(AssertionError, 'differs from immutable source/build'):
+                    release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.reset_fixture()
+        with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/version.json', json.dumps(valid)))), redirect_stdout(StringIO()):
+            manifest = release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.assertIn('web/version.json', manifest['files'])
+
+    def test_generated_metadata_cannot_be_untyped_source_channels(self):
+        for path, raw in (
+            ('assets/AssetManifest.bin', b'# SYNTHETIC source data, never executed\n'),
+            ('assets/shaders/ink_sparkle.frag', b'# SYNTHETIC source data, never executed\n'),
+            ('version.json', b'{"source":"# SYNTHETIC source data"}'),
+            ('assets/FontManifest.json', b'[{"source":"# SYNTHETIC source data"}]'),
+            ('assets/FontManifest.json', b'[{"family":"Synthetic","fonts":[{"asset":"private.key"}]}]'),
+            ('assets/AssetManifest.bin', b'\x0d\x00TRAILING_SOURCE'),
+            ('assets/AssetManifest.bin.json', b'"H4s="'),
+            ('assets/NOTICES', b'# SYNTHETIC source data, never executed\n'),
+            ('canvaskit/canvaskit.js.symbols', b'# SYNTHETIC source data, never executed\n'),
+            ('.last_build_id', b'# SYNTHETIC source data, never executed\n'),
+        ):
+            with self.subTest(path=path):
+                self.reset_fixture()
+                with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/' + path, raw))), redirect_stdout(StringIO()):
+                    with self.assertRaises(AssertionError):
+                        release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_source_and_signing_inputs_cannot_be_declared_public_by_suffix(self):
+        for path, raw in (('assets/public/infrastructure.py', b'# source, not executed'),
+                          ('assets/public/signing.keystore', b'\xfe\xed\xfe\xedSYNTHETIC'),
+                          ('assets/public/private.key', b'SYNTHETIC_NOT_A_KEY')):
+            with self.subTest(path=path):
+                # Each variant is committed/declared, not an untracked file.
+                self.declare_public_inputs({path: raw})
+                with self.assertRaisesRegex(AssertionError, 'Unsupported public payload type'):
+                    release._candidate_public_payload(self.root / 'app')
+
+    def test_public_source_text_and_generated_output_content_are_not_privacy_exempt(self):
+        raw = base64.b64encode(json.dumps(release.client_config(self.env), indent=2).encode())
+        self.declare_public_inputs({'assets/public/document.txt': raw})
+        with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/assets/assets/public/document.txt', raw))), redirect_stdout(StringIO()):
+            with self.assertRaises(AssertionError):
+                release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.reset_fixture()
+        # Renaming actual non-public source into an authorized SDK file also
+        # rejects independently of filename or serialization form.
+        source = self.git('show', 'HEAD:app/lib/main.dart')
+        with patch.object(release, 'run', side_effect=self.fake_compile(lambda: self.put('app/build/web/assets/NOTICES', source))), redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(AssertionError, 'Renamed non-public source'):
+                release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_serialization_and_payload_resource_bounds_fail_closed(self):
+        raw = json.dumps(release.client_config(self.env)).encode()
+        for _ in range(12):
+            raw = base64.b64encode(raw)
+        for value in (raw, b'[' * 1500 + b'0' + b']' * 1500,
+                      b'[' + b','.join([b'0'] * 1100) + b']', b'"' + b'a' * 1048576 + b'"'):
+            with self.subTest(length=len(value)):
+                with self.assertRaises(AssertionError):
+                    release._candidate_private_content(value)
+        for raw, kind in ((b'not a font', 'font'), (b'not wasm', 'wasm'), (b'not png', 'png'),
+                          (b'\xff', 'text'), (b'# Python source', 'code'), (b'not html', 'html'),
+                          (b'{"truncated":', 'json'), (b'{"duplicate":1,"duplicate":2}', 'json')):
+            with self.assertRaises((AssertionError, UnicodeError)):
+                release._candidate_public_type(raw, kind)
+
+        def oversized():
+            path = self.root / 'app/build/web/canvaskit/canvaskit.wasm'
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open('wb') as stream:
+                stream.truncate(67108865)  # Sparse fixture; must reject before reading.
+        with patch.object(release, 'run', side_effect=self.fake_compile(oversized)), redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(AssertionError, 'file too large'):
+                release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+        self.reset_fixture()
+
+        def oversized_total():
+            for stem in ('canvaskit', 'chromium/canvaskit', 'webparagraph/canvaskit', 'skwasm', 'wimp'):
+                path = self.root / ('app/build/web/canvaskit/' + stem + '.wasm')
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open('wb') as stream:
+                    stream.write(b'\0asm\x01\0\0\0')
+                    stream.truncate(67108864)  # Valid header, sparse bounded data.
+        with patch.object(release, 'run', side_effect=self.fake_compile(oversized_total)), redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(AssertionError, 'total size exceeded'):
+                release.build_candidate(self.root / 'app', self.env, Path('/synthetic/sdk/flutter'))
+
+    def test_source_declaration_language_is_closed_and_bounded(self):
+        for declaration in ('../lib/', 'lib/', '*alias', '{path: assets/public/}'):
+            with self.subTest(declaration=declaration):
+                self.declare_public_inputs({}, declarations=(declaration,))
+                with self.assertRaises(AssertionError):
+                    release._candidate_public_payload(self.root / 'app')
+        self.declare_public_inputs({}, declarations=('assets/public/',) * 257)
+        with self.assertRaisesRegex(AssertionError, 'declaration count exceeded'):
+            release._candidate_public_payload(self.root / 'app')
+        self.declare_public_inputs({'assets/public/item' + str(index) + '.txt': 'public data'
+                                    for index in range(2049)})
+        with self.assertRaisesRegex(AssertionError, 'input count exceeded'):
+            release._candidate_public_payload(self.root / 'app')
+
+    def test_production_cli_has_no_candidate_environment_switch_and_workflow_artifacts_are_distinct(self):
+        with patch.dict(os.environ, dict(self.env, PICKTEAMS_SOURCE_POLICY='candidate'), clear=True), \
+                patch.object(release, 'install_flutter') as install, patch.object(release, 'APP', self.root / 'app'), redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(AssertionError, 'Unapproved source differences'):
+                release.main()
+            install.assert_not_called()
+        workflow = (release.APP.parent / '.github/workflows/main.yml').read_text()
+        production = workflow.split('- name: Build configured production entrypoint with pinned SDK', 1)[1].split('- name:', 1)[0]
+        self.assertIn("if: github.event_name != 'pull_request'", production)
+        self.assertIn('python3 tool/build_web_release.py', production)
+        candidate = workflow.split('- name: Build NONPROMOTABLE configured PR candidate', 1)[1].split('- name:', 1)[0]
+        self.assertIn("if: github.event_name == 'pull_request'", candidate)
+        self.assertIn('candidate_main()', candidate)
+        self.assertIn('unaccepted-web-candidate-${{ github.event.pull_request.head.sha }}-${{ github.sha }}', workflow)
+        self.assertIn('path: app/build/candidate-web/', workflow)
+
+
 if __name__ == '__main__':
     unittest.main()

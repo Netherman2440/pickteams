@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'match_level_panel.dart';
 import 'package:intl/intl.dart';
 import 'package:app/features/matches/domain/entities/match.dart';
 import 'package:go_router/go_router.dart';
@@ -86,6 +87,7 @@ class MatchTile extends StatelessWidget {
                   ),
                 ],
               ),
+              MatchLevelPanel(squadId: squadId, matchId: match.matchId),
               if (teamsNotSelected) ...[
                 const SizedBox(height: 8),
                 Text(
