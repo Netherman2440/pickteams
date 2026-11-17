@@ -76,7 +76,12 @@ class StarsProof(Proof):
         self.passed('owner writes; admin and guest cannot write; guest reads; all finite/shape/order/null vectors; full dump unchanged')
         return {'validConstraintWrites': len(valid), 'invalidFunctionAndConstraintVectors': len(invalid)}
 
-    def prove(self):
+    def history_privileges(self, artifact):
+        self.clone('history_privileges','')
+        self.sql('history_privileges','CREATE ROLE history_owner NOLOGIN; ALTER TABLE supabase_migrations.schema_migrations OWNER TO history_owner; CREATE ROLE schema_operator NOLOGIN; ALTER TABLE public.squads OWNER TO schema_operator; GRANT USAGE,CREATE ON SCHEMA public TO schema_operator; GRANT USAGE ON SCHEMA auth,supabase_migrations TO schema_operator;')
+        self.reject_unchanged('history_privileges','SET ROLE schema_operator;\n'+artifact,'history privileges missing')
+
+    def prove(self, case='all'):
         os.umask(0o077)
         source = stars.SOURCE.read_bytes()
         artifact = stars.generate(source)
@@ -95,6 +100,9 @@ class StarsProof(Proof):
                 if path.name < stars.SOURCE.name:
                     self.sql('fixture',path.read_text())
             self.passed('real canonical predecessors plus existing local_auth fixture; no hosted connection')
+            if case == 'history-privileges':
+                self.history_privileges(artifact)
+                return
             variants = {'standard':', name text, statements text[]','version_only':'',
                         'name_only':', name text','statements_only':', statements text[]','absent':None}
             for name, columns in variants.items():
@@ -148,9 +156,7 @@ class StarsProof(Proof):
             self.clone('limited_operator','')
             self.sql('limited_operator','CREATE ROLE limited_operator NOLOGIN;')
             self.reject_unchanged('limited_operator','SET ROLE limited_operator;\n'+artifact,'existing administrator privileges required')
-            self.clone('history_privileges','')
-            self.sql('history_privileges','CREATE ROLE history_owner NOLOGIN; ALTER TABLE supabase_migrations.schema_migrations OWNER TO history_owner; CREATE ROLE schema_operator NOLOGIN; ALTER TABLE public.squads OWNER TO schema_operator; GRANT USAGE,CREATE ON SCHEMA public TO schema_operator; GRANT USAGE ON SCHEMA supabase_migrations TO schema_operator;')
-            self.reject_unchanged('history_privileges','SET ROLE schema_operator;\n'+artifact,'history privileges missing')
+            self.history_privileges(artifact)
             self.clone('bad_defaults','')
             self.sql('bad_defaults','ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;')
             self.reject_unchanged('bad_defaults',artifact,'metadata verification failed')
@@ -199,8 +205,9 @@ def main():
     parser.add_argument('--pg-bin',type=Path,required=True)
     parser.add_argument('--proof-dir',type=Path,required=True)
     parser.add_argument('--socket-dir',type=Path,required=True)
+    parser.add_argument('--case',choices=('all','history-privileges'),default='all')
     args = parser.parse_args()
-    StarsProof(args.pg_bin,args.proof_dir,args.socket_dir).prove()
+    StarsProof(args.pg_bin,args.proof_dir,args.socket_dir).prove(args.case)
 
 
 if __name__ == '__main__':
