@@ -70,7 +70,8 @@ def run(build, output):
                     if name in ('thresholds', 'baseline'):
                         assert len(metrics['fields']) == 5, metrics
                     if name == 'baseline':
-                        assert [f['text'] for f in metrics['fields']] == ['49,8', '56,1', '58,0', '59,8', '62,9'], metrics
+                        # JS prints integral doubles as "58", the VM as "58.0".
+                        assert [float(f['text'].replace(',', '.')) for f in metrics['fields']] == [49.8, 56.1, 58.0, 59.8, 62.9], metrics
                         assert metrics['saves'] == 0 and metrics['thresholds'] is None, metrics
                     image = out / f'{name}.png'
                     page.screenshot(path=str(image))
