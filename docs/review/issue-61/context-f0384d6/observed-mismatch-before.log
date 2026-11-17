@@ -1,0 +1,16 @@
+HEAD=7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd
+COMMAND=env TMPDIR=/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/context-followup/tmp /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/candidate-context-followup/reproduce_actual_history.py 
+MemAvailable=2855232 KiB
+{"actualKnownHead": "7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd", "actualKnownBase": "1377d580307959b8dc25594bff9e61370c539564", "actualKnownCheckout": "93e9f2a7bd7cdd7d0f66c89573b3141ebfedfeda", "actualKnownTree": "b65d4cb78c749eb89641f2a293202997b970000f", "auxiliaryStandIn": "7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd", "originalAuxiliaryValueKnown": false, "eventAuthenticationClaim": false, "realConfigurationUsed": false}
+Traceback (most recent call last):
+  File "/home/agents/dev/pickteams/.limen/task-coordinators/issue-61/candidate-context-followup/reproduce_actual_history.py", line 50, in <module>
+    source = web.CandidateSource(root, env)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/tool/build_web_release.py", line 504, in __init__
+    self.identity = candidate_context(root, self.env)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/tool/build_web_release.py", line 478, in candidate_context
+    assert sha(pr['merge_commit_sha']) == checkout, 'Candidate event merge mismatch'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Candidate event merge mismatch
+EXIT=1

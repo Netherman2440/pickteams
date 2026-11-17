@@ -1,6 +1,8 @@
 # Match-level stars: exact-candidate evidence
 
-Current integrated PR66 source is `7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd`, based on accepted main `1377d580307959b8dc25594bff9e61370c539564`. See [the integrated source/security receipt and remaining hosted gate](integration-7ed7651/README.md).
+Current PR66 source is `f0384d6e38673bf0f44423514e7749cb316c83d3`, based on accepted main `1377d580307959b8dc25594bff9e61370c539564`. See [the real context-failure correction and independent executed SECURITY proof](context-f0384d6/README.md). Full local Python was denied before execution; hosted full-suite/compiler/artifact/browser gates remain open.
+
+The prior [integrated source/security receipt](integration-7ed7651/README.md) applies to parent `7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd`; its actual candidate admission failure is preserved in [candidate-ci-7ed7651](candidate-ci-7ed7651/blocker.md).
 
 The UI/test candidate described below is `ec6630d6d732d3c9191ef74c5e5460bd3cc2f847`, source branch `limen/github-issue-61-issue-61`, old dependency base `4fe251fc2dadf5cd0e9abc70a25b2220096ded02`. The nine images retain that exact original provenance. Material equality with the integrated source is proved separately; these are not new-head captures.
 

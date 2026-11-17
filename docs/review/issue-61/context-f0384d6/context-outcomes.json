@@ -1,0 +1,498 @@
+[
+  {
+    "case": "before: known authentic Git graph with synthetic unequal advisory",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate event merge mismatch",
+    "actual": "Candidate event merge mismatch"
+  },
+  {
+    "case": "after: same known Git graph with synthetic unequal advisory",
+    "result": "accepted"
+  },
+  {
+    "case": "after: known Git graph full physical source admission",
+    "result": "accepted"
+  },
+  {
+    "case": "valid advisory null",
+    "result": "accepted"
+  },
+  {
+    "case": "valid advisory equal",
+    "result": "accepted"
+  },
+  {
+    "case": "valid advisory different-base",
+    "result": "accepted"
+  },
+  {
+    "case": "valid advisory different-head",
+    "result": "accepted"
+  },
+  {
+    "case": "valid advisory different-unknown-object",
+    "result": "accepted"
+  },
+  {
+    "case": "valid advisory absent",
+    "result": "accepted"
+  },
+  {
+    "case": "malformed advisory True",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory False",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory 0",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory 1",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory 1.5",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory []",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory {}",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory ''",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory '000000000000000000000000000000000000000'",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory '00000000000000000000000000000000000000000'",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "malformed advisory '0000000000000000000000000000000000000000\\n'",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "duplicate event control",
+    "result": "rejected",
+    "exception": "ValueError",
+    "expected": "duplicate JSON field",
+    "actual": "duplicate JSON field"
+  },
+  {
+    "case": "duplicate nested advisory",
+    "result": "rejected",
+    "exception": "ValueError",
+    "expected": "duplicate JSON field",
+    "actual": "duplicate JSON field"
+  },
+  {
+    "case": "escaped-equivalent duplicate advisory",
+    "result": "rejected",
+    "exception": "ValueError",
+    "expected": "duplicate JSON field",
+    "actual": "duplicate JSON field"
+  },
+  {
+    "case": "non-JSON control constant",
+    "result": "rejected",
+    "exception": "ValueError",
+    "expected": "non-JSON constant",
+    "actual": "non-JSON constant"
+  },
+  {
+    "case": "truncated event JSON",
+    "result": "rejected",
+    "exception": "JSONDecodeError",
+    "expected": "Expecting property name",
+    "actual": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+  },
+  {
+    "case": "wrong environment GITHUB_ACTIONS",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Untrusted candidate context",
+    "actual": "Untrusted candidate context"
+  },
+  {
+    "case": "wrong environment GITHUB_EVENT_NAME",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Untrusted candidate context",
+    "actual": "Untrusted candidate context"
+  },
+  {
+    "case": "wrong environment GITHUB_REPOSITORY",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Untrusted candidate context",
+    "actual": "Untrusted candidate context"
+  },
+  {
+    "case": "wrong environment GITHUB_SERVER_URL",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Untrusted candidate context",
+    "actual": "Untrusted candidate context"
+  },
+  {
+    "case": "wrong environment GITHUB_REF",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate must use the actual PR merge checkout",
+    "actual": "Candidate must use the actual PR merge checkout"
+  },
+  {
+    "case": "wrong environment GITHUB_WORKFLOW_REF",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Wrong candidate workflow",
+    "actual": "Wrong candidate workflow"
+  },
+  {
+    "case": "wrong environment GITHUB_RUN_ID",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate run context",
+    "actual": "Invalid candidate run context"
+  },
+  {
+    "case": "wrong environment GITHUB_RUN_ATTEMPT",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate run context",
+    "actual": "Invalid candidate run context"
+  },
+  {
+    "case": "missing environment GITHUB_ACTIONS",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Untrusted candidate context",
+    "actual": "Untrusted candidate context"
+  },
+  {
+    "case": "missing environment GITHUB_EVENT_NAME",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Untrusted candidate context",
+    "actual": "Untrusted candidate context"
+  },
+  {
+    "case": "missing environment GITHUB_REPOSITORY",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Untrusted candidate context",
+    "actual": "Untrusted candidate context"
+  },
+  {
+    "case": "missing environment GITHUB_SERVER_URL",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Untrusted candidate context",
+    "actual": "Untrusted candidate context"
+  },
+  {
+    "case": "missing environment GITHUB_REF",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate must use the actual PR merge checkout",
+    "actual": "Candidate must use the actual PR merge checkout"
+  },
+  {
+    "case": "missing environment GITHUB_WORKFLOW_REF",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Wrong candidate workflow",
+    "actual": "Wrong candidate workflow"
+  },
+  {
+    "case": "missing environment GITHUB_RUN_ID",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate run context",
+    "actual": "Invalid candidate run context"
+  },
+  {
+    "case": "missing environment GITHUB_RUN_ATTEMPT",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate run context",
+    "actual": "Invalid candidate run context"
+  },
+  {
+    "case": "missing environment GITHUB_SHA",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  },
+  {
+    "case": "wrong event event repository",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Wrong candidate repository",
+    "actual": "Wrong candidate repository"
+  },
+  {
+    "case": "wrong event head fork",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Unsafe candidate repository context",
+    "actual": "Unsafe candidate repository context"
+  },
+  {
+    "case": "wrong event base fork",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Unsafe candidate repository context",
+    "actual": "Unsafe candidate repository context"
+  },
+  {
+    "case": "wrong event head repository",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Unsafe candidate repository context",
+    "actual": "Unsafe candidate repository context"
+  },
+  {
+    "case": "wrong event base branch",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate base must be main",
+    "actual": "Candidate base must be main"
+  },
+  {
+    "case": "wrong event PR boolean",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate PR",
+    "actual": "Invalid candidate PR"
+  },
+  {
+    "case": "wrong event head SHA",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate merge parents mismatch",
+    "actual": "Candidate merge parents mismatch"
+  },
+  {
+    "case": "wrong event base SHA",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate merge parents mismatch",
+    "actual": "Candidate merge parents mismatch"
+  },
+  {
+    "case": "aux equals forged runner SHA while physical HEAD differs",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate checkout SHA mismatch",
+    "actual": "Candidate checkout SHA mismatch"
+  },
+  {
+    "case": "aux equals forged checkout: wrong tree",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate merge tree mismatch",
+    "actual": "Candidate merge tree mismatch"
+  },
+  {
+    "case": "aux equals forged checkout: extra tree",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate merge tree mismatch",
+    "actual": "Candidate merge tree mismatch"
+  },
+  {
+    "case": "aux equals forged checkout: reversed parents",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate merge parents mismatch",
+    "actual": "Candidate merge parents mismatch"
+  },
+  {
+    "case": "aux equals forged checkout: one parent",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate merge parents mismatch",
+    "actual": "Candidate merge parents mismatch"
+  },
+  {
+    "case": "aux equals forged checkout: third parent",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate merge parents mismatch",
+    "actual": "Candidate merge parents mismatch"
+  },
+  {
+    "case": "aux equals head-only checkout",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate merge parents mismatch",
+    "actual": "Candidate merge parents mismatch"
+  },
+  {
+    "case": "wrong origin under unequal advisory",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Wrong candidate source origin",
+    "actual": "Wrong candidate source origin"
+  },
+  {
+    "case": "missing origin under unequal advisory",
+    "result": "rejected",
+    "exception": "CalledProcessError",
+    "expected": "remote",
+    "actual": "Command '['git', 'remote', 'get-url', 'origin']' returned non-zero exit status 2."
+  },
+  {
+    "case": "shallow history under unequal advisory",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate requires complete history",
+    "actual": "Candidate requires complete history"
+  },
+  {
+    "case": "aux cannot rescue unaccepted base ancestry",
+    "result": "rejected",
+    "exception": "CalledProcessError",
+    "expected": "merge-base",
+    "actual": "Command '['git', 'merge-base', '--is-ancestor', '4fe251fc2dadf5cd0e9abc70a25b2220096ded02', 'c268b0e5a8be4d8a69659013aa0bb15b6fb2c103']' returned non-zero exit status 1."
+  },
+  {
+    "case": "dirty physical source",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Dirty candidate source",
+    "actual": "Dirty candidate source"
+  },
+  {
+    "case": "dirty index with restored physical bytes",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Staged candidate mutation",
+    "actual": "Staged candidate mutation"
+  },
+  {
+    "case": "hidden physical bytes --assume-unchanged",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate byte mutation",
+    "actual": "Candidate byte mutation"
+  },
+  {
+    "case": "hidden physical bytes --skip-worktree",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate byte mutation",
+    "actual": "Candidate byte mutation"
+  },
+  {
+    "case": "physical mode despite clean Git cache",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate execute mode mutation",
+    "actual": "Candidate execute mode mutation"
+  },
+  {
+    "case": "special physical mode",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate special mode mutation",
+    "actual": "Candidate special mode mutation"
+  },
+  {
+    "case": "hidden source symlink",
+    "result": "rejected",
+    "exception": "OSError",
+    "expected": "",
+    "actual": "[Errno 40] Too many levels of symbolic links: 'main.dart'"
+  },
+  {
+    "case": "stale compiler output",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Stale candidate compiler output",
+    "actual": "Stale candidate compiler output"
+  },
+  {
+    "case": "captured context and unequal advisory at before-sdk",
+    "result": "accepted"
+  },
+  {
+    "case": "captured context and unequal advisory at after-sdk-before-pub-get",
+    "result": "accepted"
+  },
+  {
+    "case": "captured context and unequal advisory at after-pub-get-and-checked-analysis-restore",
+    "result": "accepted"
+  },
+  {
+    "case": "captured context and unequal advisory at after-compiler-and-checked-analysis-restore",
+    "result": "accepted"
+  },
+  {
+    "case": "authoritative context changes after capture",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Candidate context changed",
+    "actual": "Candidate context changed"
+  },
+  {
+    "case": "malformed advisory after capture still rejects",
+    "result": "rejected",
+    "exception": "AssertionError",
+    "expected": "Invalid candidate SHA",
+    "actual": "Invalid candidate SHA"
+  }
+]

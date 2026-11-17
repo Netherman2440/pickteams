@@ -1,0 +1,35 @@
+{
+  "head": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "previous": "7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd",
+  "base": "1377d580307959b8dc25594bff9e61370c539564",
+  "narrowAuxiliaryBlockOnly": true,
+  "allOtherCandidateAuthorityASTUnchanged": true,
+  "productionASTReconstructsTo1377": true,
+  "allOtherD2BuilderASTUnchanged": true,
+  "frozenUnchanged": [
+    ".github/workflows/main.yml",
+    ".github/workflows/private-native-candidate.yml",
+    "app/tool/release_contract.py",
+    "app/tool/build_native_candidate.py",
+    "app/tool/audit_native_candidate.py",
+    "app/tool/sign_native_candidate.py",
+    "app/pubspec.yaml",
+    "app/pubspec.lock"
+  ],
+  "runtimeAndSqlUnchanged": {
+    "app/lib": "c9408c84f695373e5bf874d81b08bd1e2b8ba1dc",
+    "app/assets": "1ec072a17c208f6ddbb7c7881ff32ac04ad1a3b3",
+    "app/web": "44b054b26f8f7d6ecb2ebcc467c4d4d60f9ea0bf",
+    "app/test": "497935eb13eb62f67c5156d9d5bbba0fdc1c5901",
+    "app/android": "8be2fbddd2a495641c41869827125a79a04fd826",
+    "supabase/migrations": "288aecc7a496ca419144422dc7bc5640afe509d6",
+    "supabase/tests": "91042d46dc8aca586c105d0ec3d410a0d15b8ed5",
+    "app/tool/match_level_preview.dart": "5dc063b80f2f89733498c0018f0cfe581608d372"
+  },
+  "changedFiles": [
+    "app/tool/build_web_release.py",
+    "app/tool/test_build_web_release.py",
+    "docs/operations/candidate-context.md"
+  ],
+  "realCompilerOrHostedAuthentication": false
+}

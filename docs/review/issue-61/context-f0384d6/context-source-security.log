@@ -1,0 +1,21 @@
+HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+COMMAND=env TMPDIR=/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/context-followup/tmp /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/candidate-context-followup/check_context_security.py 
+MemAvailable=2669684 KiB
+test_encoded_configuration_is_not_retained (context_security_regression.CandidatePrivacyReview.test_encoded_configuration_is_not_retained) ... ok
+test_existing_guard_calibration (context_security_regression.CandidatePrivacyReview.test_existing_guard_calibration) ... ok
+test_independent_public_metadata_compatibility_and_bounds (context_security_regression.CandidatePrivacyReview.test_independent_public_metadata_compatibility_and_bounds) ... ok
+test_new_duplicate_generated_metadata_rejects_shadowed_private_values (context_security_regression.CandidatePrivacyReview.test_new_duplicate_generated_metadata_rejects_shadowed_private_values) ... ok
+test_source_and_signing_extras_are_not_retained (context_security_regression.CandidatePrivacyReview.test_source_and_signing_extras_are_not_retained) ... ok
+test_strict_json_composed_entry_paths (context_security_regression.CandidatePrivacyReview.test_strict_json_composed_entry_paths) ... ok
+test_strict_json_quoted_asset_literals (context_security_regression.CandidatePrivacyReview.test_strict_json_quoted_asset_literals) ... ok
+test_strict_json_roots_semantics_and_code_profiles (context_security_regression.CandidatePrivacyReview.test_strict_json_roots_semantics_and_code_profiles) ... ok
+test_version_metadata_binds_immutable_build (context_security_regression.CandidatePrivacyReview.test_version_metadata_binds_immutable_build) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 39.700s
+
+OK
+PASS only typed advisory block changes builder semantics; all trusted graph/context/source/private-payload/production/native guards unchanged
+PASS original9 security methods with deliberately unequal advisory SHA:11 privacy and84 composed JSON cases reject; private0600 cleanup and NONPROMOTABLE seal pass; frozen production/native reject
+SYNTHETIC events and mocked compiler writer only. Independent review and actual hosted compiler/artifact/browser gates remain open.
+EXIT=0

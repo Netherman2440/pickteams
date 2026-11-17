@@ -1,0 +1,4 @@
+HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+COMMAND=env TMPDIR=/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/context-followup/tmp /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python -m unittest discover -s app/tool -p test_\*.py 
+MemAvailable=2602596 KiB
+EXIT=76

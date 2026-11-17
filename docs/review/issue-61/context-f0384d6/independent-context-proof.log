@@ -1,0 +1,91 @@
+HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+COMMAND=python3 -B /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/review-4/context_proof.py
+MemAvailable=2669192 KiB; required=2621440 KiB
+ADMISSION PASSED; executing independent focused proof
+PASS exact clean f038; only advisory block differs in builder AST; all remaining D2/production/compiler/privacy/source controls frozen; UI/schema inputs equal predecessor
+KNOWN HISTORY: real base/head/merge/tree; event and unequal auxiliary are SYNTHETIC; original event auxiliary remains UNKNOWN
+REJECT before: known authentic Git graph with synthetic unequal advisory AssertionError Candidate event merge mismatch
+ACCEPT after: same known Git graph with synthetic unequal advisory
+ACCEPT after: known Git graph full physical source admission
+ACCEPT valid advisory null
+ACCEPT valid advisory equal
+ACCEPT valid advisory different-base
+ACCEPT valid advisory different-head
+ACCEPT valid advisory different-unknown-object
+ACCEPT valid advisory absent
+REJECT malformed advisory True AssertionError Invalid candidate SHA
+REJECT malformed advisory False AssertionError Invalid candidate SHA
+REJECT malformed advisory 0 AssertionError Invalid candidate SHA
+REJECT malformed advisory 1 AssertionError Invalid candidate SHA
+REJECT malformed advisory 1.5 AssertionError Invalid candidate SHA
+REJECT malformed advisory [] AssertionError Invalid candidate SHA
+REJECT malformed advisory {} AssertionError Invalid candidate SHA
+REJECT malformed advisory '' AssertionError Invalid candidate SHA
+REJECT malformed advisory 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' AssertionError Invalid candidate SHA
+REJECT malformed advisory '000000000000000000000000000000000000000' AssertionError Invalid candidate SHA
+REJECT malformed advisory '00000000000000000000000000000000000000000' AssertionError Invalid candidate SHA
+REJECT malformed advisory '0000000000000000000000000000000000000000\n' AssertionError Invalid candidate SHA
+REJECT duplicate event control ValueError duplicate JSON field
+REJECT duplicate nested advisory ValueError duplicate JSON field
+REJECT escaped-equivalent duplicate advisory ValueError duplicate JSON field
+REJECT non-JSON control constant ValueError non-JSON constant
+REJECT truncated event JSON JSONDecodeError Expecting property name
+REJECT wrong environment GITHUB_ACTIONS AssertionError Untrusted candidate context
+REJECT wrong environment GITHUB_EVENT_NAME AssertionError Untrusted candidate context
+REJECT wrong environment GITHUB_REPOSITORY AssertionError Untrusted candidate context
+REJECT wrong environment GITHUB_SERVER_URL AssertionError Untrusted candidate context
+REJECT wrong environment GITHUB_REF AssertionError Candidate must use the actual PR merge checkout
+REJECT wrong environment GITHUB_WORKFLOW_REF AssertionError Wrong candidate workflow
+REJECT wrong environment GITHUB_RUN_ID AssertionError Invalid candidate run context
+REJECT wrong environment GITHUB_RUN_ATTEMPT AssertionError Invalid candidate run context
+REJECT missing environment GITHUB_ACTIONS AssertionError Untrusted candidate context
+REJECT missing environment GITHUB_EVENT_NAME AssertionError Untrusted candidate context
+REJECT missing environment GITHUB_REPOSITORY AssertionError Untrusted candidate context
+REJECT missing environment GITHUB_SERVER_URL AssertionError Untrusted candidate context
+REJECT missing environment GITHUB_REF AssertionError Candidate must use the actual PR merge checkout
+REJECT missing environment GITHUB_WORKFLOW_REF AssertionError Wrong candidate workflow
+REJECT missing environment GITHUB_RUN_ID AssertionError Invalid candidate run context
+REJECT missing environment GITHUB_RUN_ATTEMPT AssertionError Invalid candidate run context
+REJECT missing environment GITHUB_SHA AssertionError Invalid candidate SHA
+REJECT wrong event event repository AssertionError Wrong candidate repository
+REJECT wrong event head fork AssertionError Unsafe candidate repository context
+REJECT wrong event base fork AssertionError Unsafe candidate repository context
+REJECT wrong event head repository AssertionError Unsafe candidate repository context
+REJECT wrong event base branch AssertionError Candidate base must be main
+REJECT wrong event PR boolean AssertionError Invalid candidate PR
+REJECT wrong event head SHA AssertionError Candidate merge parents mismatch
+REJECT wrong event base SHA AssertionError Candidate merge parents mismatch
+REJECT aux equals forged runner SHA while physical HEAD differs AssertionError Candidate checkout SHA mismatch
+REJECT aux equals forged checkout: wrong tree AssertionError Candidate merge tree mismatch
+REJECT aux equals forged checkout: extra tree AssertionError Candidate merge tree mismatch
+REJECT aux equals forged checkout: reversed parents AssertionError Candidate merge parents mismatch
+REJECT aux equals forged checkout: one parent AssertionError Candidate merge parents mismatch
+REJECT aux equals forged checkout: third parent AssertionError Candidate merge parents mismatch
+REJECT aux equals head-only checkout AssertionError Candidate merge parents mismatch
+REJECT wrong origin under unequal advisory AssertionError Wrong candidate source origin
+REJECT missing origin under unequal advisory CalledProcessError remote
+REJECT shallow history under unequal advisory AssertionError Candidate requires complete history
+REJECT aux cannot rescue unaccepted base ancestry CalledProcessError merge-base
+REJECT dirty physical source AssertionError Dirty candidate source
+REJECT dirty index with restored physical bytes AssertionError Staged candidate mutation
+REJECT hidden physical bytes --assume-unchanged AssertionError Candidate byte mutation
+REJECT hidden physical bytes --skip-worktree AssertionError Candidate byte mutation
+REJECT physical mode despite clean Git cache AssertionError Candidate execute mode mutation
+REJECT special physical mode AssertionError Candidate special mode mutation
+REJECT hidden source symlink OSError 
+REJECT stale compiler output AssertionError Stale candidate compiler output
+Candidate source check: before-sdk
+ACCEPT captured context and unequal advisory at before-sdk
+Candidate source check: after-sdk-before-pub-get
+ACCEPT captured context and unequal advisory at after-sdk-before-pub-get
+Candidate source check: after-pub-get-and-checked-analysis-restore
+ACCEPT captured context and unequal advisory at after-pub-get-and-checked-analysis-restore
+Candidate source check: after-compiler-and-checked-analysis-restore
+ACCEPT captured context and unequal advisory at after-compiler-and-checked-analysis-restore
+Candidate source check: after-compiler-and-checked-analysis-restore
+REJECT authoritative context changes after capture AssertionError Candidate context changed
+Candidate source check: after-pub-get-and-checked-analysis-restore
+REJECT malformed advisory after capture still rejects AssertionError Invalid candidate SHA
+PASS exact reviewer source remained clean; all temporary graph/source mutations were disposable
+EXECUTED PASS: 76 independent outcomes; 64 expected rejects; 12 accepted controls
+EXIT=0
