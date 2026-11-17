@@ -4,7 +4,7 @@ Runtime candidate: `ec6630d6d732d3c9191ef74c5e5460bd3cc2f847`. Source branch: `l
 
 This **evidence-only branch is not a merge candidate**. The source PR contains 25 stars files and no evidence-only commits. It does not revert later accepted release tooling.
 
-The original independent reviewer passed scoped source and visual review at this exact candidate. Its report is preserved verbatim in `source-visual-review.md`. This is a continuation of the independent review session, separate from the implementation author, not a new cold reviewer. Configured production-entrypoint hosted CI was still pending when the report was written. That result must be checked before whole-feature verification. Review and a draft PR do not authorize merge or rollout.
+The original independent reviewer passed scoped source and visual review at this exact candidate. Its report is preserved verbatim in `source-visual-review.md`. This is a continuation of the independent review session, separate from the implementation author, not a new cold reviewer. Configured production-entrypoint hosted CI was still pending when the report was written. Its actual final result is now **FAILURE**: analysis/tests passed, but the configured web step stopped before compilation at the frozen production-release source guard (`Unapproved source differences`). See `configured-ci-blocker.md`, `ci-result.json` and `ci-failed-steps.log`. Candidate and release validation need a bounded separation; the release guard was not weakened. PR66 remains draft and whole-feature verification remains open. Review and a draft PR do not authorize merge or rollout.
 
 ## Screens and artifact identity
 
