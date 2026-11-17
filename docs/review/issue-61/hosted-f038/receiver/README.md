@@ -1,6 +1,6 @@
 # Real configured candidate: authenticated receiver and startup
 
-The coordinator executed full receiver validation and then booted the real hosted, configured NONPROMOTABLE candidate at source `f0384d6e38673bf0f44423514e7749cb316c83d3`. Independent artifact review is pending; this is not production delivery, live Auth/API/schema validation, or new authenticated stars-data captures.
+The coordinator executed full receiver validation and then booted the real hosted, configured NONPROMOTABLE candidate at source `f0384d6e38673bf0f44423514e7749cb316c83d3`. [Independent artifact review passed](../independent-review/review.md); this is not production delivery, live Auth/API/schema validation, or new authenticated stars-data captures.
 
 ## Archive and complete payload
 
@@ -26,4 +26,4 @@ The [first](coordinator-configured-startup.log) and [second](coordinator-configu
 
 ## Remaining gates
 
-Independent review must accept these actual bytes, producer/consumer contracts and browser proof. Schema has no existing agent-accessible admin route or prior stars-migration receipt; this is **not** column-absence proof. A separate reviewed stars-only operator step plus disposable SQL/RLS/rollback proof is required; no bulk dbpush, grant changes or old unrelated RPC migration package. Subsequent production acceptance requires a new matching WEB+ANDROID version/native artifact/signature/audit/configuration/provenance/public-download verification. Old release1.0.6/native568f remains immutable and does not contain stars. Current Vercel preview failure is separate from successful Main candidate validation and has no claimed diagnosed cause.
+Independent review accepted these actual bytes, producer/consumer contracts and browser proof. See its [verbatim report](../independent-review/review.md), independent streaming checker/output/fresh API receipts and [coordinator's per-check disposition](../independent-review/coordinator-decision.md). No product edit or new review-model/browser/build execution followed acceptance. Schema has no existing agent-accessible admin route or prior stars-migration receipt; this is **not** column-absence proof. A separate reviewed stars-only operator step plus disposable SQL/RLS/rollback proof is required; no bulk dbpush, grant changes or old unrelated RPC migration package. Subsequent production acceptance requires a new matching WEB+ANDROID version/native artifact/signature/audit/configuration/provenance/public-download verification. Old release1.0.6/native568f remains immutable and does not contain stars. Current Vercel preview failure is separate from successful Main candidate validation and has no claimed diagnosed cause.

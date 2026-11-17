@@ -1,0 +1,7 @@
+PASS fresh external GitHub artifact/run/commit/jobs API binding: repository, PR66, f038/base1377/merge b441, attempt1 and real candidate job success
+PASS independently streamed existing archive: 6987795f4ef31e7fbfdbe2f85a5c7c1d316d8755887d3ab10fe120e6bb28391e 18473739 bytes; matches EXTERNAL GitHub digest (no download)
+PASS external commit API agrees with local Git source/ordered parents/tree; base ancestry and approved UI tree; 812 committed files (physical fixture NOT repeated)
+PASS 50 canonical unique regular ZIP members; strict manifest, detached hash, exact NONPROMOTABLE/source/version contract; all48 streamed hashes/48211398 bytes and served-byte equality; no extras/extraction/code execution
+PASS independent source-copy14, binary/JSON asset equivalence, public-reference11 and generated version checks; raw client configuration NOT recovered or recomputed
+PASS V3 two image hashes/dimensions, exact artifact binding and recorded privacy/error/network counts; browser NOT rerun
+PASS independent lightweight streaming supplement; source unchanged; no ZIP download, extraction, fixture, compiler, browser or configuration recovery
