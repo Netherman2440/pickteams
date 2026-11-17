@@ -2,9 +2,9 @@
 import re
 import subprocess
 
-ACCEPTED_SOURCE = '4fe251fc2dadf5cd0e9abc70a25b2220096ded02'
-VERSION = '1.0.6'
-VERSION_CODE = 2026111602
+ACCEPTED_SOURCE = '492f3f3eb1a19c380fd4f4066695423fcd506609'
+VERSION = '1.0.7'
+VERSION_CODE = 2026111701
 # These files cannot change runtime behavior. Each remains subject to review.
 RELEASE_FILES = (
     'app/tool/release_contract.py',

@@ -901,6 +901,41 @@ class CandidatePolicyTest(unittest.TestCase):
         self.git('checkout', '-q', '--detach', self.base)
         self.assertEqual(release.verify_web_source(self.root, {}), self.base)
         self.reject()  # A clean accepted tree is not the declared PR merge.
+        self.reset_fixture()
+        # Prelanding: even the declared feature head cannot become a pin when
+        # it is not an ancestor of the declared PR base.
+        with patch.object(release, 'ACCEPTED_SOURCE', self.head):
+            with self.assertRaises(subprocess.CalledProcessError) as error:
+                self.check()
+            self.assertEqual(error.exception.cmd[-2:], [self.head, self.base])
+        # A squash landing has the same tree, but a distinct history identity.
+        tree = self.git('rev-parse', self.head + '^{tree}').decode().strip()
+        landed = self.git('commit-tree', tree, '-p', self.base,
+                          input=b'landed synthetic runtime\n').decode().strip()
+        self.assertNotEqual(landed, self.head)
+        self.assertEqual(self.git('diff', '--name-only', landed, self.head), b'')
+        with patch.object(contract, 'ACCEPTED_SOURCE', landed), patch.object(release, 'ACCEPTED_SOURCE', landed):
+            # Byte equality cannot authorize the old feature/merge branch.
+            with self.assertRaises(subprocess.CalledProcessError):
+                contract.verify_source(self.root)
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.check()
+            self.git('checkout', '-q', '--detach', landed)
+            self.put('app/tool/release_contract.py', 'reviewed synthetic release metadata\n')
+            self.commit()
+            descriptor = self.sha()
+            self.git('checkout', '-q', '--detach', landed)
+            self.git('merge', '-q', '--no-ff', '--no-edit', descriptor)
+            checkout = self.sha()
+            self.event['pull_request'].update(merge_commit_sha=checkout)
+            self.event['pull_request']['base']['sha'] = landed
+            self.event['pull_request']['head']['sha'] = descriptor
+            self.event_path.write_text(json.dumps(self.event))
+            # Landed pin -> actual PR base now passes the unchanged rule.
+            self.assertEqual(self.check(dict(self.env, GITHUB_SHA=checkout)), checkout)
+            self.assertEqual(contract.verify_source(self.root), checkout)
+            self.assertEqual(native.verify_source(self.root), checkout)
+            self.assertEqual(release.verify_web_source(self.root, {}), checkout)
 
     def advisory_variation(self):
         # Deliberately different from the runner merge SHA; not a stale-cause claim.
