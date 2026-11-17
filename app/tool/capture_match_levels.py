@@ -75,6 +75,13 @@ def run(build, output):
                         assert metrics['saves'] == 0 and metrics['thresholds'] is None, metrics
                     image = out / f'{name}.png'
                     page.screenshot(path=str(image))
+                    if name == 'list':
+                        from PIL import Image
+                        with Image.open(image) as png:
+                            # Fixed 390px fixture: empty band above the footer text.
+                            # Require a visible full-width line, not a near-identical tint.
+                            brightness = [sum(sum(png.getpixel((x, y))[:3]) for x in range(28, 362)) / (334 * 3) for y in range(165, 185)]
+                            assert max(brightness) - min(brightness) >= 12, brightness
                     records.append({'case': name, 'query': query, 'image': image.name, 'sha256': hashlib.sha256(image.read_bytes()).hexdigest(), **metrics, 'pageErrors': list(errors)})
                     assert not errors, errors
                     if name == 'thresholds':

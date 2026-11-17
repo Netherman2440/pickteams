@@ -82,7 +82,8 @@ class MatchLevelRating extends StatelessWidget {
         children: [
           Divider(
             height: 24,
-            color: Theme.of(context).colorScheme.outlineVariant,
+            thickness: 1,
+            color: Theme.of(context).colorScheme.outline,
           ),
           content,
         ],
