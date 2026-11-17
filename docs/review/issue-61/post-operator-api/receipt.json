@@ -1,0 +1,29 @@
+{
+  "kind": "bounded-canonical-public-client-schema-metadata-read",
+  "source": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "ownerReceiptAdoptedAsOwnerReport": true,
+  "agentProductionDdlExecuted": false,
+  "productionMutations": 0,
+  "userSessionsRead": false,
+  "compiledConfigurationRecovered": false,
+  "privateValuesOrHeadersReported": false,
+  "liveAuthLoginProven": false,
+  "wholeDatabaseRlsOrBaselineProven": false,
+  "httpRequestsAttempted": 1,
+  "verified": true,
+  "httpStatus": 200,
+  "canonicalProfileAuthority": "same exact protected public profile used by accepted1.0.6 qualification",
+  "profileValidatedPublicOnly": true,
+  "canonicalProfileMatchesAuthenticatedCandidateCommitment": true,
+  "configurationSha256": "4d0584fc34995743ef5a108403f5be976c29a564b0494a3d9a0a915aaa667ab6",
+  "protectedProfileUnchanged": true,
+  "httpsSameCanonicalOriginNoRedirect": true,
+  "method": "GET",
+  "relation": "squads",
+  "selectedFields": [
+    "star_thresholds"
+  ],
+  "limit": 0,
+  "returnedRows": 0,
+  "hostedStarThresholdColumnAndCacheVisibilityProven": true
+}

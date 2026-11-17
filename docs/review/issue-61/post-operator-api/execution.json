@@ -1,0 +1,9 @@
+{
+  "actor": "original-coordinator-7ffdc342-t128",
+  "operation": "one bounded read-only parent metadata request, not SDK/security fixture or build",
+  "scriptSha256": "d95567f63c248cf1f11a5ea5b8565361051d28897eb8cc74f4d33055c0fdbf89",
+  "receiptSha256": "a1462b1719bb458a6a531a59be99b175b3b5b04095d9ac1bb74411cf2b632ca8",
+  "receiptWrittenAtUtc": "2026-11-17T17:09:21.318346+00:00",
+  "scriptExit": 0,
+  "ownerDatabaseReportIsSeparate": true
+}

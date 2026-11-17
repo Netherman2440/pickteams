@@ -1,0 +1,11 @@
+# Owner schema result adopted; independent metadata/cache binding passed
+
+The owner reported all nine flags true after the exact reviewed3047/f26b whole-file SQL Editor operation. This is an owner report, not agent-executed DDL or independent reading of the nine database contracts. No error or uncertainty was reported. The SQL is not repeated.
+
+The original coordinator then executed exactly one bounded read-only metadata request through the existing protected **public-client** configuration already used by the accepted1.0.6 release qualifier. The reviewed f038 public-input validator accepted only its public anon/publishable profile; the whole validated configuration matched the authenticated f038 candidate commitment `4d0584fc34995743ef5a108403f5be976c29a564b0494a3d9a0a915aaa667ab6`. Configuration values, headers and the Supabase URL stayed in process, with no compiled-config recovery or credential/session discovery. The protected profile bytes/metadata remained unchanged.
+
+GET `squads?select=star_thresholds&limit=0` returned **HTTP200 and an empty array** over the same canonical HTTPS origin, with no redirect. It requested/returned zero rows and performed no mutation. This independently proves that the known production public-client route sees the new field in its API schema/cache. It does not prove a user login, all RLS/indirect RPC behavior, historical baseline consistency, complete stars data flow or new WEB+ANDROID release.
+
+`receipt.json` records only safe metadata. `probe_canonical_api.py` is the exact executed private-context helper; `execution.json` binds its bytes and the actual receipt. It is not a new generic client/profile-discovery interface. The actual protected profile is not published. This lightweight parent network operation did not invoke an SDK, browser, local database or heavy security fixture. No retry or repeated request was needed.
+
+The owner-approved new joint release still needs actual repository/source-admission gates, a descriptor on the accepted **landed** runtime, a new version/code/native build/original signature/audit/provenance, and full public target verification. Current1.0.6/native568f remains unchanged; the running public APK server is retained. The separate current Vercel preview failure is not made green by this probe or Main candidate success.
