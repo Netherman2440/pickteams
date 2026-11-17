@@ -445,6 +445,53 @@ class WebSourceBoundaryTest(unittest.TestCase):
         self.assertEqual(self.git('status', '--porcelain').decode(),
                          ' M vercel.json\n?? .vercel/\n')
 
+    def hosted_without_origin(self):
+        self.git('remote', 'remove', 'origin')
+        self.env.update(VERCEL_GIT_PROVIDER='github',
+                        VERCEL_GIT_REPO_OWNER='Netherman2440',
+                        VERCEL_GIT_REPO_SLUG='pickteams')
+
+    def test_hosted_checkout_without_origin_passes_without_repairing_git(self):
+        self.hosted_without_origin()
+        for environment in ('preview', 'production'):
+            self.env['VERCEL_ENV'] = environment
+            self.assertEqual(self.check(), self.head)
+        self.materialize()
+        self.assertEqual(self.check(), self.head)
+        self.assertEqual(self.git('remote'), b'')
+
+    def test_missing_origin_requires_every_hosted_identity_field(self):
+        self.hosted_without_origin()
+        for key in ('VERCEL', 'VERCEL_ENV', 'VERCEL_GIT_PROVIDER',
+                    'VERCEL_GIT_REPO_OWNER', 'VERCEL_GIT_REPO_SLUG',
+                    'VERCEL_GIT_COMMIT_SHA'):
+            for value in (None, '', 'SYNTHETIC_SECRET'):
+                with self.subTest(key=key, value=value):
+                    env = dict(self.env)
+                    if value is None:
+                        del env[key]
+                    else:
+                        env[key] = value
+                    self.reject(env)
+        self.reject({})
+
+    def test_hosted_identity_cannot_override_wrong_existing_origin(self):
+        self.hosted_without_origin()
+        self.git('remote', 'add', 'origin', 'https://untrusted.invalid/repository')
+        self.reject()
+
+    def test_no_origin_keeps_source_mutation_checks(self):
+        self.hosted_without_origin()
+        for path in ('app/lib/main.dart', 'unrelated'):
+            with self.subTest(path=path):
+                self.reset_fixture()
+                self.put(path, 'SYNTHETIC_SECRET')
+                self.reject()
+        self.reset_fixture()
+        self.put('app/lib/main.dart', 'SYNTHETIC_SECRET')
+        self.git('add', 'app/lib/main.dart')
+        self.reject()
+
     def test_clean_ci_and_generated_app_output_keep_strict_admission(self):
         self.assertEqual(release.verify_web_source(self.root, {}), self.head)
         self.assertEqual(verify_source(self.root), self.head)

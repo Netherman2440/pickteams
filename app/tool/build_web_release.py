@@ -211,10 +211,25 @@ def verify_web_source(root, env):
 
     head = git('rev-parse', 'HEAD').decode().strip()
     assert re.fullmatch(r'[a-f0-9]{40}', head), 'Invalid source SHA'
-    assert git('remote', 'get-url', 'origin').strip() in (
-        b'https://github.com/Netherman2440/pickteams',
-        b'https://github.com/Netherman2440/pickteams.git',
-    ), 'Unexpected source origin'
+    if b'origin' in git('remote').splitlines():
+        assert git('remote', 'get-url', 'origin').strip() in (
+            b'https://github.com/Netherman2440/pickteams',
+            b'https://github.com/Netherman2440/pickteams.git',
+        ), 'Unexpected source origin'
+    else:
+        # Hosted Vercel Git checkouts can omit remotes. Admit only the exact
+        # provider-supplied repository identity and checkout SHA. The pinned
+        # history, index, physical source and web-control checks below still
+        # apply. Never create an origin or accept an existing wrong origin.
+        expected = {
+            'VERCEL': '1',
+            'VERCEL_GIT_PROVIDER': 'github',
+            'VERCEL_GIT_REPO_OWNER': 'Netherman2440',
+            'VERCEL_GIT_REPO_SLUG': 'pickteams',
+            'VERCEL_GIT_COMMIT_SHA': head,
+        }
+        assert env.get('VERCEL_ENV') in ('preview', 'production'), 'Missing hosted source context'
+        assert all(env.get(key) == value for key, value in expected.items()), 'Unexpected hosted source identity'
     if 'VERCEL_GIT_COMMIT_SHA' in env:
         assert env['VERCEL_GIT_COMMIT_SHA'] == head, 'Build commit differs from checked out source'
     # Index equality is mandatory even for the checked paths. No caller can
