@@ -21,10 +21,14 @@ class StarsProof(Proof):
         self.env['PGHOST'] = str(self.socket)
 
     def ready(self, name, artifact, history):
+        rows_query = "SELECT md5(jsonb_agg(to_jsonb(s)-'star_thresholds' ORDER BY squad_id)::text) FROM public.squads s;"
+        before, _ = self.sql(name, rows_query)
         output, _ = self.sql(name, artifact)
         receipt = '|'.join(['t'] * 6 + ['t' if history else 'f', 't', 't'])
         assert output.splitlines().count(receipt) == 1, output
         assert output.index('COMMIT') < output.index(receipt), output
+        after, _ = self.sql(name, rows_query)
+        assert before == after, 'Existing squads changed beyond the new nullable column'
         output, _ = self.sql(name,
             "SELECT NOT EXISTS (SELECT FROM public.squads WHERE star_thresholds IS NOT NULL) "
             "AND has_function_privilege('authenticated','public.valid_star_thresholds(double precision[])','EXECUTE') "
@@ -99,7 +103,12 @@ class StarsProof(Proof):
             for path in sorted(stars.SOURCE.parent.glob('*.sql')):
                 if path.name < stars.SOURCE.name:
                     self.sql('fixture',path.read_text())
-            self.passed('real canonical predecessors plus existing local_auth fixture; no hosted connection')
+            self.sql('fixture', "INSERT INTO auth.users(id,email) VALUES ('30000000-0000-0000-0000-000000000001','schema-sentinel@example.test'); INSERT INTO public.squads(squad_id,owner_id,name) VALUES ('40000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','Schema sentinel');")
+            self.passed('real canonical predecessors and existing local_auth fixture; pre-existing squad sentinel; no hosted connection')
+            if case == 'existing-squads':
+                self.clone('existing_squads', ', name text, statements text[]')
+                self.ready('existing_squads', artifact, True)
+                return
             if case == 'history-privileges':
                 self.history_privileges(artifact)
                 return
@@ -205,7 +214,7 @@ def main():
     parser.add_argument('--pg-bin',type=Path,required=True)
     parser.add_argument('--proof-dir',type=Path,required=True)
     parser.add_argument('--socket-dir',type=Path,required=True)
-    parser.add_argument('--case',choices=('all','history-privileges'),default='all')
+    parser.add_argument('--case',choices=('all','history-privileges','existing-squads'),default='all')
     args = parser.parse_args()
     StarsProof(args.pg_bin,args.proof_dir,args.socket_dir).prove(args.case)
 
