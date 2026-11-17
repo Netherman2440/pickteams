@@ -1,0 +1,24 @@
+PATCH de39c0243c25737178a6b03021fb40c41b48ff21 => 71ba359dde3b7939d12d8227d4065e430217f724 0eac77ef46db10a36ccd369ad9915409d0e0399b
+PATCH 1830968d70d5cd7555eb187aefd66ef4100a663e => fc5484ef700296e4aaa328a41ec8c54fc68f3e20 d212f79598746d5625760317ae02987f967602fb
+PATCH 40e05470ebd487f4cf65df855b358655f3ad0d20 => 5689dea4467b34c81e22251ab83b31742b1cf4e4 1d131f5031dee7d656b30a2623c46b60057836e5
+PATCH 356f6bf5d4acb6acddbf2c8046af36bc7fe5eb16 => ab9e82112cd4210f0d2cad7a600dcfdff28e12f5 31a7e72e1c2014a1329bbb4bbd2b5df094db88c9
+PATCH 20913a0e65234bb8338e88e8afa21d04395c16ec => cbff82e0017986ce5e6ccc65f1bfff9f528cb850 7961af9367fb752a8ac230d5c552c256a1a797e7
+PATCH 4b5b1258fafe918d47bc6a93ce7bb8c14c2d5e28 => 75c675fe7817f665e26322f05220d58087c7eb28 7f0dbfca8411794f9cea5567b75a543aa4a88eb6
+PATCH ec6630d6d732d3c9191ef74c5e5460bd3cc2f847 => cd017aafa65a3939dd5ce627dec662ed9782107d 2f3cfe5afaa53e4e515c5320462a292c4a5e6f46
+PATCH e3a854a2c72489670c62f4ad67fded52b8cec0a3 => 4370b4608e9c260b24ba38724ecef4c031e1aa2a 31deb2e321040ed88805199139a1e4f9c9f87b80
+PATCH 8454c2f5c962791eb3f2e22962ccbd978a511856 => 83a9053be6c0874b466087ba04590d17213a4426 a2fcf1abab4a53a75d53e320431f0c12bedbb01f
+PATCH 68c69db4e152533612f2da16eca06024d08ede8d => 49128aac9d2c5a1d0ad747f9241ce9bb710b98ef b27a5907cdc766db88e74dd9ca1bc2c5b1b27c10
+PATCH 7e91f5a834b3c9e341c95341f0a4d9b67f00e6e7 => cf0e94277fd8a7f4b2265c0fc900864f017012d9 29bd60bdcf3cc9efc44cc0bfc5bf1306e4b8fa6e
+PATCH d2c4e6b90b87f9996a117f7fd5ad0a69c1eddfbb => 7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd ed10b92413f33eaeed2785126ba00c5cc3c4dfd8
+PASS full seven-star rebase and ordered five-commit D2 replay; all stable patch IDs match
+PASS exact three-file D2 bytes/modes; scope exactly 25 stars + 3 tooling; complete maps D2=790/481, integrated=811/499
+PASS full production module AST reconstructs to accepted 1377, including config, SDK, flags, default entrypoint and stage policy
+PASS frozen production/native/shared/config/dependencies; accepted pin/version/allowlist unchanged and still excludes stars runtime
+PASS all material ec UI/runtime/test/fixture/dependency/schema inputs equal; 25 prior source hashes match integrated files
+PASS sole pubspec change versus ec is accepted release metadata 1.0.5+2026111501 -> 1.0.6+2026111602; not a new stars release
+PASS inspected workflow separation/full checkout/read-only permission; candidate upload separate from production artifacts
+SUPPLIED FINAL LOG focused-integrated-tooling.log exact head; recorded EXIT=0
+SUPPLIED FINAL LOG integrated-source-security.log exact head; recorded EXIT=0
+SUPPLIED FINAL LOG full-integrated-python.log exact head; recorded EXIT=0
+PASS recorded PR66 remote lease is ec6630; no remote write or live lease assertion performed
+PASS reviewer tree unchanged; no suites/compiler/browser/candidate policy or production access executed

@@ -1,0 +1,53 @@
+{
+  "session": "01a1e59b-7b4e-76fb-acfc-1393d251bb90",
+  "base": "1377d580307959b8dc25594bff9e61370c539564",
+  "integrated": "7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd",
+  "reviewedTooling": "d2c4e6b90b87f9996a117f7fd5ad0a69c1eddfbb",
+  "completeSeries": [
+    {
+      "reviewed": "e3a854a2c72489670c62f4ad67fded52b8cec0a3",
+      "integrated": "4370b4608e9c260b24ba38724ecef4c031e1aa2a",
+      "patchId": "31deb2e321040ed88805199139a1e4f9c9f87b80"
+    },
+    {
+      "reviewed": "8454c2f5c962791eb3f2e22962ccbd978a511856",
+      "integrated": "83a9053be6c0874b466087ba04590d17213a4426",
+      "patchId": "a2fcf1abab4a53a75d53e320431f0c12bedbb01f"
+    },
+    {
+      "reviewed": "68c69db4e152533612f2da16eca06024d08ede8d",
+      "integrated": "49128aac9d2c5a1d0ad747f9241ce9bb710b98ef",
+      "patchId": "b27a5907cdc766db88e74dd9ca1bc2c5b1b27c10"
+    },
+    {
+      "reviewed": "7e91f5a834b3c9e341c95341f0a4d9b67f00e6e7",
+      "integrated": "cf0e94277fd8a7f4b2265c0fc900864f017012d9",
+      "patchId": "29bd60bdcf3cc9efc44cc0bfc5bf1306e4b8fa6e"
+    },
+    {
+      "reviewed": "d2c4e6b90b87f9996a117f7fd5ad0a69c1eddfbb",
+      "integrated": "7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd",
+      "patchId": "ed10b92413f33eaeed2785126ba00c5cc3c4dfd8"
+    }
+  ],
+  "exactThreeFileEquality": [
+    ".github/workflows/main.yml",
+    "app/tool/build_web_release.py",
+    "app/tool/test_build_web_release.py"
+  ],
+  "productionASTReconstructsTo": "1377d580307959b8dc25594bff9e61370c539564",
+  "integratedRepositoryPaths": 811,
+  "integratedAppPaths": 499,
+  "frozenUnchangedFromBase": [
+    "app/tool/release_contract.py",
+    "app/tool/build_native_candidate.py",
+    "app/tool/audit_native_candidate.py",
+    "app/tool/sign_native_candidate.py",
+    "app/pubspec.yaml",
+    "app/pubspec.lock",
+    ".github/workflows/private-native-candidate.yml"
+  ],
+  "overlayOnlyDirty": true,
+  "releasePinRelaxed": false,
+  "hostedCompilerOrBrowserProven": false
+}

@@ -1,0 +1,14 @@
+HEAD=7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd
+COMMAND=env TMPDIR=/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/ci-integration/tmp /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python -m unittest discover -s supabase/tools -v 
+MemAvailable=2732840 KiB
+test_check_rejects_stale_artifact_without_writing (test_draft_rollout.GeneratorTest.test_check_rejects_stale_artifact_without_writing) ... Stale artifact: /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/supabase/tools/accept_match_draft_operator.sql
+ok
+test_checked_in_artifact_and_exact_source_span (test_draft_rollout.GeneratorTest.test_checked_in_artifact_and_exact_source_span) ... ok
+test_literal_and_byte_preservation (test_draft_rollout.GeneratorTest.test_literal_and_byte_preservation) ... ok
+test_unsafe_delimiter_and_invalid_encoding_fail_closed (test_draft_rollout.GeneratorTest.test_unsafe_delimiter_and_invalid_encoding_fail_closed) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+OK
+EXIT=0

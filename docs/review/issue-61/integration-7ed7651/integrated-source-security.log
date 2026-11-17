@@ -1,0 +1,21 @@
+HEAD=7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd
+COMMAND=env TMPDIR=/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/ci-integration/tmp /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/reviewed-ci-integration/integration_checks.py 
+MemAvailable=2997724 KiB
+test_encoded_configuration_is_not_retained (integrated_security_regression.CandidatePrivacyReview.test_encoded_configuration_is_not_retained) ... ok
+test_existing_guard_calibration (integrated_security_regression.CandidatePrivacyReview.test_existing_guard_calibration) ... ok
+test_independent_public_metadata_compatibility_and_bounds (integrated_security_regression.CandidatePrivacyReview.test_independent_public_metadata_compatibility_and_bounds) ... ok
+test_new_duplicate_generated_metadata_rejects_shadowed_private_values (integrated_security_regression.CandidatePrivacyReview.test_new_duplicate_generated_metadata_rejects_shadowed_private_values) ... ok
+test_source_and_signing_extras_are_not_retained (integrated_security_regression.CandidatePrivacyReview.test_source_and_signing_extras_are_not_retained) ... ok
+test_strict_json_composed_entry_paths (integrated_security_regression.CandidatePrivacyReview.test_strict_json_composed_entry_paths) ... ok
+test_strict_json_quoted_asset_literals (integrated_security_regression.CandidatePrivacyReview.test_strict_json_quoted_asset_literals) ... ok
+test_strict_json_roots_semantics_and_code_profiles (integrated_security_regression.CandidatePrivacyReview.test_strict_json_roots_semantics_and_code_profiles) ... ok
+test_version_metadata_binds_immutable_build (integrated_security_regression.CandidatePrivacyReview.test_version_metadata_binds_immutable_build) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 38.957s
+
+OK
+PASS complete5 patch replay, exact3-file reviewed equality, full1377 production AST, frozen boundaries, ec runtime input equality
+PASS original9 reviewer case definitions on integrated tree;11 privacy cases reject,84 composed strict JSON cases reject; frozen web/generic-native reject stars
+SYNTHETIC PR event/merge and mocked compiler data only. No hosted compilation, external artifact authentication or browser startup claimed.
+EXIT=0

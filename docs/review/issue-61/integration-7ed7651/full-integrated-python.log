@@ -1,0 +1,17 @@
+HEAD=7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd
+COMMAND=env TMPDIR=/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/ci-integration/tmp /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python -m unittest discover -s app/tool -p test_\*.py 
+MemAvailable=2887644 KiB
+.....................................................................................................Release source check: after-sdk-before-pub-get
+Release source verified: after-sdk-before-pub-get aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Release source check: after-pub-get-and-checked-analysis-restore
+Release source verified: after-pub-get-and-checked-analysis-restore aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+...........Release source check: after-sdk-before-pub-get
+Release source verified: after-sdk-before-pub-get bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+..........................................warning: unable to access 'app/.gitignore': Too many levels of symbolic links
+.fatal: Not a valid commit name d85a9a14748106edad7711087beadd7ef9054b4a
+........
+----------------------------------------------------------------------
+Ran 163 tests in 73.026s
+
+OK
+EXIT=0

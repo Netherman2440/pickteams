@@ -1,0 +1,74 @@
+{
+  "approved": "ec6630d6d732d3c9191ef74c5e5460bd3cc2f847",
+  "integrated": "7ed7651e52b3d5ec868e353ed20447e3bdf7f7cd",
+  "inputs": {
+    "app/lib": {
+      "approved": "c9408c84f695373e5bf874d81b08bd1e2b8ba1dc",
+      "integrated": "c9408c84f695373e5bf874d81b08bd1e2b8ba1dc"
+    },
+    "app/assets": {
+      "approved": "1ec072a17c208f6ddbb7c7881ff32ac04ad1a3b3",
+      "integrated": "1ec072a17c208f6ddbb7c7881ff32ac04ad1a3b3"
+    },
+    "app/web": {
+      "approved": "44b054b26f8f7d6ecb2ebcc467c4d4d60f9ea0bf",
+      "integrated": "44b054b26f8f7d6ecb2ebcc467c4d4d60f9ea0bf"
+    },
+    "app/test/fixtures": {
+      "approved": "731088fef06b21d5301c004cbc9f3ddf4696d131",
+      "integrated": "731088fef06b21d5301c004cbc9f3ddf4696d131"
+    },
+    "app/test": {
+      "approved": "497935eb13eb62f67c5156d9d5bbba0fdc1c5901",
+      "integrated": "497935eb13eb62f67c5156d9d5bbba0fdc1c5901"
+    },
+    "app/tool/match_level_preview.dart": {
+      "approved": "5dc063b80f2f89733498c0018f0cfe581608d372",
+      "integrated": "5dc063b80f2f89733498c0018f0cfe581608d372"
+    },
+    "app/tool/capture_match_levels.py": {
+      "approved": "63abbba5e183ef3f99eeb0cf611b329833b5093f",
+      "integrated": "63abbba5e183ef3f99eeb0cf611b329833b5093f"
+    },
+    "app/pubspec.lock": {
+      "approved": "7262653bdea12cd1c7e40efa863ece1bbc9946db",
+      "integrated": "7262653bdea12cd1c7e40efa863ece1bbc9946db"
+    },
+    "app/tool/match_view_requirements.txt": {
+      "approved": "34cc813eb06c18377c17cf37979be4bab841473a",
+      "integrated": "34cc813eb06c18377c17cf37979be4bab841473a"
+    },
+    "app/analysis_options.yaml": {
+      "approved": "0d2902135caece481a035652d88970c80e29cc7e",
+      "integrated": "0d2902135caece481a035652d88970c80e29cc7e"
+    },
+    "app/android": {
+      "approved": "8be2fbddd2a495641c41869827125a79a04fd826",
+      "integrated": "8be2fbddd2a495641c41869827125a79a04fd826"
+    },
+    "supabase/migrations": {
+      "approved": "288aecc7a496ca419144422dc7bc5640afe509d6",
+      "integrated": "288aecc7a496ca419144422dc7bc5640afe509d6"
+    },
+    "supabase/tests": {
+      "approved": "91042d46dc8aca586c105d0ec3d410a0d15b8ed5",
+      "integrated": "91042d46dc8aca586c105d0ec3d410a0d15b8ed5"
+    }
+  },
+  "pubspec": {
+    "approved": [
+      "1.0.5+2026111501"
+    ],
+    "integrated": [
+      "1.0.6+2026111602"
+    ],
+    "reason": "Accepted main release metadata only; old images are not new-head captures"
+  },
+  "sdk": {
+    "FLUTTER_VERSION": "3.47.9",
+    "FLUTTER_REVISION": "c197ca5199e9ee5661e865596c9c07294dfab51c",
+    "RELEASES": "https://storage.googleapis.com/flutter_infra_release/releases/"
+  },
+  "new_capture_claim": false,
+  "scope": "Equal visual inputs permit retaining original ec source/build/PNG provenance; not configured compilation"
+}
