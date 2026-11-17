@@ -902,7 +902,45 @@ class CandidatePolicyTest(unittest.TestCase):
         self.assertEqual(release.verify_web_source(self.root, {}), self.base)
         self.reject()  # A clean accepted tree is not the declared PR merge.
 
+    def advisory_variation(self):
+        # Deliberately different from the runner merge SHA; not a stale-cause claim.
+        self.event['pull_request']['merge_commit_sha'] = self.base
+        self.event_path.write_text(json.dumps(self.event))
+
+    def test_optional_merge_metadata_is_typed_but_never_checkout_authority(self):
+        expected = release.candidate_context(self.root, self.env)
+        for auxiliary in (None, self.base, self.head, self.checkout, 'a' * 40):
+            with self.subTest(auxiliary=auxiliary):
+                self.event['pull_request']['merge_commit_sha'] = auxiliary
+                self.event_path.write_text(json.dumps(self.event))
+                self.assertEqual(release.candidate_context(self.root, self.env), expected)
+                for stage in ('before-sdk', 'after-sdk-before-pub-get',
+                              'after-pub-get-and-checked-analysis-restore',
+                              'after-compiler-and-checked-analysis-restore'):
+                    self.assertEqual(self.check(stage=stage), self.checkout)
+        del self.event['pull_request']['merge_commit_sha']
+        self.event_path.write_text(json.dumps(self.event))
+        self.assertEqual(self.check(), self.checkout)
+
+    def test_advisory_metadata_cannot_relax_invalid_or_ambiguous_controls(self):
+        for auxiliary in (True, False, 0, 1, [], {}, '', 'A' * 40, '0' * 39, '0' * 40 + '\n', float('nan')):
+            with self.subTest(auxiliary=auxiliary):
+                self.event['pull_request']['merge_commit_sha'] = auxiliary
+                self.event_path.write_text(json.dumps(self.event))
+                self.reject()
+        self.advisory_variation()
+        raw = json.dumps(self.event)
+        duplicate = '{"pull_request":' + json.dumps(self.event['pull_request']) + ',' + raw[1:]
+        self.event_path.write_text(duplicate)
+        self.reject()
+
+    def test_well_formed_wrong_runner_sha_is_not_rescued_by_metadata(self):
+        self.advisory_variation()
+        with self.assertRaisesRegex(AssertionError, 'Candidate checkout SHA mismatch'):
+            self.check(dict(self.env, GITHUB_SHA=self.head))
+
     def test_context_rejects_missing_wrong_sha_repository_ref_workflow_and_run(self):
+        self.advisory_variation()
         for key in ('GITHUB_ACTIONS', 'GITHUB_EVENT_NAME', 'GITHUB_REPOSITORY', 'GITHUB_SERVER_URL',
                     'GITHUB_SHA', 'GITHUB_REF', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT',
                     'GITHUB_EVENT_PATH', 'GITHUB_WORKFLOW_REF'):
@@ -918,9 +956,11 @@ class CandidatePolicyTest(unittest.TestCase):
         for target, field, value in (
             ('event', 'repository', {'full_name': 'other/repository'}),
             ('event', 'number', True), ('pr', 'number', False),
-            ('pr', 'merge_commit_sha', 'a' * 40),
-            ('head', 'sha', 'b' * 40), ('base', 'sha', 'c' * 40),
+            ('pr', 'merge_commit_sha', 'not-a-sha'),
+            ('head', 'sha', self.base), ('base', 'sha', self.head),
             ('base', 'ref', 'other'), ('head', 'repo', {'full_name': 'other/repo', 'fork': True}),
+            ('head', 'repo', {'full_name': 'Netherman2440/pickteams', 'fork': True}),
+            ('base', 'repo', {'full_name': 'Netherman2440/pickteams', 'fork': True}),
         ):
             with self.subTest(target=target, field=field):
                 event = json.loads(baseline)
@@ -935,6 +975,7 @@ class CandidatePolicyTest(unittest.TestCase):
         self.reject()
 
     def test_index_dirty_cached_bytes_modes_and_links_reject(self):
+        self.advisory_variation()
         for path in ('app/lib/main.dart', 'app/vercel.json', 'untracked'):
             with self.subTest(path=path):
                 self.put(path, 'SYNTHETIC_MUTATION')
@@ -969,26 +1010,32 @@ class CandidatePolicyTest(unittest.TestCase):
         self.assertEqual(self.git('status', '--porcelain'), b'')
         self.reject()
 
-    def test_merge_tree_parents_and_complete_history_are_not_inferred(self):
+    def test_merge_tree_ordered_parents_and_complete_history_with_metadata_variation(self):
+        self.advisory_variation()
+        correct_tree = self.git('rev-parse', 'HEAD^{tree}').decode().strip()
         self.put('untrusted-merge-addition', 'not in either declared parent')
         self.git('add', '.')
-        tree = self.git('write-tree').decode().strip()
-        bad = self.git('commit-tree', tree, '-p', self.base, '-p', self.head, input=b'bad tree\n').decode().strip()
-        self.git('reset', '--hard', bad)
-        env = dict(self.env, GITHUB_SHA=bad)
-        self.event['pull_request']['merge_commit_sha'] = bad
-        self.event_path.write_text(json.dumps(self.event))
-        self.reject(env)
-        self.git('checkout', '-q', '--detach', self.head)
-        env['GITHUB_SHA'] = self.head
-        self.event['pull_request']['merge_commit_sha'] = self.head
-        self.event_path.write_text(json.dumps(self.event))
-        self.reject(env)
+        bad_tree = self.git('write-tree').decode().strip()
         self.reset_fixture()
-        self.event['pull_request']['merge_commit_sha'] = self.checkout
-        self.event_path.write_text(json.dumps(self.event))
+        for tree, parents, expected in (
+            (bad_tree, (self.base, self.head), 'Candidate merge tree mismatch'),
+            (correct_tree, (self.head, self.base), 'Candidate merge parents mismatch'),
+            (correct_tree, (self.head,), 'Candidate merge parents mismatch'),
+        ):
+            with self.subTest(parents=parents, expected=expected):
+                args = [part for parent in parents for part in ('-p', parent)]
+                bad = self.git('commit-tree', tree, *args, input=b'hostile merge fixture\n').decode().strip()
+                self.git('reset', '--hard', bad)
+                with self.assertRaisesRegex(AssertionError, expected):
+                    self.check(dict(self.env, GITHUB_SHA=bad))
+                self.reset_fixture()
+        self.git('checkout', '-q', '--detach', self.head)
+        with self.assertRaisesRegex(AssertionError, 'Candidate merge parents mismatch'):
+            self.check(dict(self.env, GITHUB_SHA=self.head))
+        self.reset_fixture()
         self.put('.git/shallow', self.base + '\n')
-        self.reject()
+        with self.assertRaisesRegex(AssertionError, 'Candidate requires complete history'):
+            self.check()
 
     def fake_compile(self, extra=None):
         def execute(command, *, cwd, env):

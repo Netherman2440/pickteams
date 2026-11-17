@@ -474,8 +474,13 @@ def candidate_context(root, env):
         assert repository.get('full_name') == CANDIDATE_REPOSITORY and repository.get('fork') is False, 'Unsafe candidate repository context'
     assert base_info.get('ref') == 'main', 'Candidate base must be main'
     head, base, checkout = sha(head_info.get('sha')), sha(base_info.get('sha')), sha(env.get('GITHUB_SHA'))
-    if pr.get('merge_commit_sha') is not None:
-        assert sha(pr['merge_commit_sha']) == checkout, 'Candidate event merge mismatch'
+    # GitHub defines the runner merge SHA separately from PR-state test-merge
+    # metadata. Keep that optional metadata typed, not authoritative. The exact
+    # runner checkout, ordered parents and recomputed tree are required below.
+    # Contract and limits: docs/operations/candidate-context.md.
+    advisory_merge = pr.get('merge_commit_sha')
+    if advisory_merge is not None:
+        sha(advisory_merge)
     assert git('remote', 'get-url', 'origin').strip() in (
         b'https://github.com/Netherman2440/pickteams',
         b'https://github.com/Netherman2440/pickteams.git',
