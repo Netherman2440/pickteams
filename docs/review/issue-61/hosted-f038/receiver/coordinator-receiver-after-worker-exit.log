@@ -1,0 +1,8 @@
+HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+ARTIFACT=14336672484
+RUN=44100639905
+COMMAND=python3 /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/configured-artifact-f038/receiver-proof/verify_receiver.py 
+MemAvailable=2835112 KiB
+PASS authenticated archive; exact envelope/source/files/public-metadata contracts; private extraction; candidate remains NONPROMOTABLE
+{"archiveEntries": 50, "payloadFiles": 48, "payloadBytes": 48211398, "manifestSha256": "ed5388811156b2406124edb9c2a4c4c7e8e1027c90c8fe56f7426436a939b50b", "payloadTreeSha256": "c3bdd48f9e5d60c6fcdcfbb2705ffca86be8415212a53f6a41c88ced7f97243b"}
+EXIT=0

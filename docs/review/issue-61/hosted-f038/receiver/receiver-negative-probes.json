@@ -1,0 +1,24 @@
+{
+  "count": 19,
+  "rejected": [
+    "path-0",
+    "path-1",
+    "path-2",
+    "path-3",
+    "path-4",
+    "path-5",
+    "path-6",
+    "path-7",
+    "path-8",
+    "duplicate-json",
+    "nonfinite-json",
+    "symlink",
+    "special",
+    "executable",
+    "duplicate-member",
+    "oversized",
+    "ancestor-file-alias",
+    "extra-payload",
+    "changed-payload"
+  ]
+}

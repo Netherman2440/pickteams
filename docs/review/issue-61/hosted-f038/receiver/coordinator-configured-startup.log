@@ -1,0 +1,7 @@
+HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+ARTIFACT=14336672484
+RUN=44100639905
+COMMAND=env LD_LIBRARY_PATH=/home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/root/usr/lib/x86_64-linux-gnu:/home/agents/.local/share/playwright-system-libs/root/usr/lib/x86_64-linux-gnu FONTCONFIG_FILE=/home/agents/.local/share/playwright-system-libs/fonts.conf /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/configured-artifact-f038/receiver-proof/prove_configured_startup.py 
+MemAvailable=2804472 KiB
+FAIL configured browser startup; sanitized private startup.json records the result. No startup pass claimed.
+EXIT=1

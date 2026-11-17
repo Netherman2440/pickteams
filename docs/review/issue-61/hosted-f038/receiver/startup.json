@@ -1,0 +1,106 @@
+{
+  "accessibilityControlBounds": {
+    "height": 1,
+    "width": 1,
+    "x": -1,
+    "y": -1
+  },
+  "archiveSha256": "6987795f4ef31e7fbfdbe2f85a5c7c1d316d8755887d3ab10fe120e6bb28391e",
+  "artifactId": 14336672484,
+  "browserVersion": "156.0.8078.4",
+  "checkout": "b441ac4abfccd840b45b3f182f1c1c2a084795a8",
+  "consoleErrorsSanitized": [
+    {
+      "classification": "expected-blocked-resource",
+      "messageChars": 61,
+      "messageSha256": "45427d24ad2d164eb9faf5df85dd0a36332d31f1ca61da52d0ddb04a097d105a",
+      "operation": "enable-built-in-accessibility-control",
+      "type": "str"
+    },
+    {
+      "classification": "expected-blocked-resource",
+      "messageChars": 61,
+      "messageSha256": "45427d24ad2d164eb9faf5df85dd0a36332d31f1ca61da52d0ddb04a097d105a",
+      "operation": "enable-built-in-accessibility-control",
+      "type": "str"
+    },
+    {
+      "classification": "expected-blocked-resource",
+      "messageChars": 61,
+      "messageSha256": "45427d24ad2d164eb9faf5df85dd0a36332d31f1ca61da52d0ddb04a097d105a",
+      "operation": "enable-built-in-accessibility-control",
+      "type": "str"
+    },
+    {
+      "classification": "expected-blocked-resource",
+      "messageChars": 61,
+      "messageSha256": "45427d24ad2d164eb9faf5df85dd0a36332d31f1ca61da52d0ddb04a097d105a",
+      "operation": "enable-built-in-accessibility-control",
+      "type": "str"
+    },
+    {
+      "classification": "expected-blocked-resource",
+      "messageChars": 61,
+      "messageSha256": "45427d24ad2d164eb9faf5df85dd0a36332d31f1ca61da52d0ddb04a097d105a",
+      "operation": "enable-built-in-accessibility-control",
+      "type": "str"
+    },
+    {
+      "classification": "expected-blocked-resource",
+      "messageChars": 61,
+      "messageSha256": "45427d24ad2d164eb9faf5df85dd0a36332d31f1ca61da52d0ddb04a097d105a",
+      "operation": "observe-login-button",
+      "type": "str"
+    },
+    {
+      "classification": "expected-blocked-resource",
+      "messageChars": 61,
+      "messageSha256": "45427d24ad2d164eb9faf5df85dd0a36332d31f1ca61da52d0ddb04a097d105a",
+      "operation": "observe-login-button",
+      "type": "str"
+    }
+  ],
+  "credentialsReadOrEntered": false,
+  "freshEmptyProfile": true,
+  "head": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+  "headersOrConfigValuesRecorded": false,
+  "kind": "authenticated-configured-candidate-unauthenticated-startup",
+  "landingScreenshotSha256": "4fe64363ab285b8ccacce1d9dde8b3c3cc0b8f67461dff998b713ecfb5cbea6e",
+  "manifestSha256": "ed5388811156b2406124edb9c2a4c4c7e8e1027c90c8fe56f7426436a939b50b",
+  "networkCounts": {
+    "blocked_GET": 1,
+    "blocked_HEAD": 6,
+    "localStaticAllowed": 16,
+    "publicFontsAllowed_GET": 7
+  },
+  "observedLoginText": "Zaloguj si\u0119",
+  "observedPasswordLabel": "Has\u0142o",
+  "ownedServerStopped": true,
+  "payloadTreeSha256": "c3bdd48f9e5d60c6fcdcfbb2705ffca86be8415212a53f6a41c88ced7f97243b",
+  "productionBackendRequestsBlocked": true,
+  "productionDeployment": false,
+  "productionMutationPermitted": false,
+  "promotable": false,
+  "publicFontReadHostsAllowed": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "queryOrFragmentPresent": true,
+  "realLandingLoginButtonClicked": true,
+  "runId": 44100639905,
+  "schemaVisibilityProbePerformed": false,
+  "schemaVisibilityReason": "Production backend blocked; only source-declared public fonts allowed; no config recovery or live rows.",
+  "scope": "Real authenticated configured bundle boots landing then real UI login navigation; only public fonts read, all production backend/mutations blocked. Not live Auth/API/stars data or release.",
+  "screenshot": "configured-unauthenticated-startup.png",
+  "screenshotSha256": "7675c57b0d3ed8045bc512f83613e35770b9b558a280022cce461e89b8ea472d",
+  "semanticsActivation": "DOM click on built-in accessibility control; no application-state assignment",
+  "serviceWorkersBlocked": true,
+  "startupVerified": true,
+  "uncaughtPageErrors": [],
+  "urlPath": "/",
+  "viewport": {
+    "deviceScaleFactor": 1,
+    "height": 1000,
+    "width": 390
+  }
+}

@@ -1,0 +1,6 @@
+HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+ARTIFACT=14336672484
+RUN=44100639905
+COMMAND=python3 /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/configured-artifact-f038/receiver-proof/verify_receiver.py 
+MemAvailable=2525140 KiB
+EXIT=76

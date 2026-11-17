@@ -1,0 +1,338 @@
+[
+  {
+    "bytes": 32,
+    "immutablePublicSourceMatched": false,
+    "path": "web/.last_build_id",
+    "role": "build-id",
+    "sha256": "21b6028c55c49548b9cb9c760bab3065c180c375aeb192e3fdc290cb5893f68b"
+  },
+  {
+    "bytes": 681,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/AssetManifest.bin",
+    "role": "asset-manifest",
+    "sha256": "570314f48face6d6c19823848f39fa1edc00d4ab3652f139a540e297ccc1bdcd"
+  },
+  {
+    "bytes": 910,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/AssetManifest.bin.json",
+    "role": "asset-manifest-json",
+    "sha256": "ec86b7d3291eba82c5afacd04abe389039d8a179f7374e4ca04393438f3cf471"
+  },
+  {
+    "bytes": 284,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/FontManifest.json",
+    "role": "font-manifest",
+    "sha256": "c5bc89fffa25a6106de80133db5eaa5a0a2d2ecba8d765349b67e5649736252f"
+  },
+  {
+    "bytes": 1419670,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/NOTICES",
+    "role": "notices",
+    "sha256": "386ea232b991596fd4da80b1c2f85f3d044380203a5ecb5c9836b6e2c04eb670"
+  },
+  {
+    "bytes": 4384,
+    "immutablePublicSourceMatched": true,
+    "path": "web/assets/assets/fonts/Nunito-LICENSE.txt",
+    "role": "text",
+    "sha256": "ee9491ad3ea5d390878695bd6cce49beb3cacd5c4312f8ab574b541e9f7afa21"
+  },
+  {
+    "bytes": 125504,
+    "immutablePublicSourceMatched": true,
+    "path": "web/assets/assets/fonts/Nunito-Regular.ttf",
+    "role": "font",
+    "sha256": "6f96017e762896b4cf3c2db345d41d7a72a3720a95698c3cd47020bf433db435"
+  },
+  {
+    "bytes": 4389,
+    "immutablePublicSourceMatched": true,
+    "path": "web/assets/assets/fonts/OpenSans-LICENSE.txt",
+    "role": "text",
+    "sha256": "fbbbcfef55318de350562559b671360de6d597112ecc5c73881b05092db89602"
+  },
+  {
+    "bytes": 98532,
+    "immutablePublicSourceMatched": true,
+    "path": "web/assets/assets/fonts/OpenSans-Regular.ttf",
+    "role": "font",
+    "sha256": "e7d1b7879cdd87c63fcc8d266ac809e8e4af507694633638de3c89fc9120b4ab"
+  },
+  {
+    "bytes": 1674921,
+    "immutablePublicSourceMatched": true,
+    "path": "web/assets/assets/icons/LOGO.svg",
+    "role": "svg",
+    "sha256": "133f8e0732ddf6c11cf958285b261a7073909f7758de2d3ceb2c5a04238f688f"
+  },
+  {
+    "bytes": 1455516,
+    "immutablePublicSourceMatched": true,
+    "path": "web/assets/assets/icons/app_icon.png",
+    "role": "png",
+    "sha256": "ee7aedb472e2f173410d11a10d24cf434237af86b53ff65764dba74470d9e1b7"
+  },
+  {
+    "bytes": 409614,
+    "immutablePublicSourceMatched": true,
+    "path": "web/assets/assets/icons/app_icon_2.png",
+    "role": "png",
+    "sha256": "273dca5403a57ebeafe253229cd7f663e0e7c1f27ff4721181f9e0ff03b81009"
+  },
+  {
+    "bytes": 77568,
+    "immutablePublicSourceMatched": true,
+    "path": "web/assets/assets/icons/logo.png",
+    "role": "png",
+    "sha256": "cdba99651e0dcf28e90cd17f9bb58f6f7858bc9c0953dd831e331981cf78eb76"
+  },
+  {
+    "bytes": 14456,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/fonts/MaterialIcons-Regular.otf",
+    "role": "font",
+    "sha256": "d6382e0e303c5be9d68dd7ba8d39da199d1ff99fcef0271487ffacdf2b6a2ddb"
+  },
+  {
+    "bytes": 171676,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/fonts/fallback/Roboto-Regular.ttf",
+    "role": "font",
+    "sha256": "79e851404657dac2106b3d22ad256d47824a9a5765458edb72c9102a45816d95"
+  },
+  {
+    "bytes": 1472,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf",
+    "role": "font",
+    "sha256": "3d90c370aa4cf00dc57ee2b902f6652147c0f81e03e483df584a9c08b1687c9d"
+  },
+  {
+    "bytes": 8890,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/shaders/ink_sparkle.frag",
+    "role": "shader",
+    "sha256": "2dca5ab93d4ec29e963f996f3916320ba60825e9537dfb149a68008c7a16b026"
+  },
+  {
+    "bytes": 6737,
+    "immutablePublicSourceMatched": false,
+    "path": "web/assets/shaders/stretch_effect.frag",
+    "role": "shader",
+    "sha256": "ab412f07a5b9b50b67a885b24dbe16929738ae28630407d6490c924caf0a3220"
+  },
+  {
+    "bytes": 86987,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/canvaskit.js",
+    "role": "code",
+    "sha256": "bb559f6080c7d312ac2a912b4abec9f68ff3d3022d4a603c7796b9b31460642b"
+  },
+  {
+    "bytes": 1356926,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/canvaskit.js.symbols",
+    "role": "symbols",
+    "sha256": "384f80b392972c83fd4f262527e3d06215a297d33ed59732c726721e9d9311bd"
+  },
+  {
+    "bytes": 7284602,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/canvaskit.wasm",
+    "role": "wasm",
+    "sha256": "fbed517a43e82452404446683f00f2e876d835aed84410695759e67b6bb01cd3"
+  },
+  {
+    "bytes": 86226,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/chromium/canvaskit.js",
+    "role": "code",
+    "sha256": "6018b12bd8ed37e6952eee72d59c1cf7ad707ccdb74a0a45190010f77edd9068"
+  },
+  {
+    "bytes": 1235870,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/chromium/canvaskit.js.symbols",
+    "role": "symbols",
+    "sha256": "31c86fac6042dd8b756150832c1d15495d0d07742e2718f75dbdde5a5a91455e"
+  },
+  {
+    "bytes": 5428806,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/chromium/canvaskit.wasm",
+    "role": "wasm",
+    "sha256": "ae8ff1d858140f7b1300ced3fa89fb8c9dce0a400a0f4f1e11f6dcfb3315fdcf"
+  },
+  {
+    "bytes": 63537,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/skwasm.js",
+    "role": "code",
+    "sha256": "71d7d3e34bf71b52bdba3b588b103bba8148ba28de5754083e01b3398e7a6e1c"
+  },
+  {
+    "bytes": 1540006,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/skwasm.js.symbols",
+    "role": "symbols",
+    "sha256": "9137f1a3ae744dea575043abfc6e063a047e910e6dab1ee53e496c975d1c033e"
+  },
+  {
+    "bytes": 3593715,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/skwasm.wasm",
+    "role": "wasm",
+    "sha256": "e540fd5e8303b7b68ec2718cb49e9c421f8ade3075b15e02a7059a62654df9a1"
+  },
+  {
+    "bytes": 63650,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/skwasm_heavy.js",
+    "role": "code",
+    "sha256": "cec554b46ddcf4c0e63d799e0556d546f42d2c3f69316fb4f67ed776f6104558"
+  },
+  {
+    "bytes": 1672152,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/skwasm_heavy.js.symbols",
+    "role": "symbols",
+    "sha256": "b6b79ed497e11d4cd13cc46724f9e289eacc744d2d185e31c72d595cdf62772b"
+  },
+  {
+    "bytes": 5216217,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/skwasm_heavy.wasm",
+    "role": "wasm",
+    "sha256": "565f5cc1cca6ab120f11934b105f01fec4b58b480c82e0889dca93af8e6f8635"
+  },
+  {
+    "bytes": 76114,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/webparagraph/canvaskit.js",
+    "role": "code",
+    "sha256": "3110e3e4d9b7b5657d336f253aaca8acca5777cde9319fb69ac302d6ff5a8b23"
+  },
+  {
+    "bytes": 963641,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/webparagraph/canvaskit.js.symbols",
+    "role": "symbols",
+    "sha256": "44d6c47919106235cf32252252490cdf798d907ee874ba343ab53dc94bc2a9dc"
+  },
+  {
+    "bytes": 3729129,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/webparagraph/canvaskit.wasm",
+    "role": "wasm",
+    "sha256": "0ce1b05082efdc8529550e8a01f6ff0593972d55525035010e26f5600aa9f254"
+  },
+  {
+    "bytes": 59127,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/wimp.js",
+    "role": "code",
+    "sha256": "8fd8a47480c6eb0a374d159912d0b3fb15661b41f5c113ecdd39c2f01f2bee46"
+  },
+  {
+    "bytes": 1813030,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/wimp.js.symbols",
+    "role": "symbols",
+    "sha256": "b4907ebd33131302a8cd99f7c55f52357bdfde04f421b605a616ba8764ae1de4"
+  },
+  {
+    "bytes": 3581677,
+    "immutablePublicSourceMatched": false,
+    "path": "web/canvaskit/wimp.wasm",
+    "role": "wasm",
+    "sha256": "e924eaafd801d41e017d178f3fd5cf8a417f641fe35c9ed34a4e1d7582283e0c"
+  },
+  {
+    "bytes": 814,
+    "immutablePublicSourceMatched": true,
+    "path": "web/favicon.png",
+    "role": "png",
+    "sha256": "b37bdc4a0041e2db949c8471a37ff87747cd11f1c2e5164f10931e94210db895"
+  },
+  {
+    "bytes": 12136,
+    "immutablePublicSourceMatched": false,
+    "path": "web/flutter.js",
+    "role": "code",
+    "sha256": "2beb1ce6b159c71540aa66030af1d7964b6a92377cc78473745e02f97b74effe"
+  },
+  {
+    "bytes": 13116,
+    "immutablePublicSourceMatched": false,
+    "path": "web/flutter_bootstrap.js",
+    "role": "code",
+    "sha256": "aa97a2b2945aa656aa62ccc8b6521373d4eda8b19e49305244c1ae07c8d2f50a"
+  },
+  {
+    "bytes": 784,
+    "immutablePublicSourceMatched": false,
+    "path": "web/flutter_service_worker.js",
+    "role": "code",
+    "sha256": "a131df5ca46154cc4eb79044f7f5a14029c2f8bfccf8cef34e3ec3b5a9f5a88c"
+  },
+  {
+    "bytes": 35063,
+    "immutablePublicSourceMatched": true,
+    "path": "web/icons/Icon-192.png",
+    "role": "png",
+    "sha256": "1dfd65f6f9e25d423cd036c94c77c840bf92ebf096780c1e618f0d8f9cc7005f"
+  },
+  {
+    "bytes": 281987,
+    "immutablePublicSourceMatched": true,
+    "path": "web/icons/Icon-512.png",
+    "role": "png",
+    "sha256": "84ccabb936ea8927ad2dac8c5d9c825492648bc49079e8a7ae82da7d28c195b1"
+  },
+  {
+    "bytes": 35063,
+    "immutablePublicSourceMatched": true,
+    "path": "web/icons/Icon-maskable-192.png",
+    "role": "png",
+    "sha256": "1dfd65f6f9e25d423cd036c94c77c840bf92ebf096780c1e618f0d8f9cc7005f"
+  },
+  {
+    "bytes": 281987,
+    "immutablePublicSourceMatched": true,
+    "path": "web/icons/Icon-maskable-512.png",
+    "role": "png",
+    "sha256": "84ccabb936ea8927ad2dac8c5d9c825492648bc49079e8a7ae82da7d28c195b1"
+  },
+  {
+    "bytes": 1498,
+    "immutablePublicSourceMatched": false,
+    "path": "web/index.html",
+    "role": "html",
+    "sha256": "bb2344a6a7fc25547595cd2298705d6cf02b61852f43e93c6b412a92ca0263dd"
+  },
+  {
+    "bytes": 4221301,
+    "immutablePublicSourceMatched": false,
+    "path": "web/main.dart.js",
+    "role": "code",
+    "sha256": "c83fe0185b4f4a29d85e8bffc6bf66440cc0e495bcfc332eaa4c49d938a40133"
+  },
+  {
+    "bytes": 916,
+    "immutablePublicSourceMatched": true,
+    "path": "web/manifest.json",
+    "role": "json",
+    "sha256": "13253c143b22087e25d071733fdfb5789a55e45197edc30ff643b163a72b12af"
+  },
+  {
+    "bytes": 85,
+    "immutablePublicSourceMatched": false,
+    "path": "web/version.json",
+    "role": "version",
+    "sha256": "16e05135285882b3092e634bd7bfe6705ce5aecbe6b01cb1f20739f3da1d250c"
+  }
+]

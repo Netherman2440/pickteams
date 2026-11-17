@@ -1,0 +1,8 @@
+HEAD=f0384d6e38673bf0f44423514e7749cb316c83d3
+ARTIFACT=14336672484
+RUN=44100639905
+COMMAND=env LD_LIBRARY_PATH=/home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/root/usr/lib/x86_64-linux-gnu:/home/agents/.local/share/playwright-system-libs/root/usr/lib/x86_64-linux-gnu FONTCONFIG_FILE=/home/agents/.local/share/playwright-system-libs/fonts.conf /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/runtime-tools/venv/bin/python /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/configured-artifact-f038/receiver-proof/prove_configured_startup_v3.py 
+MemAvailable=2747796 KiB
+PASS actual authenticated configured candidate: landing and UI-navigation to login/password, fresh browser, only public fonts read, backend/mutations blocked; no live API/schema/release claim
+{"screenshotSha256": "7675c57b0d3ed8045bc512f83613e35770b9b558a280022cce461e89b8ea472d", "networkCounts": {"localStaticAllowed": 16, "publicFontsAllowed_GET": 7, "blocked_GET": 1, "blocked_HEAD": 6}, "uncaughtPageErrors": 0, "consoleErrors": 7, "ownedServerStopped": true}
+EXIT=0

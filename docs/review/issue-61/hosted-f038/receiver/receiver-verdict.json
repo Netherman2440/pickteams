@@ -1,0 +1,48 @@
+{
+  "archiveEntries": 50,
+  "archiveModes": {
+    "3:100644": 50
+  },
+  "archiveSha256": "6987795f4ef31e7fbfdbe2f85a5c7c1d316d8755887d3ab10fe120e6bb28391e",
+  "archiveUncompressedBytes": 48217956,
+  "artifactCodeExecutedByVerifier": false,
+  "assetManifestDigests": {
+    "asset-manifest": "570314f48face6d6c19823848f39fa1edc00d4ab3652f139a540e297ccc1bdcd",
+    "asset-manifest-json": "570314f48face6d6c19823848f39fa1edc00d4ab3652f139a540e297ccc1bdcd"
+  },
+  "configurationBinding": "Reviewed producer uses same validated in-process config for private0600 compiler JSON and manifest commitment; actual trusted hosted execution inspected separately.",
+  "configurationIndependentlyRecoveredOrRecomputed": false,
+  "configurationSha256": "4d0584fc34995743ef5a108403f5be976c29a564b0494a3d9a0a915aaa667ab6",
+  "entrySafetyBeforeExtraction": true,
+  "fullFileSetAndHashesVerified": true,
+  "manifestSha256": "ed5388811156b2406124edb9c2a4c4c7e8e1027c90c8fe56f7426436a939b50b",
+  "payloadBytes": 48211398,
+  "payloadFiles": 48,
+  "payloadTreeSha256": "c3bdd48f9e5d60c6fcdcfbb2705ffca86be8415212a53f6a41c88ced7f97243b",
+  "productionAccepted": false,
+  "promotable": false,
+  "publicAndCompilerDataContractsVerified": true,
+  "publicAssetReferencesVerified": 11,
+  "publicSourceCopiesVerified": 14,
+  "source": {
+    "baseCommit": "1377d580307959b8dc25594bff9e61370c539564",
+    "baseTree": "6e0c309a0f0ccf4e1e3d611252b80bebcf76b4b7",
+    "checkoutCommit": "b441ac4abfccd840b45b3f182f1c1c2a084795a8",
+    "headCommit": "f0384d6e38673bf0f44423514e7749cb316c83d3",
+    "headTree": "895778801a6d96e79462f2b5f1960a52f7171fec",
+    "mergeParents": [
+      "1377d580307959b8dc25594bff9e61370c539564",
+      "f0384d6e38673bf0f44423514e7749cb316c83d3"
+    ],
+    "pullRequest": 66,
+    "repository": "Netherman2440/pickteams",
+    "runAttempt": "1",
+    "runId": "44100639905",
+    "runtimeTree": "895778801a6d96e79462f2b5f1960a52f7171fec",
+    "workflowRef": "Netherman2440/pickteams/.github/workflows/main.yml@refs/pull/66/merge"
+  },
+  "sourceCheckoutRemoved": true,
+  "sourcePhysicalFilesVerified": 812,
+  "uiTree": "c9408c84f695373e5bf874d81b08bd1e2b8ba1dc",
+  "verified": true
+}
