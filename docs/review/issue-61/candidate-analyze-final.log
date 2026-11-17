@@ -1,0 +1,6 @@
+HEAD=ec6630d6d732d3c9191ef74c5e5460bd3cc2f847
+COMMAND=bash -c cd\ app\ \&\&\ flutter\ analyze\ --no-pub 
+MemAvailable=2950112 KiB
+Analyzing app...                                                
+No issues found! (ran in 5.7s)
+EXIT=0

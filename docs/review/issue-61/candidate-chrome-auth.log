@@ -1,0 +1,16 @@
+HEAD=ec6630d6d732d3c9191ef74c5e5460bd3cc2f847
+COMMAND=env LD_LIBRARY_PATH=/home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/issue61-validation/root/usr/lib/x86_64-linux-gnu:/home/agents/.local/share/playwright-system-libs/root/usr/lib/x86_64-linux-gnu FONTCONFIG_FILE=/home/agents/.local/share/playwright-system-libs/fonts.conf CHROME_EXECUTABLE=/home/agents/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome bash -c cd\ app\ \&\&\ flutter\ test\ --no-pub\ --platform\ chrome\ test/widgets/auth/auth_regression_test.dart 
+MemAvailable=2997152 KiB
+00:00 +0: loading /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/test/widgets/auth/auth_regression_test.dart
+00:00 +0: Google form uses platform redirect (register=false)
+00:56 +1: Google form uses platform redirect (register=true)
+00:57 +2: login and registration links navigate to usable forms
+00:58 +3: password login submits trimmed email and reaches app
+00:59 +4: password registration retains confirmation flow (token=)
+01:00 +5: password registration retains confirmation flow (token=confirmed-access)
+01:01 +6: callback observes initial session without exchanging a code
+01:01 +7: callback error offers retry and late success can still navigate
+01:02 +8: web reset email keeps the reset redirect, then permits retry after failure
+01:03 +9: password update validates, retries after failure, then returns to login
+01:04 +10: All tests passed!
+EXIT=0

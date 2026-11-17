@@ -1,0 +1,5 @@
+HEAD=ec6630d6d732d3c9191ef74c5e5460bd3cc2f847
+COMMAND=bash -c cd\ app\ \&\&\ dart\ format\ --output=none\ --set-exit-if-changed\ lib/features/matches/domain/match_level.dart\ lib/features/matches/application/match_level_providers.dart\ lib/features/matches/application/save_star_thresholds.dart\ lib/features/matches/infrastructure/repositories/supabase_match_level_repository.dart\ lib/features/matches/presentation/widgets/match_level_panel.dart\ lib/features/squads/presentation/pages/squad_star_thresholds_page.dart\ test/features/matches/match_level_test.dart\ test/features/matches/match_level_repository_test.dart\ test/features/matches/match_level_provider_test.dart\ test/features/matches/match_level_widgets_test.dart\ test/features/matches/match_level_save_lifecycle_test.dart\ test/features/matches/match_level_refresh_test.dart\ test/fixtures/match_level_app.dart 
+MemAvailable=2972096 KiB
+Formatted 13 files (0 changed) in 0.12 seconds.
+EXIT=0

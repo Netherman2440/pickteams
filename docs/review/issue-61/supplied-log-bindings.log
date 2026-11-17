@@ -1,0 +1,20 @@
+candidate-focused-final.log: exact candidate; recorded EXIT=0
+  00:11 +41: All tests passed!
+candidate-full-flutter-coverage.log: exact candidate; recorded EXIT=0
+  04:17 +535 ~1: All tests passed!
+candidate-analyze-final.log: exact candidate; recorded EXIT=0
+  No issues found! (ran in 5.7s)
+candidate-format-check.log: exact candidate; recorded EXIT=0
+  Formatted 13 files (0 changed) in 0.12 seconds.
+candidate-web-build.log: exact candidate; recorded EXIT=0
+  ✓ Built build/stars-preview
+candidate-mobile-capture.log: exact candidate; recorded EXIT=0
+  Captured and checked 9 SYNTHETIC mobile browser frames (390x1000).
+candidate-python.log: exact candidate; recorded EXIT=0
+  Ran 102 tests in 0.622s
+candidate-chrome-auth.log: exact candidate; recorded EXIT=0
+  01:04 +10: All tests passed!
+candidate-sql-constraints-rls.log: exact candidate; recorded EXIT=0
+PASS supplied full log contains six accepted refresh cases and new lifecycle/pagination/retained-view cases
+Supplied runtime working tree declares dirty AGENTS overlay. It is not clean-tree independent execution proof.
+No logged commands executed by this check.

@@ -1,0 +1,2 @@
+PASS exact ec6630d6d732d3c9191ef74c5e5460bd3cc2f847: 25 committed source hashes, 48 copied build hashes, 9 PNG hashes/dimensions/records, 9 exact-head successful log bindings.
+This verifies artifact identity and retained logs, not an independent rerun or production read.

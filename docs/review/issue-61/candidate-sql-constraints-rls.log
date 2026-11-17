@@ -1,0 +1,322 @@
+HEAD=ec6630d6d732d3c9191ef74c5e5460bd3cc2f847
+COMMAND=bash /home/agents/dev/pickteams/.limen/task-coordinators/issue-61/continuation-owner-aggregates/sql-check.sh 
+MemAvailable=3084348 KiB
+The files belonging to this database system will be owned by user "agents".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C".
+The default database encoding has accordingly been set to "SQL_ASCII".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+creating directory /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/issue61-validation/pgdata ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... Etc/UTC
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+Success. You can now start the database server using:
+
+    /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/issue61-validation/root/usr/lib/postgresql/16/bin/pg_ctl -D /home/agents/dev/.pickteams-limen-worktrees/2026-11-16-issue-61-task-issue-61-8c93b1a9/app/build/issue61-validation/pgdata -l logfile start
+
+waiting for server to start.... done
+server started
+CREATE ROLE
+CREATE ROLE
+CREATE SCHEMA
+CREATE TABLE
+CREATE FUNCTION
+GRANT
+GRANT
+ALTER DEFAULT PRIVILEGES
+MIGRATION=supabase/migrations/20251201080000_create_extensions_and_types.sql
+CREATE EXTENSION
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+MIGRATION=supabase/migrations/20251201090100_create_users_table.sql
+CREATE TABLE
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251201090200_create_squads_table.sql
+CREATE TABLE
+CREATE INDEX
+COMMENT
+COMMENT
+COMMENT
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251201090300_create_user_squads_table.sql
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+REVOKE
+REVOKE
+GRANT
+GRANT
+GRANT
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251201090400_create_players_table.sql
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251201090500_create_tournaments_table.sql
+CREATE TABLE
+CREATE INDEX
+MIGRATION=supabase/migrations/20251201090600_create_matches_table.sql
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251201090700_create_teams_table.sql
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251201090800_create_team_players_table.sql
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251201090900_create_ranking_history_table.sql
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251201091000_create_invite_links_table.sql
+CREATE TABLE
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE FUNCTION
+COMMENT
+REVOKE
+GRANT
+MIGRATION=supabase/migrations/20251201092000_sync_public_users_from_auth.sql
+CREATE FUNCTION
+psql:supabase/migrations/20251201092000_sync_public_users_from_auth.sql:30: NOTICE:  trigger "on_auth_user_sync" for relation "auth.users" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+MIGRATION=supabase/migrations/20251202090000_add_full_name_to_public_users.sql
+ALTER TABLE
+UPDATE 0
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+MIGRATION=supabase/migrations/20251202100000_allow_select_on_squads.sql
+DROP POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20251202101500_request_squad_access.sql
+CREATE FUNCTION
+COMMENT
+REVOKE
+GRANT
+MIGRATION=supabase/migrations/20251202110000_update_team_players_player_fk_cascade.sql
+ALTER TABLE
+ALTER TABLE
+MIGRATION=supabase/migrations/20251202120000_add_player_head_to_head_stats_function.sql
+CREATE FUNCTION
+MIGRATION=supabase/migrations/20251202121000_add_match_win_probability_function.sql
+CREATE FUNCTION
+MIGRATION=supabase/migrations/20251202122000_add_home_win_prob_to_matches.sql
+ALTER TABLE
+ALTER TABLE
+COMMENT
+CREATE FUNCTION
+MIGRATION=supabase/migrations/20251202123000_add_player_pair_win_rates_function.sql
+CREATE FUNCTION
+MIGRATION=supabase/migrations/20251202124000_add_squad_stats_function.sql
+CREATE FUNCTION
+MIGRATION=supabase/migrations/20251202125000_add_player_stats_function.sql
+CREATE FUNCTION
+MIGRATION=supabase/migrations/20260219110000_create_drafts_tables.sql
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20260225100000_expand_tournaments_feature.sql
+ALTER TABLE
+ALTER TABLE
+CREATE INDEX
+ALTER TABLE
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:26: NOTICE:  policy "Members can read tournaments" for relation "public.tournaments" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:46: NOTICE:  policy "Admins can insert tournaments" for relation "public.tournaments" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:60: NOTICE:  policy "Admins can update tournaments" for relation "public.tournaments" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:83: NOTICE:  policy "Admins can delete tournaments" for relation "public.tournaments" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:125: NOTICE:  policy "Members can read tournament teams" for relation "public.tournament_teams" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:147: NOTICE:  policy "Admins can insert tournament teams" for relation "public.tournament_teams" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:162: NOTICE:  policy "Admins can update tournament teams" for relation "public.tournament_teams" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:187: NOTICE:  policy "Admins can delete tournament teams" for relation "public.tournament_teams" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+ALTER TABLE
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:245: NOTICE:  policy "Members can read tournament team players" for relation "public.tournament_team_players" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:267: NOTICE:  policy "Admins can insert tournament team players" for relation "public.tournament_team_players" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:289: NOTICE:  policy "Admins can update tournament team players" for relation "public.tournament_team_players" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:321: NOTICE:  policy "Admins can delete tournament team players" for relation "public.tournament_team_players" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:430: NOTICE:  policy "Members can read tournament drafts" for relation "public.tournament_drafts" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:450: NOTICE:  policy "Admins can insert tournament drafts" for relation "public.tournament_drafts" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:464: NOTICE:  policy "Admins can update tournament drafts" for relation "public.tournament_drafts" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:487: NOTICE:  policy "Admins can delete tournament drafts" for relation "public.tournament_drafts" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:501: NOTICE:  policy "Members can read tournament draft payloads" for relation "public.tournament_draft_payloads" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:523: NOTICE:  policy "Admins can insert tournament draft payloads" for relation "public.tournament_draft_payloads" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:538: NOTICE:  policy "Admins can update tournament draft payloads" for relation "public.tournament_draft_payloads" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20260225100000_expand_tournaments_feature.sql:563: NOTICE:  policy "Admins can delete tournament draft payloads" for relation "public.tournament_draft_payloads" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+ALTER TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+DROP POLICY
+CREATE POLICY
+DROP POLICY
+CREATE POLICY
+MIGRATION=supabase/migrations/20261111120000_accept_match_draft.sql
+CREATE FUNCTION
+REVOKE
+GRANT
+MIGRATION=supabase/migrations/20261116120000_add_squad_star_thresholds.sql
+CREATE FUNCTION
+ALTER TABLE
+ALTER TABLE
+BEGIN
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+DO
+SET
+              set_config              
+--------------------------------------
+ 10000000-0000-0000-0000-000000000001
+(1 row)
+
+UPDATE 1
+DO
+              set_config              
+--------------------------------------
+ 10000000-0000-0000-0000-000000000002
+(1 row)
+
+DO
+RESET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+DO
+ROLLBACK
+waiting for server to shut down.... done
+server stopped
+EXIT=0

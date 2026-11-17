@@ -1,0 +1,21 @@
+HEAD=ec6630d6d732d3c9191ef74c5e5460bd3cc2f847
+COMMAND=bash -c cd\ app\ \&\&\ flutter\ build\ web\ --release\ --no-pub\ --no-web-resources-cdn\ -t\ tool/match_level_preview.dart\ --output\ build/stars-preview 
+MemAvailable=2997816 KiB
+Compiling tool/match_level_preview.dart for the Web...          
+Wasm dry run findings:
+Found incompatibilities with WebAssembly.
+
+package:flutter_secure_storage_web/flutter_secure_storage_web.dart 5:1 - dart:html unsupported (0)
+package:flutter_secure_storage_web/flutter_secure_storage_web.dart 6:1 - dart:js_util unsupported (15)
+package:flutter_secure_storage_web/src/subtle.dart 21:1 - dart:html unsupported (0)
+package:flutter_secure_storage_web/src/subtle.dart 22:1 - dart:js_util unsupported (15)
+package:flutter_secure_storage_web/src/subtle.dart 26:1 - package:js/js.dart unsupported (14)
+
+Consider addressing these issues to enable wasm builds. See docs for more info: https://docs.flutter.dev/platform-integration/web/wasm
+
+Use --no-wasm-dry-run to disable these warnings.
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 14244 bytes (99.1% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling tool/match_level_preview.dart for the Web...             76.3s
+✓ Built build/stars-preview
+EXIT=0

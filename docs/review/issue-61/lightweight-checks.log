@@ -1,0 +1,13 @@
+PASS identity/base/diff check: exact candidate; 25 changed files; clean detached review tree
+PASS independent erf/bisection CDF arithmetic
+CDF endpoints: 0.0017320663255985247 0.9532321558305068
+Raw full anchors: [49.8, 56.12199193655627, 57.97976222371534, 59.76472942322212, 62.926]
+Rounded full anchors: ['49.8', '56.1', '58.0', '59.8', '62.9']
+Exact decimal halves: ['52.95', '57.05', '58.9', '61.35']
+PASS candidate calculation tool and single Dart baseline agree with independent arithmetic
+PASS independent decimal midpoint conversion including 61.35, scientific and extreme finite anchors (not Dart execution)
+PASS all 25 source hashes and app/lib tree; AGENTS overlay excluded
+PASS all 48 copied fixture build files match manifest
+PASS nine PNG hashes/dimensions/metric bindings; baseline values/halves, no save, matching 3.5 views, hidden25 and denied guest
+PASS three changed Python tool files parse; no browser or suite execution
+PASS candidate unchanged after lightweight checks
