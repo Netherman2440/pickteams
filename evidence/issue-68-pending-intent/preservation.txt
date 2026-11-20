@@ -1,0 +1,10 @@
+Prior evidence diff:
+Protected file diff:
+Primary HEAD (read-only):
+1377d580307959b8dc25594bff9e61370c539564
+Changed paths:
+app/lib/features/draft/presentation/pages/draft_selection_page.dart
+app/test/features/draft/presentation/draft_selection_page_search_test.dart
+Source and committed-test hashes:
+5214caee44677d422ec0f67651ca28438649bedae60f753931a13338901597ff  app/lib/features/draft/presentation/pages/draft_selection_page.dart
+67185814d6ba541b27dfa50a26f6cb4d58f6d7108591625837108026289edd3b  app/test/features/draft/presentation/draft_selection_page_search_test.dart

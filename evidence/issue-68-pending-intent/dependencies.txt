@@ -1,0 +1,18 @@
+flock admitted; MemAvailable=3407012 KiB; minimum=2621440 KiB
+Command: flutter pub get --offline --enforce-lockfile
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 91.0.0 (96.0.0 available)
+  analyzer 8.4.0 (10.2.0 available)
+  cli_util 0.4.2 (0.6.0 available)
+  coverage 1.15.1 (1.16.0 available)
+  dart_style 3.1.3 (3.1.7 available)
+  jni 0.14.2 (1.0.0 available)
+  js 0.6.7 (0.7.2 available)
+  json_annotation 4.9.0 (4.12.0 available)
+  path_provider_android 2.2.23 (2.3.1 available)
+Got dependencies!
+9 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Upgrading analysis_options.yaml to exclude build and platform directories.
+Exit=0

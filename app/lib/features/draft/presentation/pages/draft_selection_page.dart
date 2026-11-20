@@ -257,8 +257,11 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel>
   late final FocusNode _searchFocusNode;
   late final GlobalKey _highlightedTileKey;
 
-  bool _keyboardVisible = false;
-  bool _restoreKeyboardOnResume = false;
+  _SearchKeyboardIntent _keyboardIntent = _SearchKeyboardIntent.hidden;
+
+  bool get _needsKeyboardRestore =>
+      _keyboardIntent == _SearchKeyboardIntent.restorePending ||
+      _keyboardIntent == _SearchKeyboardIntent.awaitingVisibility;
   AppLifecycleState? _lifecycleState;
   int _resumeGeneration = 0;
 
@@ -281,9 +284,32 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel>
       debugLabel: 'draft-search-field',
       onKeyEvent: _handleSearchKeyEvent,
     );
+    _searchFocusNode.addListener(_onSearchFocusChanged);
     _highlightedTileKey = GlobalKey(debugLabel: 'draft-search-highlight');
     _lifecycleState = WidgetsBinding.instance.lifecycleState;
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ModalRoute notifies dependants when a covering route becomes current.
+    // Cancel rather than carrying search intent onto that route or its pop.
+    if (!_isCurrentRoute) {
+      _keyboardIntent = _SearchKeyboardIntent.hidden;
+      _resumeGeneration++;
+    }
+  }
+
+  void _onSearchFocusChanged() {
+    if (_handlesAndroidKeyboard &&
+        _lifecycleState == AppLifecycleState.resumed &&
+        !_searchFocusNode.hasFocus &&
+        _keyboardIntent != _SearchKeyboardIntent.restorePending) {
+      // A foreground focus loss cancels acknowledged/issued intent. The
+      // unfocused interval before our queued restore is not a dismissal.
+      _keyboardIntent = _SearchKeyboardIntent.hidden;
+    }
   }
 
   @override
@@ -295,8 +321,13 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel>
     }
     // Back can hide the IME without removing focus. Focus alone is not
     // permission to reopen it. Ignore the inset collapse while backgrounded.
-    _keyboardVisible =
-        _searchFocusNode.hasFocus && View.of(context).viewInsets.bottom > 0;
+    if (_searchFocusNode.hasFocus && View.of(context).viewInsets.bottom > 0) {
+      _keyboardIntent = _SearchKeyboardIntent.visible;
+    } else if (!_needsKeyboardRestore) {
+      _keyboardIntent = _SearchKeyboardIntent.hidden;
+    }
+    // A focus request is not visibility acknowledgement. Until positive
+    // insets arrive, zero insets may still belong to the background frame.
   }
 
   @override
@@ -307,28 +338,34 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel>
     if (!_handlesAndroidKeyboard) {
       return;
     }
-    if (previous == AppLifecycleState.resumed &&
-        state != AppLifecycleState.resumed) {
-      _restoreKeyboardOnResume =
-          _isCurrentRoute && _searchFocusNode.hasFocus && _keyboardVisible;
+    if (!_isCurrentRoute) {
+      _keyboardIntent = _SearchKeyboardIntent.hidden;
+    } else if (previous == AppLifecycleState.resumed &&
+        state != AppLifecycleState.resumed &&
+        _keyboardIntent == _SearchKeyboardIntent.visible) {
+      _keyboardIntent = _searchFocusNode.hasFocus
+          ? _SearchKeyboardIntent.restorePending
+          : _SearchKeyboardIntent.hidden;
     }
+    // Pending/issued intent survives superseded callbacks and our own
+    // transient unfocused state until visibility or cancellation is observed.
     if ((state == AppLifecycleState.hidden ||
             state == AppLifecycleState.paused) &&
-        _restoreKeyboardOnResume &&
-        _searchFocusNode.hasFocus) {
+        _needsKeyboardRestore) {
       // Release the old input connection while truly backgrounded, not on
       // inactive (which can also occur for temporary system UI).
       _searchFocusNode.unfocus();
     }
-    if (state == AppLifecycleState.resumed && _restoreKeyboardOnResume) {
-      _restoreKeyboardOnResume = false;
+    if (state == AppLifecycleState.resumed && _needsKeyboardRestore) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted &&
             generation == _resumeGeneration &&
             _lifecycleState == AppLifecycleState.resumed &&
-            _isCurrentRoute) {
+            _isCurrentRoute &&
+            _needsKeyboardRestore) {
           // One new connection, not a timed show/retry loop. Do not select
           // the phrase here: resume must preserve the editing selection too.
+          _keyboardIntent = _SearchKeyboardIntent.awaitingVisibility;
           _searchFocusNode.requestFocus();
         }
       });
@@ -658,6 +695,15 @@ class _InlineErrorText extends StatelessWidget {
       ),
     );
   }
+}
+
+// Only visible acknowledges the IME. Both restore states retain open intent;
+// issuing a focus request must not consume it before Android reports visibility.
+enum _SearchKeyboardIntent {
+  hidden,
+  visible,
+  restorePending,
+  awaitingVisibility,
 }
 
 enum _SelectionMenuAction { toggleSubstitute }

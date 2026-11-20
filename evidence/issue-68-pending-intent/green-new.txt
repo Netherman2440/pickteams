@@ -1,0 +1,8 @@
+flock admitted; MemAvailable=3300296 KiB; minimum=2621440 KiB
+Command: flutter test --no-pub test/features/draft/presentation/draft_selection_page_search_test.dart --plain-name "pending keyboard intent survives rapid departures until visible acknowledgement"
+00:00 +0: loading /home/agents/dev/.pickteams-limen-worktrees/2026-11-20-issue-68-task-7043656121-3cc5e0fa/app/test/features/draft/presentation/draft_selection_page_search_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: pending keyboard intent survives rapid departures until visible acknowledgement
+00:02 +1: (tearDownAll)
+00:02 +1: All tests passed!
+Exit=0

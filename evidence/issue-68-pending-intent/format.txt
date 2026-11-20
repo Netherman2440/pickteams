@@ -1,0 +1,6 @@
+flock admitted; MemAvailable=3241988 KiB; minimum=2621440 KiB
+Command: dart format lib/features/draft/presentation/pages/draft_selection_page.dart test/features/draft/presentation/draft_selection_page_search_test.dart
+Formatted lib/features/draft/presentation/pages/draft_selection_page.dart
+Formatted test/features/draft/presentation/draft_selection_page_search_test.dart
+Formatted 2 files (2 changed) in 0.06 seconds.
+Exit=0
