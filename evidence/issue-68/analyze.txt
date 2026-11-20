@@ -1,0 +1,4 @@
+MemAvailable=3323860 KiB; minimum=2621440 KiB
+Command: /home/agents/.local/share/pickteams-f001-sdk/flutter/bin/flutter analyze --no-pub
+Analyzing app...
+No issues found! (ran in 8.9s)

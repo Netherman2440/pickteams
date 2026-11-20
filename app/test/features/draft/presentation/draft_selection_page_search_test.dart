@@ -75,6 +75,15 @@ void main() {
     },
   );
 
+  testWidgets('draft search opens the input connection on entry', (
+    tester,
+  ) async {
+    await _pumpPage(tester);
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.focusNode!.hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+  });
+
   testWidgets('draft search filters both selected and available sections', (
     tester,
   ) async {
@@ -188,7 +197,7 @@ void main() {
   );
 
   testWidgets(
-    'draft search tapping a player refocuses the field and selects phrase',
+    'player tap selects phrase; repeated simulated resumes preserve query and roster',
     (tester) async {
       await _pumpPage(tester);
 
@@ -215,6 +224,73 @@ void main() {
       expect(selection.isCollapsed, isFalse);
       expect(selection.baseOffset, 0);
       expect(selection.extentOffset, controller.text.length);
+
+      for (var i = 0; i < 3; i++) {
+        _setKeyboardInset(tester, 300);
+        await tester.pump();
+        await _background(tester);
+        expect(field.focusNode!.hasFocus, isFalse);
+        await _resume(tester);
+        expect(field.focusNode!.hasFocus, isTrue);
+        expect(tester.testTextInput.isVisible, isTrue);
+        expect(controller.text, 'a');
+        expect(controller.selection, selection);
+        expect(_findInSection('Wybrani gracze', 'Bartek'), findsOneWidget);
+        expect(_findInSection('Dostępni gracze', 'Anna'), findsOneWidget);
+      }
+    },
+  );
+
+  testWidgets(
+    'simulated Back inset collapse stays hidden across resumes; tap reopens',
+    (tester) async {
+      await _pumpPage(tester, initialSelectedIds: const ['p2']);
+      await _enterSearchQuery(tester, 'a');
+      final field = tester.widget<TextField>(find.byType(TextField));
+      _setKeyboardInset(tester, 300);
+      await tester.pump();
+      // Simulate the observable Flutter signals, not an Android Back event.
+      tester.testTextInput.hide();
+      _setKeyboardInset(tester, 0);
+      await tester.pump();
+      expect(field.focusNode!.hasFocus, isTrue);
+      for (var i = 0; i < 3; i++) {
+        await _background(tester);
+        await _resume(tester);
+        expect(tester.testTextInput.isVisible, isFalse);
+        expect(field.controller!.text, 'a');
+        expect(_findInSection('Wybrani gracze', 'Bartek'), findsOneWidget);
+      }
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+      expect(tester.testTextInput.isVisible, isTrue);
+    },
+  );
+
+  testWidgets(
+    'resume does not focus search under another route or after disposal',
+    (tester) async {
+      await _pumpPage(tester);
+      _setKeyboardInset(tester, 300);
+      await tester.pump();
+      final fieldContext = tester.element(find.byType(TextField));
+      final navigator = Navigator.of(fieldContext);
+      navigator.push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('Other route')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      tester.testTextInput.hide();
+      await _background(tester);
+      await _resume(tester);
+      expect(find.text('Other route'), findsOneWidget);
+      expect(tester.testTextInput.isVisible, isFalse);
+      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+      await _background(tester);
+      await _resume(tester);
+      expect(tester.testTextInput.isVisible, isFalse);
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -322,6 +398,11 @@ Future<void> _pumpPage(
   List<String> initialSelectedIds = const [],
   bool phone = false,
 }) async {
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  addTearDown(() {
+    tester.view.resetViewInsets();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  });
   await tester.binding.setSurfaceSize(
     phone ? const Size(360, 640) : const Size(1800, 1000),
   );
@@ -341,6 +422,26 @@ Future<void> _pumpPage(
   await tester.pumpWidget(
     SharedRowsFixture(players: players, initialSelectedIds: initialSelectedIds),
   );
+  await tester.pumpAndSettle();
+}
+
+void _setKeyboardInset(WidgetTester tester, double bottom) {
+  tester.view.viewInsets = FakeViewPadding(bottom: bottom);
+}
+
+Future<void> _background(WidgetTester tester) async {
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+  tester.testTextInput.hide();
+  _setKeyboardInset(tester, 0);
+  await tester.pump();
+}
+
+Future<void> _resume(WidgetTester tester) async {
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
   await tester.pumpAndSettle();
 }
 

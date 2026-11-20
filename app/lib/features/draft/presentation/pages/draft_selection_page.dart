@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -249,11 +250,22 @@ class _AvailablePlayersPanel extends StatefulWidget {
   State<_AvailablePlayersPanel> createState() => _AvailablePlayersPanelState();
 }
 
-class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
+class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel>
+    with WidgetsBindingObserver {
   late final ScrollController _scrollController;
   late final TextEditingController _searchController;
   late final FocusNode _searchFocusNode;
   late final GlobalKey _highlightedTileKey;
+
+  bool _keyboardVisible = false;
+  bool _restoreKeyboardOnResume = false;
+  AppLifecycleState? _lifecycleState;
+  int _resumeGeneration = 0;
+
+  bool get _handlesAndroidKeyboard =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  bool get _isCurrentRoute => ModalRoute.of(context)?.isCurrent ?? false;
 
   /// Index of the available player currently picked by keyboard
   /// navigation in the search field. `null` means no player is picked, so
@@ -270,6 +282,58 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
       onKeyEvent: _handleSearchKeyEvent,
     );
     _highlightedTileKey = GlobalKey(debugLabel: 'draft-search-highlight');
+    _lifecycleState = WidgetsBinding.instance.lifecycleState;
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (!_handlesAndroidKeyboard ||
+        _lifecycleState != AppLifecycleState.resumed ||
+        !_isCurrentRoute) {
+      return;
+    }
+    // Back can hide the IME without removing focus. Focus alone is not
+    // permission to reopen it. Ignore the inset collapse while backgrounded.
+    _keyboardVisible =
+        _searchFocusNode.hasFocus && View.of(context).viewInsets.bottom > 0;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final previous = _lifecycleState;
+    _lifecycleState = state;
+    final generation = ++_resumeGeneration;
+    if (!_handlesAndroidKeyboard) {
+      return;
+    }
+    if (previous == AppLifecycleState.resumed &&
+        state != AppLifecycleState.resumed) {
+      _restoreKeyboardOnResume =
+          _isCurrentRoute && _searchFocusNode.hasFocus && _keyboardVisible;
+    }
+    if ((state == AppLifecycleState.hidden ||
+            state == AppLifecycleState.paused) &&
+        _restoreKeyboardOnResume &&
+        _searchFocusNode.hasFocus) {
+      // Release the old input connection while truly backgrounded, not on
+      // inactive (which can also occur for temporary system UI).
+      _searchFocusNode.unfocus();
+    }
+    if (state == AppLifecycleState.resumed && _restoreKeyboardOnResume) {
+      _restoreKeyboardOnResume = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            generation == _resumeGeneration &&
+            _lifecycleState == AppLifecycleState.resumed &&
+            _isCurrentRoute) {
+          // One new connection, not a timed show/retry loop. Do not select
+          // the phrase here: resume must preserve the editing selection too.
+          _searchFocusNode.requestFocus();
+        }
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
+    }
   }
 
   @override
@@ -297,6 +361,7 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
@@ -381,7 +446,9 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
   /// no matter how many players remain in "Dostępni".
   void _refocusSearchField() {
     void apply() {
-      if (!mounted) {
+      if (!mounted ||
+          _lifecycleState != AppLifecycleState.resumed ||
+          !_isCurrentRoute) {
         return;
       }
       _searchFocusNode.requestFocus();
@@ -418,6 +485,7 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
           if (widget.validationMessage != null)
             _InlineErrorText(message: widget.validationMessage!),
           TextField(
+            autofocus: true,
             controller: _searchController,
             focusNode: _searchFocusNode,
             decoration: const InputDecoration(

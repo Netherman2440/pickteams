@@ -1,0 +1,17 @@
+MemAvailable=3381784 KiB; minimum=2621440 KiB
+00:00 +0: loading /home/agents/dev/.pickteams-limen-worktrees/2026-11-20-issue-68-task-7043656121-3cc5e0fa/app/test/features/draft/presentation/draft_selection_page_search_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: 100 players share one scroll below fixed search; toggles never duplicate
+00:03 +1: draft search opens the input connection on entry
+00:03 +2: draft search filters both selected and available sections
+00:03 +3: draft search enter adds auto-highlighted first match and selects phrase
+00:04 +4: draft search software keyboard done action adds highlighted player
+00:04 +5: player tap selects phrase; repeated simulated resumes preserve query and roster
+00:04 +6: simulated Back inset collapse stays hidden across resumes; tap reopens
+00:05 +7: resume does not focus search under another route or after disposal
+00:05 +8: draft search arrow keys navigate results and enter adds highlighted player
+00:05 +9: draft search picked tile looks like a normal tile (no color override)
+00:06 +10: draft search enter without highlighted player adds nothing
+00:06 +11: draft search query change resets highlight to first match
+00:06 +12: (tearDownAll)
+00:06 +12: All tests passed!
