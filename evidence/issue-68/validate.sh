@@ -20,7 +20,12 @@ case "${1:-}" in
     set -- "$sdk/flutter" analyze --no-pub ;;
   full)
     set -- "$sdk/flutter" test --no-pub --coverage --concurrency=1 ;;
-  *) printf 'Usage: bash evidence/issue-68/validate.sh format|focused|analyze|full\n' >&2; exit 2 ;;
+  remaining)
+    mapfile -t targets < ../evidence/issue-68/remaining-tests.txt
+    set -- "$sdk/flutter" test --no-pub --coverage --concurrency=1 "${targets[@]}" ;;
+  interrupted)
+    set -- "$sdk/flutter" test --no-pub --coverage --concurrency=1 test/features/matches/presentation/match_score_breakpoint_test.dart --name '^(?!.*at (360|599)\.0px).*' ;;
+  *) printf 'Usage: bash evidence/issue-68/validate.sh format|focused|analyze|full|remaining|interrupted\n' >&2; exit 2 ;;
 esac
 printf 'Command:'; printf ' %q' "$@"; printf '\n'
 "$@"
