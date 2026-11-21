@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:app/core/error/failure.dart';
+import 'package:app/features/players/application/player_goal_comparison_provider.dart';
+import '../widgets/squad_role_goal_section.dart';
 import 'package:app/features/squads/domain/entities/squad_stats.dart';
 import 'package:app/features/squads/presentation/state/squad_stats_provider.dart';
 import 'package:app/features/squads/presentation/widgets/stat_tile.dart';
@@ -24,11 +26,22 @@ class SquadStatsPage extends ConsumerWidget {
           onRetry: () => ref.invalidate(squadStatsProvider(squadId)),
         ),
         data: (stats) => RefreshIndicator(
-          onRefresh: () => ref.refresh(squadStatsProvider(squadId).future),
+          onRefresh: () async {
+            ref.invalidate(squadGoalHistoryProvider(squadId));
+            ref.invalidate(squadRoleGoalComparisonsProvider(squadId));
+            await Future.wait([
+              ref.refresh(squadStatsProvider(squadId).future),
+              ref.read(squadRoleGoalComparisonsProvider(squadId).future),
+            ]);
+          },
           child: ListView(
             padding: const EdgeInsets.all(16),
             physics: const AlwaysScrollableScrollPhysics(),
-            children: _buildTiles(stats),
+            children: [
+              SquadRoleGoalSection(squadId: squadId),
+              const Divider(),
+              ..._buildTiles(stats),
+            ],
           ),
         ),
       ),

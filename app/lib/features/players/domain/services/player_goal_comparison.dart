@@ -121,6 +121,120 @@ GoalComparison comparePlayerGoals(
   return GoalComparison.available(scored, conceded);
 }
 
+enum GoalRole { home, away }
+
+enum GoalMeasure {
+  homeScored(GoalRole.home, false, 'Gospodarze · strzelone'),
+  homeConceded(GoalRole.home, true, 'Gospodarze · stracone'),
+  awayScored(GoalRole.away, false, 'Goście · strzelone'),
+  awayConceded(GoalRole.away, true, 'Goście · stracone');
+
+  const GoalMeasure(this.role, this.conceded, this.label);
+  final GoalRole role;
+  final bool conceded;
+  final String label;
+
+  double? value(Map<GoalRole, RoleGoalComparison> comparison) {
+    final result = comparison[role];
+    return conceded ? result?.conceded : result?.scored;
+  }
+}
+
+class RoleGoalComparison {
+  const RoleGoalComparison({
+    required this.withPlayer,
+    required this.withoutPlayer,
+    this.scored,
+    this.conceded,
+    this.incomplete = false,
+  });
+  final int withPlayer;
+  final int withoutPlayer;
+  final double? scored;
+  final double? conceded;
+  final bool incomplete;
+}
+
+/// Ineligible/unplayed matches are ignored. Malformed scored history makes all
+/// deltas unavailable; counts include only valid ordinary-goal matches. Colors
+/// are deliberately irrelevant. Opposite-role appearances are not absences.
+Map<GoalRole, RoleGoalComparison> comparePlayerRoleGoals(
+  List<GoalComparisonMatch> matches,
+  String playerId,
+) {
+  final played = {for (final role in GoalRole.values) role: _Goals()};
+  final absent = {for (final role in GoalRole.values) role: _Goals()};
+  var incomplete = false;
+  for (final match in matches) {
+    if (!match.ordinaryGoals) continue;
+    if (match.homeScore == null && match.awayScore == null) continue;
+    final home = match.home;
+    final away = match.away;
+    final hs = match.homeScore;
+    final aws = match.awayScore;
+    if (home == null ||
+        away == null ||
+        hs == null ||
+        aws == null ||
+        hs < 0 ||
+        aws < 0 ||
+        home.playerIds.isEmpty ||
+        away.playerIds.isEmpty ||
+        home.playerIds
+            .toSet()
+            .intersection(away.playerIds.toSet())
+            .isNotEmpty) {
+      incomplete = true;
+      continue;
+    }
+    final atHome = home.playerIds.contains(playerId);
+    final atAway = away.playerIds.contains(playerId);
+    if (atHome) played[GoalRole.home]!.add(hs, aws);
+    if (atAway) played[GoalRole.away]!.add(aws, hs);
+    if (!atHome && !atAway) {
+      absent[GoalRole.home]!.add(hs, aws);
+      absent[GoalRole.away]!.add(aws, hs);
+    }
+  }
+  return {
+    for (final role in GoalRole.values)
+      role: RoleGoalComparison(
+        withPlayer: played[role]!.count,
+        withoutPlayer: absent[role]!.count,
+        incomplete: incomplete,
+        scored:
+            !incomplete && played[role]!.count > 0 && absent[role]!.count > 0
+            ? played[role]!.scored / played[role]!.count -
+                  absent[role]!.scored / absent[role]!.count
+            : null,
+        conceded:
+            !incomplete && played[role]!.count > 0 && absent[role]!.count > 0
+            ? played[role]!.conceded / played[role]!.count -
+                  absent[role]!.conceded / absent[role]!.count
+            : null,
+      ),
+  };
+}
+
+/// Missing values always sort last. IDs provide stable, locale-independent ties.
+int compareGoalMeasure(
+  GoalMeasure measure,
+  String aId,
+  Map<GoalRole, RoleGoalComparison> a,
+  String bId,
+  Map<GoalRole, RoleGoalComparison> b, {
+  bool reverse = false,
+}) {
+  final av = measure.value(a);
+  final bv = measure.value(b);
+  if (av == null || bv == null) {
+    if (av == null && bv == null) return aId.compareTo(bId);
+    return av == null ? 1 : -1;
+  }
+  final order = measure.conceded ? av.compareTo(bv) : bv.compareTo(av);
+  return order == 0 ? aId.compareTo(bId) : (reverse ? -order : order);
+}
+
 class _Goals {
   int count = 0;
   int scored = 0;

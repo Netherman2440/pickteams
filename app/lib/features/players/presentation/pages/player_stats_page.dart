@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:app/core/error/failure.dart';
+import '../../application/player_goal_comparison_provider.dart';
+import '../widgets/player_role_goal_section.dart';
 import 'package:app/features/players/domain/entities/player_stats.dart';
 import 'package:app/features/players/presentation/state/player_name_provider.dart';
 import 'package:app/features/players/presentation/state/player_stats_provider.dart';
@@ -41,12 +43,27 @@ class _PlayerStatsPageState extends ConsumerState<PlayerStatsPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _StatsErrorView(message: _errorMessage(error)),
         data: (state) => RefreshIndicator(
-          onRefresh: () =>
+          onRefresh: () async {
+            ref.invalidate(squadGoalHistoryProvider(widget.squadId));
+            await Future.wait([
               ref.refresh(playerStatsProvider(widget.playerId).future),
+              ref.read(
+                playerRoleGoalComparisonProvider((
+                  squadId: widget.squadId,
+                  playerId: widget.playerId,
+                )).future,
+              ),
+            ]);
+          },
           child: ListView(
             padding: const EdgeInsets.all(16),
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
+              PlayerRoleGoalSection(
+                squadId: widget.squadId,
+                playerId: widget.playerId,
+              ),
+              const Divider(),
               ..._buildStatTiles(state.stats),
               const SizedBox(height: 24),
               Text(
