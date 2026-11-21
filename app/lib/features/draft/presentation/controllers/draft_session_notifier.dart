@@ -245,6 +245,7 @@ class DraftSessionNotifier extends Notifier<AsyncValue<DraftSessionState>> {
 
     final proposals = await useCase.execute(
       players: selected,
+      currentMatchId: request.matchId,
       rules: request.rules,
       playWithSubstitute: request.playWithSubstitute,
       seed: seed,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:app/features/draft/domain/repositories/draft_experience_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -367,10 +368,10 @@ class _Fixture {
     draftPersistenceRepositoryProvider.overrideWithValue(persistence),
     draftAcceptanceRepositoryProvider.overrideWithValue(acceptance),
     combinatoryCreateDraftUseCaseProvider.overrideWithValue(
-      CreateDraftUseCase(generator),
+      CreateDraftUseCase(generator, experienceRepository: _Experience()),
     ),
     greedyCreateDraftUseCaseProvider.overrideWithValue(
-      CreateDraftUseCase(generator),
+      CreateDraftUseCase(generator, experienceRepository: _Experience()),
     ),
     getPlayerPairWinRatesUseCaseProvider.overrideWithValue(
       GetPlayerPairWinRatesUseCase(_Stats()),
@@ -430,6 +431,14 @@ class _Ranking extends Mock implements RankingRepository {}
 
 class _Persistence extends Mock implements DraftPersistenceRepository {}
 
+class _Experience implements DraftExperienceRepository {
+  @override
+  Future<Map<String, int>> getAppearances({
+    required List<String> playerIds,
+    String? currentMatchId,
+  }) async => {for (final id in playerIds) id: 0};
+}
+
 class _Stats implements DraftStatsRepository {
   @override
   Future<List<HeadToHeadWinRate>> getPlayerPairWinRates({
@@ -451,6 +460,7 @@ class _Generator implements DraftRepository {
     int limit = 20,
     bool playWithSubstitute = true,
     int? seed,
+    Map<String, int> appearances = const {},
   }) async {
     calls++;
     lastRules = rules;

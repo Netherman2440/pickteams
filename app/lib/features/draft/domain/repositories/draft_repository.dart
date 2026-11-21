@@ -10,5 +10,6 @@ abstract class DraftRepository {
     int limit = 20,
     bool playWithSubstitute = true,
     int? seed,
+    Map<String, int> appearances = const {},
   });
 }
