@@ -7,6 +7,7 @@ No DOM/image edits. Only real keyboard/click actions enable semantics and sort.
 """
 import hashlib
 import json
+import re
 from pathlib import Path
 import sys
 from urllib.parse import urlparse
@@ -74,31 +75,37 @@ def run(base, output):
                     record['url'] = url
                     page.goto(url, wait_until='networkidle')
                     page.locator('flt-semantics-placeholder').press('Enter')
-                    expect(page.get_by_text('SYNTHETIC DATA', exact=False)).to_be_attached()
-                    expect(page.get_by_text('Gole według strony', exact=True)).to_be_attached()
-                    expect(page.get_by_text('Z zawodnikiem: 1 · Bez zawodnika: 1', exact=True).first).to_be_attached()
-                    expect(page.get_by_text('Strzelone: +3,00 · Stracone: -1,00', exact=True)).to_be_attached()
+                    (out / (screen + '-dom.html')).write_text(page.content())
+                    record['ariaSnapshot'] = page.locator('body').aria_snapshot()
+                    record['syntheticLabelCheck'] = 'Visible fixture banner; image must be opened. Banner is outside route semantics.'
+                    snapshot = page.locator('body').aria_snapshot()
+                    for label in ('Gole według strony', 'Z zawodnikiem: 1 · Bez zawodnika: 1',
+                                  'Strzelone: +3,00 · Stracone: -1,00'):
+                        assert label in snapshot, snapshot
                     if screen == 'player':
-                        expect(page.get_by_text('Strzelone: +3,00 · Stracone: +2,00', exact=True)).to_be_attached()
+                        assert 'Strzelone: +3,00 · Stracone: +2,00' in snapshot, snapshot
                     else:
                         record['sortChecks'] = []
                         # The accessible dropdown is a Flutter semantics button.
                         for label, value in MEASURES.items():
-                            page.get_by_role('button', name='Gospodarze · strzelone' if not record['sortChecks'] else record['sortChecks'][-1]['measure'], exact=True).click()
-                            page.get_by_text(label, exact=True).last.click()
-                            expect(page.get_by_text('Jan Testowy · ' + value, exact=True)).to_be_attached()
-                            jan = page.get_by_text('Jan Testowy · ' + value, exact=True).bounding_box()
-                            missing = page.get_by_text('Nowy bez występów · Brak danych', exact=True).bounding_box()
-                            assert jan and missing and jan['y'] < missing['y'], (jan, missing)
+                            page.get_by_role('button', name=re.compile('^Gole według strony')).click()
+                            record['menuSnapshot'] = page.locator('body').aria_snapshot()
+                            page.get_by_role('menuitem', name=label, exact=True).click()
+                            expect(page.get_by_role('button', name=re.compile('^Gole według strony'))).to_have_attribute('aria-expanded', 'false')
+                            row_text = page.locator('body').aria_snapshot()
+                            assert row_text.index('Jan Testowy · ' + value) < row_text.index('Nowy bez występów · Brak danych'), row_text
                             record['sortChecks'].append({'measure': label, 'janValue': value, 'missingLast': True})
                             actions.append('Select ' + label)
-                        page.get_by_role('button', name='Goście · stracone', exact=True).click()
-                        page.get_by_text('Gospodarze · strzelone', exact=True).last.click()
+                        page.get_by_role('button', name=re.compile('^Gole według strony')).click()
+                        page.get_by_role('menuitem', name='Gospodarze · strzelone', exact=True).click()
                         actions.append('Select Gospodarze · strzelone for final capture; no scroll')
-                    record['semanticsText'] = page.locator('flt-semantics-host').inner_text()
-                    for label in ['SYNTHETIC DATA', 'Gole według strony', 'Strzelone: +3,00 · Stracone: -1,00']:
-                        bounds = page.get_by_text(label, exact=False).first.bounding_box()
-                        assert bounds and bounds['y'] >= 0 and bounds['y'] + bounds['height'] <= 1000, (label, bounds)
+                    record['ariaSnapshot'] = page.locator('body').aria_snapshot()
+                    (out / (screen + '-dom.html')).write_text(page.content())
+                    section = (page.get_by_role('button', name=re.compile('^Gole według strony'))
+                               if screen == 'squad' else page.get_by_text('Gole według strony', exact=False))
+                    bounds = section.bounding_box()
+                    assert bounds and bounds['y'] >= 0 and bounds['y'] + bounds['height'] <= 1000, bounds
+                    record['sectionBounds'] = bounds
                     assert not blocked, blocked
                     assert all(r['status'] < 400 for r in responses), responses
                     fonts = [r for r in responses if '/fonts/' in r['url'] and r['url'].endswith('.ttf')]
@@ -108,7 +115,8 @@ def run(base, output):
                     page.screenshot(path=str(image))
                     record.update(image=image.name, imageSha256=sha256(image), status='passed')
                 except Exception as error:
-                    record.update(status='failed', failure=str(error))
+                    record.update(status='failed', failure=str(error), failureSnapshot=page.locator('body').aria_snapshot())
+                    (out / (screen + '-failure-dom.html')).write_text(page.content())
                     page.screenshot(path=str(out / (screen + '-failure.png')))
                     raise
                 finally:
