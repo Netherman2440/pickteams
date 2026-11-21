@@ -37,11 +37,12 @@ class _SquadRoleGoalSectionState extends ConsumerState<SquadRoleGoalSection> {
               DropdownMenuItem(value: item, child: Text(item.label)),
           ],
           onChanged: (value) {
-            if (value != null)
+            if (value != null) {
               setState(() {
                 measure = value;
                 reverse = false;
               });
+            }
           },
         ),
         TextButton.icon(
