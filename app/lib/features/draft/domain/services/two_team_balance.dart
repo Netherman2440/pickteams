@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:app/core/utils/team_ranking.dart';
 import 'package:app/features/draft/domain/entities/draft.dart';
 import 'package:app/features/draft/domain/entities/draft_proposal.dart';
 import 'package:app/features/players/domain/entities/player.dart';
@@ -32,24 +31,49 @@ class TwoTeamBalance {
     () => 0.5 * rankingPairs(draft) + 0.5 * experiencePairs(draft),
   );
 
+  // Persisted rankings have two decimal places. Sum integer hundredths
+  // before any arithmetic to avoid splitting a genuine tie by addition order.
+  ({int numerator, int denominator}) _effectiveGap(
+    Draft draft,
+    bool playWithSubstitute,
+  ) {
+    final teams = draft.teams;
+    int total(int index) => teams[index].players.fold<int>(
+      0,
+      (sum, player) => sum + (player.ranking * 100).round(),
+    );
+    final home = total(0), away = total(1);
+    final homeSize = teams[0].players.length;
+    final awaySize = teams[1].players.length;
+
+    // Keep the larger team's existing (size - 1) / size adjustment
+    // as a fraction of a hundredth, rather than rounding it to a hundredth.
+    if (playWithSubstitute && homeSize > awaySize) {
+      return (
+        numerator: (home * (homeSize - 1) - away * homeSize).abs(),
+        denominator: homeSize,
+      );
+    }
+    if (playWithSubstitute && awaySize > homeSize) {
+      return (
+        numerator: (home * awaySize - away * (awaySize - 1)).abs(),
+        denominator: awaySize,
+      );
+    }
+    return (numerator: (home - away).abs(), denominator: 1);
+  }
+
   /// Compare exact effective differences, never rounded labels or epsilon ties.
   int compare(
     DraftProposal a,
     DraftProposal b, {
     required bool playWithSubstitute,
   }) {
-    double difference(Draft draft) {
-      final teams = draft.teams;
-      double effective(int index) => effectiveTeamRanking(
-        totalRanking: teams[index].totalRanking,
-        teamSize: teams[index].players.length,
-        opponentTeamSize: teams[1 - index].players.length,
-        playWithSubstitute: playWithSubstitute,
-      );
-      return (effective(0) - effective(1)).abs();
-    }
-
-    final primary = difference(a.draft).compareTo(difference(b.draft));
+    final left = _effectiveGap(a.draft, playWithSubstitute);
+    final right = _effectiveGap(b.draft, playWithSubstitute);
+    final primary = (left.numerator * right.denominator).compareTo(
+      right.numerator * left.denominator,
+    );
     if (primary != 0) return primary;
     final pairs = secondary(a.draft).compareTo(secondary(b.draft));
     if (pairs != 0) return pairs;

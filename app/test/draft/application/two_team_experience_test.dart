@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:app/core/error/failure.dart';
 import 'package:app/core/global_dependencies.dart';
-import 'package:app/core/utils/team_ranking.dart';
 import 'package:app/features/draft/application/create_draft_use_case.dart';
 import 'package:app/features/draft/domain/entities/draft.dart';
 import 'package:app/features/draft/domain/entities/draft_proposal.dart';
@@ -44,16 +43,6 @@ String key(Draft d) =>
             .toList()
           ..sort())
         .join('|');
-
-double difference(Draft d, bool substitutes) {
-  double effective(int i) => effectiveTeamRanking(
-    totalRanking: d.teams[i].totalRanking,
-    teamSize: d.teams[i].players.length,
-    opponentTeamSize: d.teams[1 - i].players.length,
-    playWithSubstitute: substitutes,
-  );
-  return (effective(0) - effective(1)).abs();
-}
 
 DraftProposal proposal(Draft d, String signature) => DraftProposal(
   draft: d,
@@ -164,9 +153,9 @@ void main() {
     expect(balance.secondary(draft([], [players[0]])), 0);
   });
 
-  test('exact primary differences are not ties after display rounding', () {
+  test('a true stored hundredth difference is not a tie', () {
     final balance = TwoTeamBalance(players, counts);
-    final nearly = draft([player('x', 50.000001)], [player('y', 50)]);
+    final nearly = draft([player('x', 50.01)], [player('y', 50)]);
     final exact = draft([player('a', 50)], [player('d', 50)]);
     expect(
       balance.compare(
@@ -186,6 +175,68 @@ void main() {
     );
   });
 
+  final decimalExperience = {
+    'a': 40,
+    'b': 39,
+    'c': 23,
+    'd': 21,
+    'e': 2,
+    'f': 0,
+  };
+  List<Player> decimalPool({required bool control}) => [
+    player('a', 45.90),
+    player('b', control ? 46.41 : 46.40),
+    player('c', control ? 46.71 : 46.70),
+    player('d', 45.50),
+    player('e', 46.70),
+    player('f', 45.00),
+  ];
+
+  test('cent-level ties use experience, but a true cent gap wins first', () {
+    for (final control in [false, true]) {
+      final [a, b, c, d, e, f] = decimalPool(control: control);
+      final acd = draft([a, c, d], [b, e, f]);
+      final ade = draft([a, d, e], [b, c, f]);
+      final balance = TwoTeamBalance([a, b, c, d, e, f], decimalExperience);
+      expect(balance.secondary(ade), lessThan(balance.secondary(acd)));
+      expect(
+        balance.compare(
+          proposal(ade, 'ade'),
+          proposal(acd, 'acd'),
+          playWithSubstitute: false,
+        ),
+        control ? greaterThan(0) : lessThan(0),
+      );
+    }
+  });
+
+  test('substitute adjustment preserves a third of a hundredth', () {
+    final a = player('a', 1.00);
+    final b = player('b', 1.00);
+    final c = player('c', 1.00);
+    final d = player('d', 1.00);
+    final e = player('e', 1.00);
+    final f = player('f', 1.01);
+    final g = player('g', 1.01);
+    final h = player('h', 1.01);
+    final balance = TwoTeamBalance(
+      [a, b, c, d, e, f, g, h],
+      {'a': 40, 'b': 40, 'c': 40, 'h': 40},
+    );
+    // 3.00 * 2/3 == 2.00, while 3.02 * 2/3 - 2.01 is 1/300.
+    final exact = draft([a, b, c], [d, e]);
+    final fractional = draft([a, f, g], [d, h]);
+    expect(balance.secondary(fractional), lessThan(balance.secondary(exact)));
+    expect(
+      balance.compare(
+        proposal(exact, 'z'),
+        proposal(fractional, 'a'),
+        playWithSubstitute: true,
+      ),
+      lessThan(0),
+    );
+  });
+
   final generators = <String, DraftRepository>{
     'combinatory': const CombinatoryDraftRepository(),
     // A pool of one exposes all partitions in these small deterministic fixtures.
@@ -193,6 +244,19 @@ void main() {
   };
   for (final entry in generators.entries) {
     final name = entry.key, generator = entry.value;
+    test('$name: decimal rankings preserve real ties and gaps', () async {
+      for (final control in [false, true]) {
+        final proposals = await generator.createDraft(
+          players: decimalPool(control: control),
+          appearances: decimalExperience,
+          seed: 42,
+        );
+        final keys = proposals.map(key);
+        expect(keys, containsAll(['a,c,d|b,e,f', 'a,d,e|b,c,f']));
+        expect(keys.first, control ? 'a,c,d|b,e,f' : 'a,d,e|b,c,f');
+      }
+    });
+
     test('$name: 90:90 precedes 100:80 despite worse secondary', () async {
       final pool = [
         player('a', 80),
@@ -337,8 +401,11 @@ void main() {
             seed: 7,
           );
           expect(drafts, isNotEmpty);
-          final gaps = drafts.map((p) => difference(p, substitutes)).toList();
-          expect(gaps, orderedEquals([...gaps]..sort()));
+          // The five players total 400 ranking points. If the two-player
+          // side sums to s, the other side sums to 400 - s. With substitutes,
+          // measure the gap in thirds: 3 * |(400 - s) * 2/3 - s|.
+          // This fixture oracle keeps ties exact without calling app scoring.
+          final gaps = <int>[];
           for (final d in drafts) {
             expect(d.teams.map((t) => t.players.length).toList()..sort(), [
               2,
@@ -348,7 +415,14 @@ void main() {
               d.teams.expand((t) => t.players).map((p) => p.playerId).toSet(),
               pool.map((p) => p.playerId).toSet(),
             );
+            final smaller = d.teams.singleWhere((t) => t.players.length == 2);
+            final s = smaller.players.fold(
+              0,
+              (sum, p) => sum + p.ranking.toInt(),
+            );
+            gaps.add(substitutes ? (800 - 5 * s).abs() : (400 - 2 * s).abs());
           }
+          expect(gaps, orderedEquals([...gaps]..sort()));
         },
       );
     }

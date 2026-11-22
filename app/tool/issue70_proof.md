@@ -3,9 +3,9 @@
 ## Contract and seams
 
 `TwoTeamBalance` is the shared two-team comparator used by both repositories.
-It compares the absolute effective ranking difference first, using the existing
-`effectiveTeamRanking` function and substitute setting. Comparisons use exact
-numbers, not formatted labels or epsilon equality. Only equal primary differences
+It compares the absolute effective ranking difference first, summing persisted
+rankings as integer hundredths. The existing substitute adjustment is compared
+as a fraction, without rounding or epsilon equality. Only equal primary differences
 compare `0.5 * R + 0.5 * E`. On an exact secondary tie, the existing combined
 rule/position penalty precedes the stable player-ID signature. Rules and positions
 remain soft preferences, as before; the generators still build the same eligible
@@ -59,6 +59,10 @@ combinatory-only ranking-baseline example with stronger shared checks:
   providers send these counts to both real generators (default greedy settings
   for this equal-ranked fixture). Balanced E=1/40 beats E=39/40; R=0 and totals
   are 100:100.
+- Both generators and the shared comparator compare two true stored-score
+  ties at 138.10 per side using experience. Adding 0.01 to B and C makes one
+  partition worse by 0.02 and confirms ranking still wins. The direct
+  comparator also checks a genuine one-third-cent gap after substitute weighting.
 - Independent sorting, exact 50/50 weights, fixed scales with an omitted maximum,
   rank 0, zero/equal experience, unmatched/empty pairs, strict primary ties,
   stable fallback, odd sizes with substitutes on/off, and three/four-team
