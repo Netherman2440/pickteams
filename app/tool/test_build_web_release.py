@@ -824,6 +824,7 @@ class CandidatePolicyTest(unittest.TestCase):
         self.put('app/.gitignore', '/build/\n')
         self.put('app/analysis_options.yaml', 'include: package:flutter_lints/flutter.yaml\n')
         self.put('app/lib/main.dart', 'accepted synthetic runtime\n')
+        self.put('app/tool/test_release_contract.py', 'checked synthetic contract assertions\n')
         self.put('scripts/checked.sh', '#!/bin/sh\ntrue\n')
         (self.root / 'scripts/checked.sh').chmod(0o755)
         for path in ('vercel.json', 'app/vercel.json'):
@@ -835,6 +836,9 @@ class CandidatePolicyTest(unittest.TestCase):
             pin.start()
             self.addCleanup(pin.stop)
         self.put('app/pubspec.yaml', f'name: app\nversion: {RELEASE_VERSION}\n')
+        self.put('app/tool/release_contract.py',
+                 f"ACCEPTED_SOURCE = '{accepted}'\nVERSION = '{contract.VERSION}'\n"
+                 f'VERSION_CODE = {contract.VERSION_CODE}\n')
         self.commit()
         self.base = self.sha()
         self.git('checkout', '-qb', 'synthetic-feature')
@@ -902,40 +906,99 @@ class CandidatePolicyTest(unittest.TestCase):
         self.assertEqual(release.verify_web_source(self.root, {}), self.base)
         self.reject()  # A clean accepted tree is not the declared PR merge.
         self.reset_fixture()
-        # Prelanding: even the declared feature head cannot become a pin when
-        # it is not an ancestor of the declared PR base.
-        with patch.object(release, 'ACCEPTED_SOURCE', self.head):
-            with self.assertRaises(subprocess.CalledProcessError) as error:
-                self.check()
-            self.assertEqual(error.exception.cmd[-2:], [self.head, self.base])
-        # A squash landing has the same tree, but a distinct history identity.
-        tree = self.git('rev-parse', self.head + '^{tree}').decode().strip()
-        landed = self.git('commit-tree', tree, '-p', self.base,
-                          input=b'landed synthetic runtime\n').decode().strip()
-        self.assertNotEqual(landed, self.head)
-        self.assertEqual(self.git('diff', '--name-only', landed, self.head), b'')
-        with patch.object(contract, 'ACCEPTED_SOURCE', landed), patch.object(release, 'ACCEPTED_SOURCE', landed):
-            # Byte equality cannot authorize the old feature/merge branch.
-            with self.assertRaises(subprocess.CalledProcessError):
-                contract.verify_source(self.root)
-            with self.assertRaises(subprocess.CalledProcessError):
-                self.check()
-            self.git('checkout', '-q', '--detach', landed)
-            self.put('app/tool/release_contract.py', 'reviewed synthetic release metadata\n')
-            self.commit()
-            descriptor = self.sha()
-            self.git('checkout', '-q', '--detach', landed)
-            self.git('merge', '-q', '--no-ff', '--no-edit', descriptor)
-            checkout = self.sha()
-            self.event['pull_request'].update(merge_commit_sha=checkout)
-            self.event['pull_request']['base']['sha'] = landed
-            self.event['pull_request']['head']['sha'] = descriptor
-            self.event_path.write_text(json.dumps(self.event))
-            # Landed pin -> actual PR base now passes the unchanged rule.
-            self.assertEqual(self.check(dict(self.env, GITHUB_SHA=checkout)), checkout)
-            self.assertEqual(contract.verify_source(self.root), checkout)
-            self.assertEqual(native.verify_source(self.root), checkout)
-            self.assertEqual(release.verify_web_source(self.root, {}), checkout)
+
+    def bind_merge(self, base, head):
+        tree = self.git('rev-parse', head + '^{tree}').decode().strip()
+        checkout = self.git('commit-tree', tree, '-p', base, '-p', head,
+                            input=b'synthetic merge\n').decode().strip()
+        self.git('checkout', '-q', '--detach', checkout)
+        self.base, self.head, self.checkout = base, head, checkout
+        self.event['pull_request']['base']['sha'] = base
+        self.event['pull_request']['head']['sha'] = head
+        self.event['pull_request']['merge_commit_sha'] = checkout
+        self.event_path.write_text(json.dumps(self.event))
+        self.env['GITHUB_SHA'] = checkout
+
+    def descriptor_transition(self):
+        runtime = self.head
+        self.git('checkout', '-q', '--detach', runtime)
+        self.base_policy = self.git('show', self.base + ':app/tool/release_contract.py').decode()
+        version = contract.VERSION.split('.')
+        version[-1] = str(int(version[-1]) + 1)
+        next_version = '.'.join(version)
+        policy = self.base_policy.replace(contract.ACCEPTED_SOURCE, runtime).replace(
+            f"VERSION = '{contract.VERSION}'", f"VERSION = '{next_version}'").replace(
+            f'VERSION_CODE = {contract.VERSION_CODE}', f'VERSION_CODE = {contract.VERSION_CODE + 1}')
+        self.put('app/tool/release_contract.py', policy)
+        self.put('app/pubspec.yaml', f'name: app\nversion: {next_version}+{contract.VERSION_CODE + 1}\n')
+        self.put('app/tool/test_release_contract.py', 'new checked descriptor assertions\n')
+        self.commit()
+        self.bind_merge(self.base, self.sha())
+        return runtime
+
+    def test_checked_out_import_cannot_nominate_candidate_trust_root(self):
+        expected = self.check()
+        for pin in (self.head, self.checkout, 'f' * 40):
+            with self.subTest(pin=pin), patch.object(release, 'ACCEPTED_SOURCE', pin):
+                self.assertEqual(self.check(), expected)
+        # The immutable event base, not those imports, supplies the policy.
+        self.git('checkout', '-q', '--detach', self.base)
+        raw = self.git('show', self.base + ':app/tool/release_contract.py').decode()
+        self.put('app/tool/release_contract.py', raw.replace(contract.ACCEPTED_SOURCE, self.head))
+        self.commit()
+        base = self.sha()
+        self.put('app/lib/main.dart', 'descendant of hostile base\n')
+        self.commit()
+        self.bind_merge(base, self.sha())
+        with self.assertRaises(subprocess.CalledProcessError) as error:
+            self.check()
+        self.assertEqual(error.exception.cmd[-1], base)
+
+    def test_atomic_descriptor_transition_passes_only_nonpromotable_candidate(self):
+        runtime = self.descriptor_transition()
+        self.assertNotEqual(runtime, self.base)
+        self.assertEqual(self.check(), self.checkout)
+        for strict in (contract.verify_source, native.verify_source):
+            with self.assertRaisesRegex(AssertionError, 'Unapproved source differences'):
+                strict(self.root)
+        with self.assertRaisesRegex(AssertionError, 'Unapproved source differences'):
+            release.verify_web_source(self.root, {})
+
+    def test_descriptor_transition_rejects_wrong_pins_policy_dependencies_and_extra_source(self):
+        runtime = self.descriptor_transition()
+        valid_head = self.head
+        valid_base = self.base
+        pin_path = 'app/tool/release_contract.py'
+        original = self.git('show', valid_head + ':' + pin_path).decode()
+        orphan = self.git('commit-tree', self.git('rev-parse', runtime + '^{tree}').decode().strip(),
+                          input=b'same bytes without trusted ancestry\n').decode().strip()
+        attacks = [
+            (pin_path, original.replace(runtime, 'f' * 40)),
+            (pin_path, original.replace(runtime, valid_base)),
+            (pin_path, original.replace(runtime, valid_head)),
+            (pin_path, original.replace(runtime, orphan)),
+            (pin_path, original + '\ndef waive_source(): return True\n'),
+            (pin_path, original + "\nACCEPTED_SOURCE = '" + runtime + "'\n"),
+            (pin_path, original.replace(f"'{runtime}'", f"str('{runtime}')")),
+            (pin_path, original.replace(f'VERSION_CODE = {contract.VERSION_CODE + 1}',
+                                       f'VERSION_CODE = {contract.VERSION_CODE}')),
+            (pin_path, original.replace("VERSION = '", "VERSION = '0.", 1)),
+            ('app/pubspec.yaml', 'name: changed_dependency\nversion: ' + RELEASE_VERSION + '\n'),
+            ('app/tool/unreviewed.py', 'candidate tool after runtime\n'),
+            ('app/lib/main.dart', 'runtime hidden inside descriptor\n'),
+        ]
+        for path, content in attacks:
+            with self.subTest(path=path, content=content):
+                self.git('checkout', '-q', '--detach', valid_head)
+                self.put(path, content)
+                self.commit()
+                self.bind_merge(valid_base, self.sha())
+                self.reject()
+        self.git('checkout', '-q', '--detach', valid_head)
+        (self.root / pin_path).chmod(0o755)
+        self.commit()
+        self.bind_merge(valid_base, self.sha())
+        self.reject()
 
     def advisory_variation(self):
         # Deliberately different from the runner merge SHA; not a stale-cause claim.

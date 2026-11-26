@@ -428,6 +428,66 @@ def verify_source_stage(root, stage):
 CANDIDATE_REPOSITORY = 'Netherman2440/pickteams'
 
 
+def _candidate_release_policy(git, base, head):
+    """Read trust from the runner-bound base, never from candidate imports.
+
+    A new descriptor pin is only a subordinate NONPROMOTABLE source identity.
+    It must describe a metadata-only child of a runtime descended from base.
+    This grants neither runtime approval nor production/native authority.
+    """
+    import ast
+
+    path = 'app/tool/release_contract.py'
+
+    def policy(commit):
+        entry = git('ls-tree', commit, '--', path).split()
+        assert entry[:2] == [b'100644', b'blob'], 'Unsafe candidate contract mode'
+        raw = git('show', commit + ':' + path)
+        assert len(raw) <= 65536, 'Oversize candidate contract'
+        tree = ast.parse(raw)
+        values = {}
+        normalized = raw.decode()
+        for name, pattern in (('ACCEPTED_SOURCE', r"'[a-f0-9]{40}'"),
+                              ('VERSION', r"'[0-9]+\.[0-9]+\.[0-9]+'"),
+                              ('VERSION_CODE', r'[1-9][0-9]{0,9}')):
+            assignments = [node for node in tree.body if isinstance(node, ast.Assign)
+                           and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
+                           and node.targets[0].id == name]
+            stores = [node for node in ast.walk(tree) if isinstance(node, ast.Name)
+                      and isinstance(node.ctx, ast.Store) and node.id == name]
+            assert len(assignments) == len(stores) == 1, 'Ambiguous candidate contract literal'
+            values[name] = ast.literal_eval(assignments[0].value)
+            normalized, count = re.subn('^' + name + ' = ' + pattern + '$',
+                                        name + ' = <literal>', normalized, flags=re.M)
+            assert count == 1, 'Nonliteral candidate contract'
+        assert type(values['VERSION_CODE']) is int and values['VERSION_CODE'] <= 2100000000, 'Invalid candidate version code'
+        return raw, normalized, values
+
+    base_raw, base_shape, trusted = policy(base)
+    head_raw, head_shape, candidate = policy(head)
+    base_pubspec = git('show', base + ':app/pubspec.yaml').decode()
+    assert re.findall(r'^version: (.+)$', base_pubspec, re.M) == [
+        f"{trusted['VERSION']}+{trusted['VERSION_CODE']}"], 'Base contract version mismatch'
+    runtime = candidate['ACCEPTED_SOURCE']
+    if runtime != trusted['ACCEPTED_SOURCE']:
+        assert head_shape == base_shape, 'Candidate changed trusted contract policy'
+        git('merge-base', '--is-ancestor', base, runtime)
+        git('merge-base', '--is-ancestor', runtime, head)
+        assert git('show', runtime + ':' + path) == base_raw, 'Runtime changed trusted contract'
+        assert git('show', runtime + ':app/pubspec.yaml').decode() == base_pubspec, 'Runtime changed release dependencies'
+        changed = set(git('diff', '--name-only', runtime, head).decode().splitlines())
+        assert changed == {'app/pubspec.yaml', path, 'app/tool/test_release_contract.py'}, 'Not a descriptor-only transition'
+        assert git('diff', '--summary', runtime, head) == b'', 'Descriptor mode or type change'
+        current = git('show', head + ':app/pubspec.yaml').decode()
+        assert re.findall(r'^version: (.+)$', current, re.M) == [
+            f"{candidate['VERSION']}+{candidate['VERSION_CODE']}"], 'Candidate descriptor version mismatch'
+        assert re.sub(r'^version: .+$', 'version: <release>', current, flags=re.M) == re.sub(
+            r'^version: .+$', 'version: <release>', base_pubspec, flags=re.M), 'Candidate changed release dependencies'
+        assert tuple(map(int, candidate['VERSION'].split('.'))) > tuple(map(int, trusted['VERSION'].split('.'))), 'Candidate version must increase'
+        assert candidate['VERSION_CODE'] > trusted['VERSION_CODE'], 'Candidate version code must increase'
+    return trusted['ACCEPTED_SOURCE']
+
+
 def candidate_context(root, env):
     """Bind a GitHub PR merge checkout, never production acceptance.
 
@@ -488,7 +548,8 @@ def candidate_context(root, env):
     assert git('rev-parse', '--is-shallow-repository').strip() == b'false', 'Candidate requires complete history'
     assert git('rev-parse', 'HEAD').decode().strip() == checkout, 'Candidate checkout SHA mismatch'
     assert git('rev-list', '--parents', '-n', '1', checkout).decode().split() == [checkout, base, head], 'Candidate merge parents mismatch'
-    subprocess.run(['git', 'merge-base', '--is-ancestor', ACCEPTED_SOURCE, base], cwd=root,
+    trusted_source = _candidate_release_policy(git, base, head)
+    subprocess.run(['git', 'merge-base', '--is-ancestor', trusted_source, base], cwd=root,
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     tree = git('rev-parse', checkout + '^{tree}').decode().strip()
     merged = git('merge-tree', '--write-tree', base, head).decode().splitlines()[0]
