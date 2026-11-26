@@ -147,7 +147,15 @@ class RoleGoalComparison {
     this.scored,
     this.conceded,
     this.incomplete = false,
+    this.scoredWithPlayer,
+    this.scoredWithoutPlayer,
+    this.concededWithPlayer,
+    this.concededWithoutPlayer,
   });
+  final double? scoredWithPlayer;
+  final double? scoredWithoutPlayer;
+  final double? concededWithPlayer;
+  final double? concededWithoutPlayer;
   final int withPlayer;
   final int withoutPlayer;
   final double? scored;
@@ -202,6 +210,18 @@ Map<GoalRole, RoleGoalComparison> comparePlayerRoleGoals(
         withPlayer: played[role]!.count,
         withoutPlayer: absent[role]!.count,
         incomplete: incomplete,
+        scoredWithPlayer: !incomplete && played[role]!.count > 0
+            ? played[role]!.scored / played[role]!.count
+            : null,
+        scoredWithoutPlayer: !incomplete && absent[role]!.count > 0
+            ? absent[role]!.scored / absent[role]!.count
+            : null,
+        concededWithPlayer: !incomplete && played[role]!.count > 0
+            ? played[role]!.conceded / played[role]!.count
+            : null,
+        concededWithoutPlayer: !incomplete && absent[role]!.count > 0
+            ? absent[role]!.conceded / absent[role]!.count
+            : null,
         scored:
             !incomplete && played[role]!.count > 0 && absent[role]!.count > 0
             ? played[role]!.scored / played[role]!.count -

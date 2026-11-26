@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/player_goal_comparison_provider.dart';
 import '../../domain/services/player_goal_comparison.dart';
+import 'player_role_goal_values.dart';
 
 String goalDeltaText(double? value) {
   if (value == null) return 'Brak danych';
@@ -79,7 +80,7 @@ class PlayerRoleGoalSection extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (final role in GoalRole.values) ...[
-                RoleGoalValues(role: role, result: values[role]!),
+                PlayerRoleGoalValues(role: role, result: values[role]!),
                 const SizedBox(height: 12),
               ],
             ],

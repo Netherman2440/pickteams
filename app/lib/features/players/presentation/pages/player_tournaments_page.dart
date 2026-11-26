@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/player_context_header.dart';
+import '../widgets/player_navigation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -25,43 +27,61 @@ class PlayerTournamentsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Turnieje')),
-      body: RefreshIndicator(
-        onRefresh: () => ref.refresh(playerTournamentsProvider(params).future),
-        child: tournamentsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
-            child: SelectableText.rich(
-              TextSpan(
-                text: 'Błąd: $error',
-                style: const TextStyle(color: Colors.red),
+      body: PlayerContent(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: PlayerContextHeader(
+                squadId: squadId,
+                playerId: playerId,
+                selected: PlayerSection.tournaments,
               ),
             ),
-          ),
-          data: (tournaments) {
-            if (tournaments.isEmpty) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  Center(child: Text('Nie znaleziono turniejów.')),
-                ],
-              );
-            }
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () =>
+                    ref.refresh(playerTournamentsProvider(params).future),
+                child: tournamentsAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => Center(
+                    child: SelectableText.rich(
+                      TextSpan(
+                        text: 'Błąd: $error',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                  data: (tournaments) {
+                    if (tournaments.isEmpty) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 120),
+                          Center(child: Text('Nie znaleziono turniejów.')),
+                        ],
+                      );
+                    }
 
-            return ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: tournaments.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final tournament = tournaments[index];
-                return _TournamentTile(
-                  squadId: squadId,
-                  tournament: tournament,
-                );
-              },
-            );
-          },
+                    return ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: tournaments.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final tournament = tournaments[index];
+                        return _TournamentTile(
+                          squadId: squadId,
+                          tournament: tournament,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

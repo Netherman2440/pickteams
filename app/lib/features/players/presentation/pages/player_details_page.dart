@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import 'package:app/core/app_config.dart';
 import 'package:app/core/error/failure.dart';
-import 'package:app/core/app_router.dart';
 import 'package:app/features/players/application/usecases/delete_player_usecase.dart';
-import 'package:app/features/players/application/player_goal_comparison_provider.dart';
+import '../widgets/player_navigation.dart';
+import '../widgets/player_profile_previews.dart';
 import 'package:app/features/players/domain/entities/player_position.dart';
 import 'package:app/features/players/presentation/controllers/players_notifier.dart';
 import 'package:app/features/squads/domain/entities/user_squad_role.dart';
@@ -14,7 +14,6 @@ import 'package:app/features/squads/presentation/state/squad_detail_notifier.dar
 
 import '../controllers/player_details_controller.dart';
 import '../widgets/edit_player_position_dialog.dart';
-import '../widgets/player_goal_comparison_section.dart';
 import '../widgets/ranking_history_graph_widget.dart';
 import '../widgets/edit_player_name_dialog.dart';
 import '../widgets/edit_player_ranking_dialog.dart';
@@ -176,100 +175,110 @@ class _PlayerDetailsPageState extends ConsumerState<PlayerDetailsPage> {
           final avatar = CircleAvatar(
             radius: 40,
             child: Text(
-              player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
+              player.name.trim().isNotEmpty
+                  ? player.name
+                        .trim()
+                        .split(RegExp(r'\s+'))
+                        .take(2)
+                        .map((part) => part[0])
+                        .join()
+                        .toUpperCase()
+                  : '?',
               style: const TextStyle(fontSize: 32),
             ),
           );
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (canEdit) ...[
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => setState(() => _editing = !_editing),
-                      icon: Icon(_editing ? Icons.check : Icons.edit),
-                      label: Text(_editing ? 'Gotowe' : 'Edytuj gracza'),
+            child: PlayerContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (canEdit) ...[
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => setState(() => _editing = !_editing),
+                        icon: Icon(_editing ? Icons.check : Icons.edit),
+                        label: Text(_editing ? 'Gotowe' : 'Edytuj gracza'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                if (isNarrowScreen) ...[
-                  avatar,
+                    const SizedBox(height: 8),
+                  ],
+                  if (isNarrowScreen) ...[
+                    avatar,
+                    const SizedBox(height: 16),
+                    fields,
+                  ] else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        avatar,
+                        const SizedBox(width: 24),
+                        Expanded(child: fields),
+                      ],
+                    ),
                   const SizedBox(height: 16),
-                  fields,
-                ] else
+                  PlayerNavigation(
+                    squadId: squadId,
+                    playerId: playerId,
+                    selected: PlayerSection.profile,
+                  ),
+                  const SizedBox(height: 24),
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      avatar,
-                      const SizedBox(width: 24),
-                      Expanded(child: fields),
+                      Flexible(
+                        child: Text(
+                          'Historia rankingu',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => showDialog<void>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Historia rankingu'),
+                            content: const Text(
+                              'Po każdym meczu ranking gracza jest aktualizowany automatycznie. '
+                              'Im większa różnica bramek, tym większa zmiana rankingu '
+                              '(w górę lub w dół).',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: Icon(
+                            Icons.info_outline,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                const SizedBox(height: 24),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'Historia rankingu',
-                        style: Theme.of(context).textTheme.titleMedium,
+                  const SizedBox(height: 16),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: RankingHistoryGraphWidget(
+                        history: history,
+                        baseRanking: player.baseRanking.toDouble(),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => showDialog<void>(
-                        context: context,
-                        builder: (dialogContext) => AlertDialog(
-                          title: const Text('Historia rankingu'),
-                          content: const Text(
-                            'Po każdym meczu ranking gracza jest aktualizowany automatycznie. '
-                            'Im większa różnica bramek, tym większa zmiana rankingu '
-                            '(w górę lub w dół).',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(dialogContext).pop(),
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: Icon(
-                          Icons.info_outline,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: RankingHistoryGraphWidget(
-                      history: history,
-                      baseRanking: player.baseRanking.toDouble(),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                PlayerGoalComparisonSection(
-                  squadId: squadId,
-                  playerId: playerId,
-                ),
-                const SizedBox(height: 32),
-                _PlayerTabs(squadId: squadId, playerId: playerId),
-              ],
+                  const SizedBox(height: 24),
+                  PlayerProfilePreviews(squadId: squadId, playerId: playerId),
+                ],
+              ),
             ),
           );
         },
@@ -406,85 +415,6 @@ class _RankingDifferenceIndicator extends StatelessWidget {
             fontSize: 18,
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _PlayerTabs extends ConsumerWidget {
-  final String squadId;
-  final String playerId;
-
-  const _PlayerTabs({required this.squadId, required this.playerId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    Future<void> openMatchHistory(AppRoute route) async {
-      await context.pushNamed(
-        route.name,
-        pathParameters: {'squadId': squadId, 'playerId': playerId},
-      );
-      // Pushed routes keep the profile alive. Re-read even after failed edits:
-      // a multi-step save can persist part of a change before reporting failure.
-      if (context.mounted) ref.invalidate(squadGoalHistoryProvider(squadId));
-    }
-
-    return Column(
-      children: [
-        const Divider(),
-        const SizedBox(height: 16),
-        Wrap(
-          alignment: WrapAlignment.spaceEvenly,
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            _TabButton(
-              label: 'Mecze',
-              icon: Icons.sports_soccer,
-              onPressed: () => openMatchHistory(AppRoute.playerMatches),
-            ),
-            _TabButton(
-              label: 'Turnieje',
-              icon: Icons.emoji_events,
-              onPressed: () => openMatchHistory(AppRoute.playerTournaments),
-            ),
-            _TabButton(
-              label: 'Statystyki',
-              icon: Icons.analytics,
-              onPressed: () => context.pushNamed(
-                AppRoute.playerStats.name,
-                pathParameters: {'squadId': squadId, 'playerId': playerId},
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _TabButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _TabButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        IconButton.filledTonal(
-          onPressed: onPressed,
-          icon: Icon(icon),
-          iconSize: 32,
-        ),
-        const SizedBox(height: 8),
-        Text(label),
       ],
     );
   }
