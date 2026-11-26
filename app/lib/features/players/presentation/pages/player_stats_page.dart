@@ -80,8 +80,9 @@ class _PlayerStatsPageState extends ConsumerState<PlayerStatsPage> {
                               PlayerGoalComparisonSection(
                                 squadId: widget.squadId,
                                 playerId: widget.playerId,
+                                compact: true,
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 12),
                               PlayerRoleGoalSection(
                                 squadId: widget.squadId,
                                 playerId: widget.playerId,

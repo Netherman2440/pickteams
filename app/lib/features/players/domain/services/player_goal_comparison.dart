@@ -21,12 +21,14 @@ class GoalComparisonTeam {
 /// A match snapshot. Membership comes from team_players, not current rosters.
 class GoalComparisonMatch {
   const GoalComparisonMatch({
+    this.matchId,
     required this.home,
     required this.away,
     required this.homeScore,
     required this.awayScore,
     this.ordinaryGoals = true,
   });
+  final String? matchId;
   final GoalComparisonTeam? home;
   final GoalComparisonTeam? away;
   final int? homeScore;

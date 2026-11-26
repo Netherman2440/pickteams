@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../domain/services/player_goal_comparison.dart';
+import 'player_recent_match_row.dart';
 import 'package:app/core/app_router.dart';
 import '../../application/player_goal_comparison_provider.dart';
 import '../state/player_matches_provider.dart';
@@ -21,6 +22,15 @@ class PlayerProfilePreviews extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final matches = ref.watch(playerMatchesProvider(playerId));
+    final snapshots = <String, GoalComparisonMatch?>{};
+    for (final snapshot
+        in ref.watch(squadGoalHistoryProvider(squadId)).asData?.value ??
+            <GoalComparisonMatch>[]) {
+      final id = snapshot.matchId;
+      if (id != null) {
+        snapshots[id] = snapshots.containsKey(id) ? null : snapshot;
+      }
+    }
     Future<void> open(AppRoute route) async {
       await context.pushNamed(
         route.name,
@@ -115,19 +125,10 @@ class PlayerProfilePreviews extends ConsumerWidget {
                     children: [
                       for (final match in recent.take(3)) ...[
                         const Divider(),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${DateFormat('dd.MM.yyyy').format(match.createdAt.toLocal())}\n${match.homeTeam?.name ?? 'Gospodarze'} – ${match.awayTeam?.name ?? 'Goście'}',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              '${match.homeScore ?? '—'} : ${match.awayScore ?? '—'}',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ],
+                        PlayerRecentMatchRow(
+                          match: match,
+                          playerId: playerId,
+                          snapshot: snapshots[match.matchId],
                         ),
                       ],
                     ],

@@ -165,8 +165,9 @@ class _PlayerProfileFixtureState extends State<PlayerProfileFixture> {
       ),
       squadGoalHistoryProvider.overrideWith(
         (ref, id) async => [
-          for (final g in games)
+          for (final (i, g) in games.indexed)
             GoalComparisonMatch(
+              matchId: '${i + 1}',
               home: GoalComparisonTeam(
                 color: 'ffffff',
                 playerIds: g.$1 ? ['player'] : ['other'],
