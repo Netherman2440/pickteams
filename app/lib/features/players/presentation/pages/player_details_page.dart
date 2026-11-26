@@ -173,7 +173,7 @@ class _PlayerDetailsPageState extends ConsumerState<PlayerDetailsPage> {
             ],
           );
           final avatar = CircleAvatar(
-            radius: 40,
+            radius: isNarrowScreen ? 24 : 32,
             child: Text(
               player.name.trim().isNotEmpty
                   ? player.name
@@ -184,7 +184,7 @@ class _PlayerDetailsPageState extends ConsumerState<PlayerDetailsPage> {
                         .join()
                         .toUpperCase()
                   : '?',
-              style: const TextStyle(fontSize: 32),
+              style: const TextStyle(fontSize: 20),
             ),
           );
 
@@ -205,17 +205,38 @@ class _PlayerDetailsPageState extends ConsumerState<PlayerDetailsPage> {
                     ),
                     const SizedBox(height: 8),
                   ],
-                  if (isNarrowScreen) ...[
-                    avatar,
-                    const SizedBox(height: 16),
-                    fields,
-                  ] else
+                  if (_editing)
+                    fields
+                  else
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         avatar,
-                        const SizedBox(width: 24),
-                        Expanded(child: fields),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(player.name, style: nameStyle),
+                              const SizedBox(height: 4),
+                              Text('Pozycja: $positionLabel'),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Ranking: ${player.ranking.toStringAsFixed(2)}',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            _RankingDifferenceIndicator(
+                              difference: difference,
+                              isPositive: isPositive,
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   const SizedBox(height: 16),
@@ -225,58 +246,30 @@ class _PlayerDetailsPageState extends ConsumerState<PlayerDetailsPage> {
                     selected: PlayerSection.profile,
                   ),
                   const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Historia rankingu',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () => showDialog<void>(
-                          context: context,
-                          builder: (dialogContext) => AlertDialog(
-                            title: const Text('Historia rankingu'),
-                            content: const Text(
-                              'Po każdym meczu ranking gracza jest aktualizowany automatycznie. '
-                              'Im większa różnica bramek, tym większa zmiana rankingu '
-                              '(w górę lub w dół).',
+                  PlayerProfilePreviews(
+                    squadId: squadId,
+                    playerId: playerId,
+                    rankingCard: Card(
+                      margin: EdgeInsets.zero,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Historia rankingu',
+                              style: Theme.of(context).textTheme.titleLarge,
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
+                            const SizedBox(height: 12),
+                            RankingHistoryGraphWidget(
+                              history: history,
+                              baseRanking: player.baseRanking.toDouble(),
+                            ),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(2),
-                          child: Icon(
-                            Icons.info_outline,
-                            size: 18,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: RankingHistoryGraphWidget(
-                        history: history,
-                        baseRanking: player.baseRanking.toDouble(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  PlayerProfilePreviews(squadId: squadId, playerId: playerId),
                 ],
               ),
             ),

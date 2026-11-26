@@ -33,39 +33,57 @@ class PlayerNavigation extends ConsumerWidget {
     decoration: BoxDecoration(
       border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
     ),
-    child: Row(
-      children: [
-        for (final section in PlayerSection.values)
-          Expanded(
-            child: Semantics(
-              selected: section == selected,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  minimumSize: const Size(0, 48),
-                  foregroundColor: section == selected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  shape: const RoundedRectangleBorder(),
-                  side: section == selected
-                      ? BorderSide(color: Theme.of(context).colorScheme.primary)
-                      : BorderSide.none,
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Row(
+          children: [
+            for (final section in PlayerSection.values)
+              Expanded(
+                child: Semantics(
+                  selected: section == selected,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          width: 3,
+                          color: section == selected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        minimumSize: const Size(0, 48),
+                        foregroundColor: section == selected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        shape: const RoundedRectangleBorder(),
+                      ),
+                      onPressed: () async {
+                        if (section == selected) return;
+                        await context.pushNamed(
+                          routes[section.index].name,
+                          pathParameters: {
+                            'squadId': squadId,
+                            'playerId': playerId,
+                          },
+                        );
+                        if (context.mounted) {
+                          ref.invalidate(squadGoalHistoryProvider(squadId));
+                        }
+                      },
+                      child: Text(labels[section.index], maxLines: 1),
+                    ),
+                  ),
                 ),
-                onPressed: () async {
-                  if (section == selected) return;
-                  await context.pushNamed(
-                    routes[section.index].name,
-                    pathParameters: {'squadId': squadId, 'playerId': playerId},
-                  );
-                  if (context.mounted) {
-                    ref.invalidate(squadGoalHistoryProvider(squadId));
-                  }
-                },
-                child: Text(labels[section.index], maxLines: 1),
               ),
-            ),
-          ),
-      ],
+          ],
+        ),
+      ),
     ),
   );
 }

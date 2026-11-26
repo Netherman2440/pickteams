@@ -12,9 +12,11 @@ class PlayerProfilePreviews extends ConsumerWidget {
     super.key,
     required this.squadId,
     required this.playerId,
+    required this.rankingCard,
   });
   final String squadId;
   final String playerId;
+  final Widget rankingCard;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,29 +32,48 @@ class PlayerProfilePreviews extends ConsumerWidget {
       }
     }
 
+    final statsCard = PlayerPreviewCard(
+      label: 'Otwórz pełne statystyki zawodnika',
+      onTap: () => open(AppRoute.playerStats),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // The entire card is one keyboard target, including the two tiles.
+          IgnorePointer(
+            child: PlayerGoalComparisonSection(
+              squadId: squadId,
+              playerId: playerId,
+              compact: true,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Porównaj gospodarzy i gości →',
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+          ),
+        ],
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        PlayerPreviewCard(
-          label: 'Otwórz pełne statystyki zawodnika',
-          onTap: () => open(AppRoute.playerStats),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // The entire card is one keyboard target, including the two tiles.
-              IgnorePointer(
-                child: PlayerGoalComparisonSection(
-                  squadId: squadId,
-                  playerId: playerId,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Porównaj gospodarzy i gości →',
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
-              ),
-            ],
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 800) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [rankingCard, const SizedBox(height: 16), statsCard],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: rankingCard),
+                const SizedBox(width: 16),
+                Expanded(flex: 2, child: statsCard),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 16),
         PlayerPreviewCard(
@@ -87,8 +108,9 @@ class PlayerProfilePreviews extends ConsumerWidget {
                 data: (all) {
                   final recent = [...all]
                     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-                  if (recent.isEmpty)
+                  if (recent.isEmpty) {
                     return const Text('Nie znaleziono meczów.');
+                  }
                   return Column(
                     children: [
                       for (final match in recent.take(3)) ...[

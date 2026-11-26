@@ -29,8 +29,15 @@ void main() {
     (tester) async {
       await open(tester);
       expect(find.textContaining('SYNTHETIC DATA'), findsOneWidget);
-      expect(find.text('Strzelone: +3,00 · Stracone: -1,00'), findsOneWidget);
-      expect(find.text('Strzelone: +3,00 · Stracone: +2,00'), findsOneWidget);
+      expect(find.text('+3,00'), findsNWidgets(2));
+      expect(find.text('-1,00'), findsOneWidget);
+      expect(find.text('+2,00'), findsOneWidget);
+      expect(find.text('5,00 z graczem · 2,00 bez'), findsOneWidget);
+      expect(find.text('2,00 z graczem · 3,00 bez'), findsOneWidget);
+      expect(find.text('6,00 z graczem · 3,00 bez'), findsOneWidget);
+      expect(find.text('4,00 z graczem · 2,00 bez'), findsOneWidget);
+      expect(find.text('Korzystnie'), findsNWidgets(3));
+      expect(find.text('Niekorzystnie'), findsOneWidget);
       expect(
         find.text('Z zawodnikiem: 1 · Bez zawodnika: 1'),
         findsNWidgets(2),
@@ -92,14 +99,24 @@ void main() {
       history.fail = false;
       await tester.tap(find.text('Ponów'));
       await tester.pumpAndSettle();
-      expect(find.text('Strzelone: +3,00 · Stracone: -1,00'), findsOneWidget);
+      expect(
+        squad
+            ? find.text('Strzelone: +3,00 · Stracone: -1,00')
+            : find.text('-1,00'),
+        findsOneWidget,
+      );
       expect(history.reads, 2);
       history.matches = [];
       await tester.drag(find.byType(ListView), const Offset(0, 400));
       await tester.pumpAndSettle();
       expect(history.reads, 3);
       expect(find.textContaining('Strzelone: +3,00'), findsNothing);
-      expect(find.textContaining('Strzelone: Brak danych'), findsWidgets);
+      expect(
+        squad
+            ? find.textContaining('Strzelone: Brak danych')
+            : find.text('Brak danych'),
+        findsWidgets,
+      );
     });
   }
   testWidgets('missing samples show counts and Brak danych, not a zero delta', (
@@ -108,10 +125,7 @@ void main() {
     await open(tester, history: RoleHistory()..matches = [goalMatch()]);
     expect(find.text('Z zawodnikiem: 1 · Bez zawodnika: 0'), findsOneWidget);
     expect(find.text('Z zawodnikiem: 0 · Bez zawodnika: 0'), findsOneWidget);
-    expect(
-      find.text('Strzelone: Brak danych · Stracone: Brak danych'),
-      findsNWidgets(2),
-    );
+    expect(find.text('Brak próbki porównawczej'), findsNWidgets(4));
   });
   testWidgets(
     'loading is not missing data; narrow large-text section has no overflow',

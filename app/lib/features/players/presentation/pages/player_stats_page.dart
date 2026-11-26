@@ -102,7 +102,7 @@ class _PlayerStatsPageState extends ConsumerState<PlayerStatsPage> {
                             ],
                           ),
                         );
-                        if (constraints.maxWidth < 800)
+                        if (constraints.maxWidth < 800) {
                           return Column(
                             children: [
                               goals,
@@ -110,6 +110,7 @@ class _PlayerStatsPageState extends ConsumerState<PlayerStatsPage> {
                               metrics,
                             ],
                           );
+                        }
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

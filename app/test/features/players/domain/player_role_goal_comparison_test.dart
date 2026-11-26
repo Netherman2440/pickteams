@@ -9,6 +9,13 @@ void main() {
     for (final role in GoalRole.values) {
       expect(result[role]!.withPlayer, 1);
       expect(result[role]!.withoutPlayer, 1);
+      expect(result[role]!.scoredWithPlayer, role == GoalRole.home ? 5 : 6);
+      expect(result[role]!.scoredWithoutPlayer, role == GoalRole.home ? 2 : 3);
+      expect(result[role]!.concededWithPlayer, role == GoalRole.home ? 2 : 4);
+      expect(
+        result[role]!.concededWithoutPlayer,
+        role == GoalRole.home ? 3 : 2,
+      );
       expect(result[role]!.scored, 3);
       expect(result[role]!.conceded, role == GoalRole.home ? -1 : 2);
     }
@@ -51,6 +58,11 @@ void main() {
       goalMatch(homePlayers: ['third']),
     ], 'player');
     expect(homeOnly[GoalRole.home]!.scored, 0);
+    expect(
+      homeOnly[GoalRole.home]!.scoredWithPlayer,
+      homeOnly[GoalRole.home]!.scoredWithoutPlayer,
+    );
+    expect(homeOnly[GoalRole.away]!.scoredWithPlayer, isNull);
     expect(homeOnly[GoalRole.away]!.scored, isNull);
     expect(homeOnly[GoalRole.away]!.withoutPlayer, 1);
   });

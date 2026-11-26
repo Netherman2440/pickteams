@@ -175,7 +175,7 @@ void main() {
         final heading = find.text('Drużyna z tym zawodnikiem');
         expect(
           tester.getTopLeft(heading).dy,
-          lessThan(
+          greaterThan(
             tester
                 .getTopLeft(
                   find.descendant(
@@ -191,7 +191,7 @@ void main() {
         expect(data.goalHistoryReads, 1);
         final matchesButton = find.descendant(
           of: find.byType(PlayerDetailsPage),
-          matching: find.byIcon(Icons.sports_soccer),
+          matching: find.text('Mecze'),
         );
         await tester.ensureVisible(matchesButton);
         await tester.tap(matchesButton);

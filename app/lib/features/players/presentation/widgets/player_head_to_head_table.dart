@@ -128,7 +128,12 @@ class _PlayerHeadToHeadTableState extends State<PlayerHeadToHeadTable> {
         final isCompact = constraints.maxWidth < AppConfig.compactWidth;
         final rowHeight = isCompact ? 44.0 : 48.0;
         final playerColumnWidth = isCompact ? 140.0 : 180.0;
-        final statColumnWidth = isCompact ? 112.0 : 118.0;
+        final statColumnWidth = isCompact
+            ? 112.0
+            : ((constraints.maxWidth - playerColumnWidth) / 8).clamp(
+                100.0,
+                140.0,
+              );
         final columns = _orderedColumns();
         final statColumns = columns
             .where((column) => column != HeadToHeadColumn.player)
@@ -169,8 +174,9 @@ class _PlayerHeadToHeadTableState extends State<PlayerHeadToHeadTable> {
                         : HeadToHeadColumn.togetherMatches,
                     false,
                   );
-                  if (_bodyHorizontalController.hasClients)
+                  if (_bodyHorizontalController.hasClients) {
                     _bodyHorizontalController.jumpTo(0);
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -608,28 +614,39 @@ class _HeaderCell extends StatelessWidget {
         : null;
     final iconWidgets = icon == null ? null : <Widget>[icon];
 
-    return InkWell(
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
       onTap: onTap,
-      child: Container(
-        width: width,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        color: isSelected ? highlightColor : Colors.transparent,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+      label:
+          '$label${isSelected ? (isAscending ? ', rosnąco' : ', malejąco') : ''}',
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            width: width,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            color: isSelected ? highlightColor : Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    label.replaceFirst(RegExp(r'^(Razem|Przeciwko) '), ''),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
+                ...?iconWidgets,
+              ],
             ),
-            ...?iconWidgets,
-          ],
+          ),
         ),
       ),
     );
