@@ -1,0 +1,5 @@
+flock admitted; MemAvailable=3225904 KiB; minimum=2621440 KiB
+Command: flutter analyze --no-pub
+Analyzing app...
+No issues found! (ran in 5.9s)
+Exit=0

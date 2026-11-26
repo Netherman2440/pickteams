@@ -1,0 +1,22 @@
+$ git ls-remote origin refs/heads/main
+dc4f2a490e8ebeb70c8ad764de56719cba112c1f	refs/heads/main
+$ git reflog -2 --date=iso
+dc4f2a4 HEAD@{2026-11-20 15:42:26 +0000}: merge dc4f2a490e8ebeb70c8ad764de56719cba112c1f: Fast-forward
+1377d58 HEAD@{2026-11-20 15:42:00 +0000}: reset: moving to HEAD
+$ git rev-parse HEAD HEAD^{tree}
+dc4f2a490e8ebeb70c8ad764de56719cba112c1f
+2ec22a832c926464789581fb2a013cd5630f3b87
+$ git diff --name-only
+app/lib/features/draft/presentation/pages/draft_selection_page.dart
+app/test/features/draft/presentation/draft_selection_page_search_test.dart
+$ git ls-files -v AGENTS.md app/AGENTS.md
+H AGENTS.md
+H app/AGENTS.md
+$ git diff -- AGENTS.md app/AGENTS.md app/pubspec.lock app/analysis_options.yaml
+$ git -C /home/agents/dev/pickteams rev-parse HEAD
+1377d580307959b8dc25594bff9e61370c539564
+$ adb version
+Android Debug Bridge version 1.0.41
+Version 37.0.1-15733141
+Installed as /home/agents/.local/share/pickteams-android-release/sdk/platform-tools/adb
+Running on Linux 6.8.0-149-generic (x86_64)

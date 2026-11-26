@@ -1,0 +1,4 @@
+MemAvailable=3353208 KiB; minimum=2621440 KiB
+Command: /home/agents/.local/share/pickteams-f001-sdk/flutter/bin/dart format lib/features/draft/presentation/pages/draft_selection_page.dart test/features/draft/presentation/draft_selection_page_search_test.dart
+Formatted test/features/draft/presentation/draft_selection_page_search_test.dart
+Formatted 2 files (1 changed) in 0.06 seconds.

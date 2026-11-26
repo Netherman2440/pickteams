@@ -1,0 +1,10 @@
+$ adb devices -l
+List of devices attached
+
+$ adb kill-server (server started by this job)
+$ SDK emulator/system-images; local avd; alternative SDK
+absent: /home/agents/.local/share/pickteams-android-release/production/sdk/emulator
+absent: /home/agents/.local/share/pickteams-android-release/production/sdk/system-images
+absent: /home/agents/.android/avd
+absent: /home/agents/Android/Sdk
+absent: /opt/android-sdk

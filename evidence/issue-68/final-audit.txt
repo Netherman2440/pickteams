@@ -1,0 +1,19 @@
+$ git diff 561a6ea --exit-code -- app/lib app/test
+$ git diff dc4f2a4 --name-only
+app/lib/features/draft/presentation/pages/draft_selection_page.dart
+app/test/features/draft/presentation/draft_selection_page_search_test.dart
+evidence/issue-68/README.md
+evidence/issue-68/analyze.txt
+evidence/issue-68/android-capability.txt
+evidence/issue-68/base-provenance.txt
+evidence/issue-68/baseline-entry.txt
+evidence/issue-68/focused-final.txt
+evidence/issue-68/focused-first.txt
+evidence/issue-68/format.txt
+evidence/issue-68/mutation-no-restore.txt
+evidence/issue-68/validate.sh
+$ git diff dc4f2a4 -- AGENTS.md app/AGENTS.md app/analysis_options.yaml app/pubspec.lock app/android supabase spec
+$ git -C /home/agents/dev/pickteams rev-parse HEAD
+1377d580307959b8dc25594bff9e61370c539564
+$ pgrep -ax adb
+$ git diff --check

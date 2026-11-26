@@ -1,0 +1,51 @@
+MemAvailable=3409420 KiB; minimum=2621440 KiB
+Command: /home/agents/.local/share/pickteams-f001-sdk/flutter/bin/flutter test --no-pub --coverage --concurrency=1 test/features/matches/presentation/match_score_breakpoint_test.dart --name \^\(\?\!.\*at\ \(360\|599\)\\.0px\).\*
+00:00 +0: loading /home/agents/dev/.pickteams-limen-worktrees/2026-11-20-issue-68-task-7043656121-3cc5e0fa/app/test/features/matches/presentation/match_score_breakpoint_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: score display and entry remain available at 600.0px in the real shell
+00:02 +1: score display and entry remain available at 601.0px in the real shell
+00:03 +2: score display and entry remain available at 719.0px in the real shell
+00:04 +3: score display and entry remain available at 720.0px in the real shell
+00:04 +4: score display and entry remain available at 721.0px in the real shell
+00:05 +5: score display and entry remain available at 767.0px in the real shell
+00:05 +6: score display and entry remain available at 768.0px in the real shell
+00:06 +7: score display and entry remain available at 769.0px in the real shell
+00:06 +8: score display and entry remain available at 791.0px in the real shell
+00:07 +9: score display and entry remain available at 792.0px in the real shell
+00:07 +10: score display and entry remain available at 793.0px in the real shell
+00:07 +11: score display and entry remain available at 1440.0px in the real shell
+00:08 +12: phone 320.0 scale 1.0 score (14, 5) with Android keyboard
+00:08 +13: phone 320.0 scale 1.0 score (null, null) with Android keyboard
+00:09 +14: phone 320.0 scale 1.0 score (123, 98) with Android keyboard
+00:09 +15: phone 320.0 scale 1.6 score (14, 5) with Android keyboard
+00:10 +16: phone 320.0 scale 1.6 score (null, null) with Android keyboard
+00:10 +17: phone 320.0 scale 1.6 score (123, 98) with Android keyboard
+00:11 +18: phone 360.0 scale 1.0 score (14, 5) with Android keyboard
+00:11 +19: phone 360.0 scale 1.0 score (null, null) with Android keyboard
+00:12 +20: phone 360.0 scale 1.0 score (123, 98) with Android keyboard
+00:12 +21: phone 360.0 scale 1.6 score (14, 5) with Android keyboard
+00:13 +22: phone 360.0 scale 1.6 score (null, null) with Android keyboard
+00:13 +23: phone 360.0 scale 1.6 score (123, 98) with Android keyboard
+00:13 +24: phone 360.0 scale 2.0 score (14, 5) with Android keyboard
+00:14 +25: phone 360.0 scale 2.0 score (null, null) with Android keyboard
+00:14 +26: phone 360.0 scale 2.0 score (123, 98) with Android keyboard
+00:15 +27: phone 393.0 scale 1.0 score (14, 5) with Android keyboard
+00:15 +28: phone 393.0 scale 1.0 score (null, null) with Android keyboard
+00:15 +29: phone 393.0 scale 1.0 score (123, 98) with Android keyboard
+00:16 +30: phone 393.0 scale 1.6 score (14, 5) with Android keyboard
+00:16 +31: phone 393.0 scale 1.6 score (null, null) with Android keyboard
+00:16 +32: phone 393.0 scale 1.6 score (123, 98) with Android keyboard
+00:17 +33: phone 393.0 scale 2.0 score (14, 5) with Android keyboard
+00:17 +34: phone 393.0 scale 2.0 score (null, null) with Android keyboard
+00:18 +35: phone 393.0 scale 2.0 score (123, 98) with Android keyboard
+00:18 +36: phone 412.0 scale 1.0 score (14, 5) with Android keyboard
+00:18 +37: phone 412.0 scale 1.0 score (null, null) with Android keyboard
+00:19 +38: phone 412.0 scale 1.0 score (123, 98) with Android keyboard
+00:19 +39: phone 412.0 scale 1.6 score (14, 5) with Android keyboard
+00:19 +40: phone 412.0 scale 1.6 score (null, null) with Android keyboard
+00:20 +41: phone 412.0 scale 1.6 score (123, 98) with Android keyboard
+00:20 +42: phone 412.0 scale 2.0 score (14, 5) with Android keyboard
+00:21 +43: phone 412.0 scale 2.0 score (null, null) with Android keyboard
+00:21 +44: phone 412.0 scale 2.0 score (123, 98) with Android keyboard
+00:21 +45: (tearDownAll)
+00:23 +45: All tests passed!

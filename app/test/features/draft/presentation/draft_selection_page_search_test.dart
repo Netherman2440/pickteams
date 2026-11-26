@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -74,6 +75,15 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('draft search opens the input connection on entry', (
+    tester,
+  ) async {
+    await _pumpPage(tester);
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.focusNode!.hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+  });
 
   testWidgets('draft search filters both selected and available sections', (
     tester,
@@ -188,7 +198,7 @@ void main() {
   );
 
   testWidgets(
-    'draft search tapping a player refocuses the field and selects phrase',
+    'player tap selects phrase; repeated simulated resumes preserve query and roster',
     (tester) async {
       await _pumpPage(tester);
 
@@ -215,8 +225,196 @@ void main() {
       expect(selection.isCollapsed, isFalse);
       expect(selection.baseOffset, 0);
       expect(selection.extentOffset, controller.text.length);
+
+      for (var i = 0; i < 3; i++) {
+        _setKeyboardInset(tester, 300);
+        await tester.pump();
+        await _background(tester);
+        expect(field.focusNode!.hasFocus, isFalse);
+        await _resume(tester);
+        expect(field.focusNode!.hasFocus, isTrue);
+        expect(tester.testTextInput.isVisible, isTrue);
+        expect(controller.text, 'a');
+        expect(controller.selection, selection);
+        expect(_findInSection('Wybrani gracze', 'Bartek'), findsOneWidget);
+        expect(_findInSection('Dostępni gracze', 'Anna'), findsOneWidget);
+      }
     },
   );
+
+  testWidgets(
+    'pending keyboard intent survives rapid departures until visible acknowledgement',
+    (tester) async {
+      await _pumpPage(tester, initialSelectedIds: const ['p2']);
+      await _enterSearchQuery(tester, 'Anna');
+      final field = tester.widget<TextField>(find.byType(TextField));
+      const selection = TextSelection(baseOffset: 1, extentOffset: 3);
+      field.controller!.selection = selection;
+      _setKeyboardInset(tester, 300);
+      await tester.pump();
+      await _background(tester);
+
+      for (var i = 0; i < 3; i++) {
+        _resumeWithoutFrame(tester);
+        await _background(tester);
+        expect(field.focusNode!.hasFocus, isFalse);
+        expect(tester.testTextInput.isVisible, isFalse);
+      }
+      await _resume(tester);
+      expect(field.focusNode!.hasFocus, isTrue);
+      expect(tester.testTextInput.isVisible, isTrue);
+      expect(field.controller!.text, 'Anna');
+      expect(field.controller!.selection, selection);
+      expect(find.text('Wybrani gracze (1)'), findsOneWidget);
+
+      // Focus is not visibility acknowledgement. Zero metrics can still be
+      // from the old background connection before the IME reports visible.
+      _setKeyboardInset(tester, 0);
+      await tester.pump();
+      await _background(tester);
+      await _resume(tester);
+      expect(field.focusNode!.hasFocus, isTrue);
+      expect(tester.testTextInput.isVisible, isTrue);
+      expect(field.controller!.text, 'Anna');
+      expect(field.controller!.selection, selection);
+      expect(find.text('Wybrani gracze (1)'), findsOneWidget);
+
+      expect(_findInSection('Dostępni gracze', 'Anna'), findsOneWidget);
+      await _enterSearchQuery(tester, 'Bart');
+      expect(_findInSection('Wybrani gracze', 'Bartek'), findsOneWidget);
+
+      // Once visible, a settled explicit dismissal cancels the intent.
+      _setKeyboardInset(tester, 300);
+      await tester.pump();
+      tester.testTextInput.hide();
+      _setKeyboardInset(tester, 0);
+      await tester.pump();
+      await _background(tester);
+      await _resume(tester);
+      expect(tester.testTextInput.isVisible, isFalse);
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+      expect(tester.testTextInput.isVisible, isTrue);
+    },
+  );
+
+  testWidgets(
+    'simulated Back inset collapse stays hidden across resumes; tap reopens',
+    (tester) async {
+      await _pumpPage(tester, initialSelectedIds: const ['p2']);
+      await _enterSearchQuery(tester, 'a');
+      final field = tester.widget<TextField>(find.byType(TextField));
+      _setKeyboardInset(tester, 300);
+      await tester.pump();
+      // Simulate the observable Flutter signals, not an Android Back event.
+      tester.testTextInput.hide();
+      _setKeyboardInset(tester, 0);
+      await tester.pump();
+      expect(field.focusNode!.hasFocus, isTrue);
+      for (var i = 0; i < 3; i++) {
+        await _background(tester);
+        await _resume(tester);
+        expect(tester.testTextInput.isVisible, isFalse);
+        expect(field.controller!.text, 'a');
+        expect(_findInSection('Wybrani gracze', 'Bartek'), findsOneWidget);
+      }
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+      expect(tester.testTextInput.isVisible, isTrue);
+    },
+  );
+
+  testWidgets(
+    'settled foreground connection close cancels unacknowledged restore',
+    (tester) async {
+      await _pumpPage(tester, initialSelectedIds: const ['p2']);
+      await _enterSearchQuery(tester, 'Anna');
+      _setKeyboardInset(tester, 300);
+      await tester.pump();
+      await _background(tester);
+      await _resume(tester);
+      expect(tester.testTextInput.isVisible, isTrue);
+      // The request has focus but no positive-inset acknowledgement yet.
+      // A settled foreground connection close is cancellation, not a new
+      // background transition. This does not model quick native Back ordering.
+      tester.testTextInput.closeConnection();
+      tester.testTextInput.hide();
+      await tester.pumpAndSettle();
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.focusNode!.hasFocus, isFalse);
+      await _background(tester);
+      await _resume(tester);
+      expect(tester.testTextInput.isVisible, isFalse);
+      expect(field.controller!.text, 'Anna');
+      expect(find.text('Wybrani gracze (1)'), findsOneWidget);
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+      expect(tester.testTextInput.isVisible, isTrue);
+    },
+  );
+
+  for (final queued in [true, false]) {
+    for (final action in ['cover', 'replace', 'dispose']) {
+      testWidgets('restore queued=$queued is cancelled by $action', (
+        tester,
+      ) async {
+        await _pumpPage(tester);
+        _setKeyboardInset(tester, 300);
+        await tester.pump();
+        final navigator = Navigator.of(tester.element(find.byType(TextField)));
+        await _background(tester);
+        _resumeWithoutFrame(tester);
+        await _background(tester);
+        _resumeWithoutFrame(tester);
+        if (!queued) {
+          // Focus request issued, but visible insets have not acknowledged it.
+          await tester.pumpAndSettle();
+          expect(tester.testTextInput.isVisible, isTrue);
+        }
+        final route = MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('Other route')),
+        );
+        if (action == 'cover') {
+          navigator.push<void>(route);
+        } else if (action == 'replace') {
+          navigator.pushReplacement<void, void>(route);
+        } else {
+          await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+        }
+        await tester.pumpAndSettle();
+        expect(tester.testTextInput.isVisible, isFalse);
+        await _background(tester);
+        await _resume(tester);
+        expect(tester.testTextInput.isVisible, isFalse);
+        if (action == 'cover') {
+          navigator.pop();
+          await tester.pumpAndSettle();
+          await _background(tester);
+          await _resume(tester);
+          expect(tester.testTextInput.isVisible, isFalse);
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  for (final platform in [TargetPlatform.iOS, TargetPlatform.linux]) {
+    testWidgets('$platform does not use Android restoration', (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        await _pumpPage(tester);
+        _setKeyboardInset(tester, 300);
+        await tester.pump();
+        final field = tester.widget<TextField>(find.byType(TextField));
+        await _background(tester);
+        expect(field.focusNode!.hasFocus, isTrue);
+        await _resume(tester);
+        expect(tester.testTextInput.isVisible, isFalse);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+  }
 
   testWidgets(
     'draft search arrow keys navigate results and enter adds highlighted player',
@@ -322,6 +520,11 @@ Future<void> _pumpPage(
   List<String> initialSelectedIds = const [],
   bool phone = false,
 }) async {
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  addTearDown(() {
+    tester.view.resetViewInsets();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  });
   await tester.binding.setSurfaceSize(
     phone ? const Size(360, 640) : const Size(1800, 1000),
   );
@@ -341,6 +544,30 @@ Future<void> _pumpPage(
   await tester.pumpWidget(
     SharedRowsFixture(players: players, initialSelectedIds: initialSelectedIds),
   );
+  await tester.pumpAndSettle();
+}
+
+void _setKeyboardInset(WidgetTester tester, double bottom) {
+  tester.view.viewInsets = FakeViewPadding(bottom: bottom);
+}
+
+Future<void> _background(WidgetTester tester) async {
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+  tester.testTextInput.hide();
+  _setKeyboardInset(tester, 0);
+  await tester.pump();
+}
+
+void _resumeWithoutFrame(WidgetTester tester) {
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+}
+
+Future<void> _resume(WidgetTester tester) async {
+  _resumeWithoutFrame(tester);
   await tester.pumpAndSettle();
 }
 

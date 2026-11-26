@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -249,11 +250,25 @@ class _AvailablePlayersPanel extends StatefulWidget {
   State<_AvailablePlayersPanel> createState() => _AvailablePlayersPanelState();
 }
 
-class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
+class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel>
+    with WidgetsBindingObserver {
   late final ScrollController _scrollController;
   late final TextEditingController _searchController;
   late final FocusNode _searchFocusNode;
   late final GlobalKey _highlightedTileKey;
+
+  _SearchKeyboardIntent _keyboardIntent = _SearchKeyboardIntent.hidden;
+
+  bool get _needsKeyboardRestore =>
+      _keyboardIntent == _SearchKeyboardIntent.restorePending ||
+      _keyboardIntent == _SearchKeyboardIntent.awaitingVisibility;
+  AppLifecycleState? _lifecycleState;
+  int _resumeGeneration = 0;
+
+  bool get _handlesAndroidKeyboard =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  bool get _isCurrentRoute => ModalRoute.of(context)?.isCurrent ?? false;
 
   /// Index of the available player currently picked by keyboard
   /// navigation in the search field. `null` means no player is picked, so
@@ -269,7 +284,93 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
       debugLabel: 'draft-search-field',
       onKeyEvent: _handleSearchKeyEvent,
     );
+    _searchFocusNode.addListener(_onSearchFocusChanged);
     _highlightedTileKey = GlobalKey(debugLabel: 'draft-search-highlight');
+    _lifecycleState = WidgetsBinding.instance.lifecycleState;
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ModalRoute notifies dependants when a covering route becomes current.
+    // Cancel rather than carrying search intent onto that route or its pop.
+    if (!_isCurrentRoute) {
+      _keyboardIntent = _SearchKeyboardIntent.hidden;
+      _resumeGeneration++;
+    }
+  }
+
+  void _onSearchFocusChanged() {
+    if (_handlesAndroidKeyboard &&
+        _lifecycleState == AppLifecycleState.resumed &&
+        !_searchFocusNode.hasFocus &&
+        _keyboardIntent != _SearchKeyboardIntent.restorePending) {
+      // A foreground focus loss cancels acknowledged/issued intent. The
+      // unfocused interval before our queued restore is not a dismissal.
+      _keyboardIntent = _SearchKeyboardIntent.hidden;
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (!_handlesAndroidKeyboard ||
+        _lifecycleState != AppLifecycleState.resumed ||
+        !_isCurrentRoute) {
+      return;
+    }
+    // Back can hide the IME without removing focus. Focus alone is not
+    // permission to reopen it. Ignore the inset collapse while backgrounded.
+    if (_searchFocusNode.hasFocus && View.of(context).viewInsets.bottom > 0) {
+      _keyboardIntent = _SearchKeyboardIntent.visible;
+    } else if (!_needsKeyboardRestore) {
+      _keyboardIntent = _SearchKeyboardIntent.hidden;
+    }
+    // A focus request is not visibility acknowledgement. Until positive
+    // insets arrive, zero insets may still belong to the background frame.
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final previous = _lifecycleState;
+    _lifecycleState = state;
+    final generation = ++_resumeGeneration;
+    if (!_handlesAndroidKeyboard) {
+      return;
+    }
+    if (!_isCurrentRoute) {
+      _keyboardIntent = _SearchKeyboardIntent.hidden;
+    } else if (previous == AppLifecycleState.resumed &&
+        state != AppLifecycleState.resumed &&
+        _keyboardIntent == _SearchKeyboardIntent.visible) {
+      _keyboardIntent = _searchFocusNode.hasFocus
+          ? _SearchKeyboardIntent.restorePending
+          : _SearchKeyboardIntent.hidden;
+    }
+    // Pending/issued intent survives superseded callbacks and our own
+    // transient unfocused state until visibility or cancellation is observed.
+    if ((state == AppLifecycleState.hidden ||
+            state == AppLifecycleState.paused) &&
+        _needsKeyboardRestore) {
+      // Release the old input connection while truly backgrounded, not on
+      // inactive (which can also occur for temporary system UI).
+      _searchFocusNode.unfocus();
+    }
+    if (state == AppLifecycleState.resumed && _needsKeyboardRestore) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            generation == _resumeGeneration &&
+            _lifecycleState == AppLifecycleState.resumed &&
+            _isCurrentRoute &&
+            _needsKeyboardRestore) {
+          // One new connection, not a timed show/retry loop. Do not select
+          // the phrase here: resume must preserve the editing selection too.
+          _keyboardIntent = _SearchKeyboardIntent.awaitingVisibility;
+          _searchFocusNode.requestFocus();
+        }
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
+    }
   }
 
   @override
@@ -297,6 +398,7 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
@@ -381,7 +483,9 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
   /// no matter how many players remain in "Dostępni".
   void _refocusSearchField() {
     void apply() {
-      if (!mounted) {
+      if (!mounted ||
+          _lifecycleState != AppLifecycleState.resumed ||
+          !_isCurrentRoute) {
         return;
       }
       _searchFocusNode.requestFocus();
@@ -418,6 +522,7 @@ class _AvailablePlayersPanelState extends State<_AvailablePlayersPanel> {
           if (widget.validationMessage != null)
             _InlineErrorText(message: widget.validationMessage!),
           TextField(
+            autofocus: true,
             controller: _searchController,
             focusNode: _searchFocusNode,
             decoration: const InputDecoration(
@@ -590,6 +695,15 @@ class _InlineErrorText extends StatelessWidget {
       ),
     );
   }
+}
+
+// Only visible acknowledges the IME. Both restore states retain open intent;
+// issuing a focus request must not consume it before Android reports visibility.
+enum _SearchKeyboardIntent {
+  hidden,
+  visible,
+  restorePending,
+  awaitingVisibility,
 }
 
 enum _SelectionMenuAction { toggleSubstitute }
