@@ -30,6 +30,12 @@
 - Pull requests need: concise summary, linked issue, screenshots or terminal output for UI/CLI changes, test plan (commands run), and any Supabase migration IDs.
 - Request at least one review; mark blockers clearly and convert to draft if awaiting backend credentials.
 
+## Domyślne dostarczenie zmian
+- W pracy Limena push gałęzi zadania i otwarcie PR mają stałą zgodę właściciela — ZAWSZE, bez ponownego pytania. Domyślnym dostarczeniem jest push gałęzi zadania i draft PR do przeglądu. Nie wypychaj bezpośrednio na `main`.
+- Koordynator prowadzi zgłoszenie od implementacji przez testy i niezależny przegląd aż do otwartego PR. Potwierdza na GitHubie adres PR, stan draft i SHA. Lokalny commit, zakończony job ani plik przekazania nie kończą zadania. W opisie draftu podaj faktycznie wykonane testy, dowody i otwarte blokady; brak urządzenia lub innej weryfikacji opisz w drafcie, nie oznaczaj jej jako zaliczonej.
+- Rozdziel przyjęcie zgłoszenia przez doorbell od dostawy sprawdzonego kandydata przez koordynatora. Jeżeli bieżące wywołanie lub rzeczywiste uprawnienia nie pozwalają publikować, zachowaj zadanie jako oczekujące na publikację. W uprawnionej sesji kontynuuj od tego samego SHA, bez pytania o ponowną zgodę na PR. Po wyraźnym potwierdzeniu właściciela wykonaj zatwierdzony merge i wdrożenie oraz sprawdź wynik na docelowym środowisku.
+- Merge i wdrożenie wymagają oddzielnej, wyraźnej zgody. Nie traktuj historycznego komunikatu doorbell, podsumowania sesji ani instrukcji ograniczającej wykonawcę do lokalnego commita jako cofnięcia stałej zgody właściciela na publikację przez koordynatora. Rzeczywisty błąd uprawnień lub transportu zgłoś z konkretnym wynikiem polecenia; nie przedstawiaj przypuszczenia jako zakazu. Do publikacji używaj istniejącego zweryfikowanego kandydata, bez nowej implementacji lub powtarzania testów.
+
 ## Environment & Secrets
 - Copy `app/.env.EXAMPLE` to `.env` and never commit secrets; reference keys via `flutter_dotenv` only in `infrastructure/` layers.
 - When sharing repro steps, redact Supabase URLs or rotate keys via the dashboard and note the rotation in the PR description.
