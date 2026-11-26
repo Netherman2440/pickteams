@@ -9,33 +9,6 @@ import 'package:app/features/players/domain/entities/player.dart';
 void main() {
   const repository = CombinatoryDraftRepository();
 
-  test('ranking baseline: best first proposal is {1,1,4} vs {2,2,2}', () async {
-    final players = [
-      _player(id: 'p1', ranking: 1),
-      _player(id: 'p2', ranking: 1),
-      _player(id: 'p3', ranking: 4),
-      _player(id: 'p4', ranking: 2),
-      _player(id: 'p5', ranking: 2),
-      _player(id: 'p6', ranking: 2),
-    ];
-
-    final proposals = await repository.createDraft(
-      players: players,
-      teamCount: 2,
-    );
-    expect(proposals, isNotEmpty);
-
-    final first = proposals.first;
-    final teamRankings =
-        first.teams.map(_sortedRankings).toList(growable: false)
-          ..sort((a, b) => _rankingKey(a).compareTo(_rankingKey(b)));
-
-    expect(teamRankings, [
-      [1.0, 1.0, 4.0],
-      [2.0, 2.0, 2.0],
-    ]);
-  });
-
   test(
     'position penalty breaks ties by splitting duplicated positions',
     () async {
@@ -212,14 +185,6 @@ Player _player({
     createdAt: DateTime(2025, 1, 1),
   );
 }
-
-List<double> _sortedRankings(DraftTeam team) {
-  final rankings = team.players.map((p) => p.ranking).toList(growable: false)
-    ..sort();
-  return rankings;
-}
-
-String _rankingKey(List<double> rankings) => rankings.join(',');
 
 String _draftKey(Draft draft) {
   final teams = draft.teams

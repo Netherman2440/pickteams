@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:app/features/draft/domain/repositories/draft_experience_repository.dart';
 
 import 'package:app/core/app_config.dart';
 import 'package:app/core/error/failure.dart';
@@ -11,7 +12,10 @@ import 'package:app/features/players/domain/entities/player.dart';
 void main() {
   test('rejects player lists larger than configured max per match', () async {
     final repository = _FakeDraftRepository();
-    final useCase = CreateDraftUseCase(repository);
+    final useCase = CreateDraftUseCase(
+      repository,
+      experienceRepository: _Experience(),
+    );
     final players = List<Player>.generate(
       AppConfig.maxPlayersPerMatch + 1,
       (index) => _player('p$index'),
@@ -35,7 +39,10 @@ void main() {
         ),
       ],
     );
-    final useCase = CreateDraftUseCase(repository);
+    final useCase = CreateDraftUseCase(
+      repository,
+      experienceRepository: _Experience(),
+    );
     final players = List<Player>.generate(
       AppConfig.maxPlayersPerMatch,
       (index) => _player('p$index'),
@@ -49,7 +56,10 @@ void main() {
 
   test('forwards optional seed to repository', () async {
     final repository = _FakeDraftRepository();
-    final useCase = CreateDraftUseCase(repository);
+    final useCase = CreateDraftUseCase(
+      repository,
+      experienceRepository: _Experience(),
+    );
     final players = [_player('p1'), _player('p2')];
 
     await useCase.execute(players: players, seed: 123456);
@@ -59,7 +69,11 @@ void main() {
 
   test('allows lists larger than max when max check is disabled', () async {
     final repository = _FakeDraftRepository();
-    final useCase = CreateDraftUseCase(repository, enforceMaxPlayers: false);
+    final useCase = CreateDraftUseCase(
+      repository,
+      experienceRepository: _Experience(),
+      enforceMaxPlayers: false,
+    );
     final players = List<Player>.generate(
       AppConfig.maxPlayersPerMatch + 1,
       (index) => _player('p$index'),
@@ -69,6 +83,14 @@ void main() {
 
     expect(repository.wasCalled, isTrue);
   });
+}
+
+class _Experience implements DraftExperienceRepository {
+  @override
+  Future<Map<String, int>> getAppearances({
+    required List<String> playerIds,
+    String? currentMatchId,
+  }) async => {for (final id in playerIds) id: 0};
 }
 
 class _FakeDraftRepository implements DraftRepository {
@@ -86,6 +108,7 @@ class _FakeDraftRepository implements DraftRepository {
     int limit = 20,
     bool playWithSubstitute = true,
     int? seed,
+    Map<String, int> appearances = const {},
   }) async {
     wasCalled = true;
     lastSeed = seed;

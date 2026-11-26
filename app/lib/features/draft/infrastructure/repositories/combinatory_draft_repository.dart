@@ -5,6 +5,7 @@ import 'package:app/features/draft/domain/entities/draft_proposal.dart';
 import 'package:app/features/draft/domain/entities/draft_rule.dart';
 import 'package:app/features/draft/domain/entities/normalized_draft_rule.dart';
 import 'package:app/features/draft/domain/repositories/draft_repository.dart';
+import 'package:app/features/draft/domain/services/two_team_balance.dart';
 import 'package:app/features/players/domain/entities/player.dart';
 import 'package:logging/logging.dart';
 
@@ -26,6 +27,7 @@ class CombinatoryDraftRepository implements DraftRepository {
     int limit = 20,
     bool playWithSubstitute = true,
     int? seed,
+    Map<String, int> appearances = const {},
   }) async {
     final startedAt = DateTime.now();
     _logger.info(
@@ -88,7 +90,11 @@ class CombinatoryDraftRepository implements DraftRepository {
 
     final scoredProposals = _applyEqualWeightScoring(proposals);
 
+    final balance = TwoTeamBalance(players, appearances);
     scoredProposals.sort((a, b) {
+      if (teamCount == 2) {
+        return balance.compare(a, b, playWithSubstitute: playWithSubstitute);
+      }
       final byScore = a.score.compareTo(b.score);
       if (byScore != 0) {
         return byScore;
