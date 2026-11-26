@@ -2,9 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "python3 tool/build_web_release.py",
-  "outputDirectory": "build/web",
+  "buildCommand": "python3 tool/build_web_vercel.py",
+  "outputDirectory": "build/vercel-web",
   "headers": [
+    {"source": "/preview.json", "headers": [{"key": "Cache-Control", "value": "no-store"}]},
     {"source": "/release.json", "headers": [{"key": "Cache-Control", "value": "no-store"}]},
     {"source": "/index.html", "headers": [{"key": "Cache-Control", "value": "no-cache"}]}
   ]
