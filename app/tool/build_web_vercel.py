@@ -6,10 +6,64 @@ import os
 import re
 import shutil
 import subprocess
+from urllib.error import URLError
+from urllib.parse import urlencode
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 import build_web_release as release
 
 APP = release.APP
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, message, headers, newurl):
+        return None
+
+
+def github_preview_pr(root, ref, commit):
+    """Resolve public PR evidence once, never infer a PR from a branch alone.
+
+    GitHub REST list-pulls supports public unauthenticated reads filtered by
+    owner:head and base. Query the fixed repository; reject pagination rather
+    than selecting a convenient result. No tokens, redirects, retries or URLs
+    supplied by response metadata are used.
+    """
+    query = urlencode({'state': 'open', 'head': 'Netherman2440:' + ref,
+                       'base': 'main', 'per_page': '2'})
+    url = 'https://api.github.com/repos/Netherman2440/pickteams/pulls?' + query
+    request = Request(url, headers={'Accept': 'application/vnd.github+json',
+                                   'X-GitHub-Api-Version': '2022-11-28',
+                                   'User-Agent': 'pickteams-preview-source'})
+    try:
+        with build_opener(_NoRedirect()).open(request, timeout=20) as response:
+            assert response.status == 200 and response.geturl() == url, 'Unexpected GitHub PR response'
+            assert not response.headers.get('Link'), 'Incomplete GitHub PR evidence'
+            assert response.headers.get_content_type() == 'application/json', 'Invalid GitHub PR content type'
+            raw = response.read(1048577)
+        assert len(raw) <= 1048576, 'Oversize GitHub PR evidence'
+        pulls = release._candidate_json(raw)
+    except (URLError, OSError, ValueError, AssertionError):
+        raise AssertionError('GitHub PR evidence unavailable or invalid') from None
+    assert isinstance(pulls, list) and len(pulls) == 1, 'Preview requires a unique open GitHub PR'
+    pr = pulls[0]
+    assert isinstance(pr, dict) and pr.get('state') == 'open', 'Invalid GitHub PR state'
+    number = pr.get('number')
+    assert type(number) is int and 0 < number < 1000000000, 'Invalid GitHub PR number'
+    assert pr.get('url') == f'https://api.github.com/repos/{release.CANDIDATE_REPOSITORY}/pulls/{number}', 'Wrong GitHub PR identity'
+    assert pr.get('merged_at') is None and pr.get('closed_at') is None, 'Closed GitHub PR evidence'
+    for side in ('head', 'base'):
+        branch = pr.get(side)
+        assert isinstance(branch, dict), 'Invalid GitHub PR branch'
+        repo = branch.get('repo')
+        assert isinstance(repo, dict) and repo.get('full_name') == release.CANDIDATE_REPOSITORY, 'Wrong GitHub PR repository'
+        assert repo.get('fork') is False, 'Forked GitHub PR repository'
+    assert pr['head'].get('ref') == ref and pr['head'].get('sha') == commit, 'GitHub PR head mismatch'
+    base = pr['base'].get('sha')
+    assert pr['base'].get('ref') == 'main', 'Untrusted GitHub PR base'
+    assert isinstance(base, str) and re.fullmatch(r'[a-f0-9]{40}', base), 'Invalid GitHub PR base SHA'
+    subprocess.run(['git', 'merge-base', '--is-ancestor', release.ACCEPTED_SOURCE, base],
+                   cwd=root, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return {'pullRequest': number, 'baseCommit': base, 'pullRequestAuthority': 'github-open-pr'}
 
 
 def target_context(root, env):
@@ -41,12 +95,12 @@ def target_context(root, env):
         assert ref == 'main' and pr == '', 'Production requires main without a PR'
         return {'target': target, 'checkoutCommit': commit}
     assert ref != 'main', 'Preview requires a feature branch'
-    assert isinstance(pr, str) and re.fullmatch(r'[1-9][0-9]{0,8}', pr), 'Preview requires a PR'
+    assert isinstance(pr, str) and (pr == '' or re.fullmatch(r'[1-9][0-9]{0,8}', pr)), 'Malformed Vercel PR ID'
     assert git('rev-parse', '--is-shallow-repository') == 'false', 'Preview requires complete history'
     subprocess.run(['git', 'merge-base', '--is-ancestor', release.ACCEPTED_SOURCE, commit],
                    cwd=root, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return {'target': target, 'provider': 'vercel', 'repository': release.CANDIDATE_REPOSITORY,
-            'pullRequest': int(pr), 'headRef': ref, 'checkoutCommit': commit,
+            'pullRequest': int(pr) if pr else None, 'headRef': ref, 'checkoutCommit': commit,
             'runtimeTree': git('rev-parse', 'HEAD^{tree}')}
 
 
@@ -54,19 +108,22 @@ class VercelPreviewSource:
     """PR head policy, separate from GitHub merge candidates and production."""
     def __init__(self, root, env):
         self.env = dict(env)
-        self.identity = target_context(root, self.env)
-        assert self.identity['target'] == 'preview', 'Not a Vercel preview'
+        self.context = target_context(root, self.env)
+        assert self.context['target'] == 'preview', 'Not a Vercel preview'
+        self.identity = dict(self.context, pullRequestAuthority='vercel')
+        if self.context['pullRequest'] is None:
+            self.identity.update(github_preview_pr(root, self.context['headRef'], self.context['checkoutCommit']))
 
     def verify_stage(self, root, stage):
         print(f'Preview source check: {stage}', flush=True)
-        assert target_context(root, self.env) == self.identity, 'Preview context changed'
+        assert target_context(root, self.env) == self.context, 'Preview context changed'
         commit = release.verify_web_worktree(root, self.env)
         assert commit == self.identity['checkoutCommit'], 'Preview source changed'
         assert not os.path.lexists(root / 'app/build/candidate-web'), 'Stale preview evidence'
         assert not os.path.lexists(root / 'app/build/vercel-web'), 'Stale Vercel output'
         if stage != 'after-compiler-and-checked-analysis-restore':
             assert not os.path.lexists(root / 'app/build/web'), 'Stale preview compiler output'
-        assert target_context(root, self.env) == self.identity, 'Preview source history changed'
+        assert target_context(root, self.env) == self.context, 'Preview source history changed'
         return commit
 
 
