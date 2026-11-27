@@ -227,13 +227,14 @@ class AcceptedPlayerReleaseTest(unittest.TestCase):
         import build_native_candidate
         import sign_native_candidate
 
-        self.assertEqual(release.ACCEPTED_SOURCE, '6383c1cf3363cddeebcfe22395183df84f153cc1')
-        self.assertEqual((release.VERSION, release.VERSION_CODE), ('1.0.9', 2026112602))
+        self.assertEqual(release.ACCEPTED_SOURCE, '506013c42051d57aff0a2ffdf5e8feb401f89439')
+        self.assertEqual((release.VERSION, release.VERSION_CODE), ('1.0.10', 2026112701))
         for module in (audit_native_candidate, build_native_candidate, sign_native_candidate):
             self.assertEqual((module.VERSION, module.VERSION_CODE), (release.VERSION, release.VERSION_CODE))
         self.assertEqual(build_native_candidate.UI_SOURCE, release.ACCEPTED_SOURCE)
         # Released and superseded runtime/descriptor pins are not this release.
-        for source in ('179df8dc5802c4cf55a14bd3dc9c4ac50273911d',
+        for source in ('6383c1cf3363cddeebcfe22395183df84f153cc1',
+                       '179df8dc5802c4cf55a14bd3dc9c4ac50273911d',
                        '1684ba3cb0b492f213538851ac27ae81525a6aba',
                        '66bb7c9ea52fe7853b8e350d5531e4f3a384ebf4',
                        'e3a36d6928b653138e4c513d77a83fa844b30b16',

@@ -90,9 +90,6 @@ class PlayerRoleGoalDetails extends StatelessWidget {
                 Text(
                   '${average(scored ? result.scoredWithPlayer : result.concededWithPlayer)} z graczem · ${average(scored ? result.scoredWithoutPlayer : result.concededWithoutPlayer)} bez',
                 ),
-                Text(
-                  '${goalDeltaText(scored ? result.scored : result.conceded)} gola / mecz · ${_meaning(scored ? result.scored : result.conceded, scored)}',
-                ),
               ],
             ),
           ),

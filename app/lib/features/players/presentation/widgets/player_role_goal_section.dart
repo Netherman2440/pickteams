@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/player_goal_comparison_provider.dart';
 import '../../domain/services/player_goal_comparison.dart';
 import 'player_role_goal_values.dart';
-import 'player_goal_comparison_section.dart' show aggregateGoalExplanation;
 
 String goalDeltaText(double? value) {
   if (value == null) return 'Brak danych';
@@ -13,9 +12,7 @@ String goalDeltaText(double? value) {
 }
 
 const roleGoalExplanation =
-    'Porównanie wyników drużyny, nie wpływ zawodnika. '
-    'Różnica średniej goli na mecz: z zawodnikiem po tej stronie minus '
-    'mecze bez niego w obu drużynach.';
+    'Porównujemy, ile goli drużyna średnio strzela i traci, gdy zawodnik gra, a ile w meczach bez niego.';
 
 class RoleGoalValues extends StatelessWidget {
   const RoleGoalValues({super.key, required this.role, required this.result});
@@ -63,6 +60,7 @@ class PlayerRoleGoalSection extends ConsumerWidget {
           style: Theme.of(context).textTheme.titleLarge,
         ),
 
+        const Text(roleGoalExplanation),
         comparison.when(
           loading: () => const CircularProgressIndicator(),
           error: (_, _) => Column(
@@ -82,7 +80,7 @@ class PlayerRoleGoalSection extends ConsumerWidget {
               for (final role in GoalRole.values)
                 PlayerRoleGoalValues(role: role, result: values[role]!),
               ExpansionTile(
-                title: const Text('Jak czytać te liczby?'),
+                title: const Text('Średnie i liczba meczów'),
                 tilePadding: const EdgeInsets.symmetric(horizontal: 8),
                 childrenPadding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -90,13 +88,6 @@ class PlayerRoleGoalSection extends ConsumerWidget {
                 ),
                 expandedCrossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(roleGoalExplanation),
-                  const SizedBox(height: 8),
-                  const Text(aggregateGoalExplanation),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Więcej strzelonych lub mniej straconych = korzystnie. Odwrotna zmiana = niekorzystnie. 0,00 oznacza brak różnicy; brak danych oznacza brak próbki albo niekompletną historię. Jednostka: gola na mecz.',
-                  ),
                   for (final role in GoalRole.values)
                     PlayerRoleGoalDetails(role: role, result: values[role]!),
                 ],
