@@ -25,7 +25,7 @@ void main() {
   }
 
   Future<void> details(WidgetTester tester) async {
-    final disclosure = find.text('Jak czytać te liczby?');
+    final disclosure = find.text('Średnie i liczba meczów');
     await tester.ensureVisible(disclosure);
     await tester.tap(disclosure);
     await tester.pumpAndSettle();
@@ -45,11 +45,8 @@ void main() {
       expect(find.text('2,00 z graczem · 3,00 bez'), findsOneWidget);
       expect(find.text('6,00 z graczem · 3,00 bez'), findsOneWidget);
       expect(find.text('4,00 z graczem · 2,00 bez'), findsOneWidget);
-      expect(find.textContaining('gola / mecz · Korzystnie'), findsNWidgets(3));
-      expect(
-        find.textContaining('gola / mecz · Niekorzystnie'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('gola / mecz ·'), findsNothing);
+      expect(find.text('Jak czytać te liczby?'), findsNothing);
       expect(
         find.text('Z zawodnikiem: 1 · Bez zawodnika: 1'),
         findsNWidgets(2),
@@ -139,10 +136,7 @@ void main() {
     await details(tester);
     expect(find.text('Z zawodnikiem: 1 · Bez zawodnika: 0'), findsOneWidget);
     expect(find.text('Z zawodnikiem: 0 · Bez zawodnika: 0'), findsOneWidget);
-    expect(
-      find.textContaining('gola / mecz · Brak próbki porównawczej'),
-      findsNWidgets(4),
-    );
+    expect(find.textContaining('gola / mecz ·'), findsNothing);
   });
   testWidgets(
     'loading is not missing data; narrow large-text section has no overflow',

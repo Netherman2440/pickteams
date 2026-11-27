@@ -257,8 +257,7 @@ void main() {
           find.text('Z zawodnikiem: 0 · Bez zawodnika: 10'),
           findsOneWidget,
         );
-        expect(find.text('+1,50 gola / mecz · Korzystnie'), findsOneWidget);
-        expect(find.text('0,00 gola / mecz · Brak różnicy'), findsOneWidget);
+        expect(find.textContaining('gola / mecz ·'), findsNothing);
         expect(find.text(roleGoalExplanation), findsOneWidget);
         await tester.sendKeyEvent(LogicalKeyboardKey.enter);
         await tester.pumpAndSettle();
