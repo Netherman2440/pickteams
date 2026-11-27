@@ -168,7 +168,7 @@ void main() {
   for (final relations in [false, true]) {
     for (final systemBack in [false, true]) {
       testWidgets(
-        'real routes: relations=$relations systemBack=$systemBack retain selection without writes',
+        'real routes: relations=$relations systemBack=$systemBack retain selection then exit to squad without writes',
         (tester) async {
           final fixture = _Fixture();
           final router = await fixture.mount(tester, relations: relations);
@@ -229,6 +229,16 @@ void main() {
             unorderedEquals(ids),
           );
           fixture.expectNoWrites();
+          // Results replaces the stack with selection. System Back must still
+          // be handled, with this squad as the real page below selection.
+          tester.testTextInput.hide();
+          expect(await tester.binding.handlePopRoute(), isTrue);
+          await tester.pumpAndSettle();
+          expect(
+            router.routeInformationProvider.value.uri.path,
+            '/squads/squad-1',
+          );
+          fixture.expectNoWrites();
           await tester.pumpWidget(const SizedBox());
           router.dispose();
         },
@@ -271,6 +281,13 @@ void main() {
       await tester.pump();
       expect(fixture.acceptance.calls, 1);
       expect(find.byType(DraftResultsPage), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.byType(DraftResultsPage), findsOneWidget);
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/squads/squad-1/matches/preview',
+      );
       expect(fixture.acceptance.payload!['proposals'], hasLength(2));
       final request = fixture.acceptance.requestId;
       fixture.acceptance.reply.completeError(

@@ -143,6 +143,9 @@ final appRouter = () {
               final squadId = state.pathParameters['squadId'] ?? '';
               return NoTransitionPage(child: SquadShellPage(squadId: squadId));
             },
+            // Selection needs a real squad page below it, including after
+            // results use goNamed to return here and on direct draft links.
+            routes: [_draftSelectionRoute(), _draftCreateRoute()],
           ),
           GoRoute(
             path: '/squads/:squadId/players',
@@ -218,38 +221,6 @@ final appRouter = () {
             },
           ),
           GoRoute(
-            path: '/squads/:squadId/matches/draft',
-            name: AppRoute.draftSelection.name,
-            pageBuilder: (context, state) {
-              final squadId = state.pathParameters['squadId'] ?? '';
-              final extra = state.extra;
-
-              List<String> selectedIds = const [];
-              String? matchId;
-              List<DraftRule> draftRules = const [];
-
-              if (extra is Map<String, dynamic>) {
-                selectedIds =
-                    (extra['selectedIds'] as List<dynamic>?)?.cast<String>() ??
-                    [];
-                matchId = extra['matchId'] as String?;
-                draftRules = _decodeDraftRules(extra['draftRules']);
-              }
-
-              return NoTransitionPage(
-                child: DraftSelectionPage(
-                  squadId: squadId,
-                  initialSelectedIds: selectedIds,
-                  initialDraftRules: draftRules,
-                  matchId: matchId,
-                  playWithSubstitute: extra is Map<String, dynamic>
-                      ? (extra['playWithSubstitute'] as bool?) ?? true
-                      : true,
-                ),
-              );
-            },
-          ),
-          GoRoute(
             path: '/squads/:squadId/matches/preview',
             name: AppRoute.draftPreview.name,
             pageBuilder: (context, state) {
@@ -264,36 +235,6 @@ final appRouter = () {
                   draftRules: _decodeDraftRules(extra['draftRules']),
                   playWithSubstitute:
                       (extra['playWithSubstitute'] as bool?) ?? true,
-                ),
-              );
-            },
-          ),
-          GoRoute(
-            path: '/squads/:squadId/matches/create',
-            name: AppRoute.draftCreate.name,
-            pageBuilder: (context, state) {
-              final squadId = state.pathParameters['squadId'] ?? '';
-              final extra = state.extra;
-
-              List<String> selectedIds = const [];
-              String? matchId;
-              List<DraftRule> draftRules = const [];
-              if (extra is List<String>) {
-                selectedIds = extra;
-              } else if (extra is Map<String, dynamic>) {
-                selectedIds =
-                    (extra['selectedIds'] as List<dynamic>?)?.cast<String>() ??
-                    [];
-                matchId = extra['matchId'] as String?;
-                draftRules = _decodeDraftRules(extra['draftRules']);
-              }
-
-              return NoTransitionPage(
-                child: DraftSelectionPage(
-                  squadId: squadId,
-                  initialSelectedIds: selectedIds,
-                  initialDraftRules: draftRules,
-                  matchId: matchId,
                 ),
               );
             },
@@ -609,6 +550,68 @@ final appRouter = () {
     ],
   );
 }();
+
+GoRoute _draftSelectionRoute() => GoRoute(
+  path: 'matches/draft',
+  name: AppRoute.draftSelection.name,
+  pageBuilder: (context, state) {
+    final squadId = state.pathParameters['squadId'] ?? '';
+    final extra = state.extra;
+
+    List<String> selectedIds = const [];
+    String? matchId;
+    List<DraftRule> draftRules = const [];
+
+    if (extra is Map<String, dynamic>) {
+      selectedIds =
+          (extra['selectedIds'] as List<dynamic>?)?.cast<String>() ?? [];
+      matchId = extra['matchId'] as String?;
+      draftRules = _decodeDraftRules(extra['draftRules']);
+    }
+
+    return NoTransitionPage(
+      child: DraftSelectionPage(
+        squadId: squadId,
+        initialSelectedIds: selectedIds,
+        initialDraftRules: draftRules,
+        matchId: matchId,
+        playWithSubstitute: extra is Map<String, dynamic>
+            ? (extra['playWithSubstitute'] as bool?) ?? true
+            : true,
+      ),
+    );
+  },
+);
+
+GoRoute _draftCreateRoute() => GoRoute(
+  path: 'matches/create',
+  name: AppRoute.draftCreate.name,
+  pageBuilder: (context, state) {
+    final squadId = state.pathParameters['squadId'] ?? '';
+    final extra = state.extra;
+
+    List<String> selectedIds = const [];
+    String? matchId;
+    List<DraftRule> draftRules = const [];
+    if (extra is List<String>) {
+      selectedIds = extra;
+    } else if (extra is Map<String, dynamic>) {
+      selectedIds =
+          (extra['selectedIds'] as List<dynamic>?)?.cast<String>() ?? [];
+      matchId = extra['matchId'] as String?;
+      draftRules = _decodeDraftRules(extra['draftRules']);
+    }
+
+    return NoTransitionPage(
+      child: DraftSelectionPage(
+        squadId: squadId,
+        initialSelectedIds: selectedIds,
+        initialDraftRules: draftRules,
+        matchId: matchId,
+      ),
+    );
+  },
+);
 
 List<DraftRule> _decodeDraftRules(Object? rawRules) {
   if (rawRules is! List) {
