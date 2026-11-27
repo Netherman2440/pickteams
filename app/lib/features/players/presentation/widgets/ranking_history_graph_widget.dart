@@ -119,7 +119,13 @@ class _RankingHistoryGraphState extends State<RankingHistoryGraphWidget> {
               builder: (context, constraints) {
                 final width = math.max(1.0, constraints.maxWidth - 48);
                 double fraction(double x) => (x / width).clamp(0, 1);
+                void selectAt(double x) => setState(() {
+                  _selected = (_view.start + fraction(x) * _view.span)
+                      .round()
+                      .clamp(_view.start.ceil(), _view.end.floor());
+                });
                 return Semantics(
+                  container: true,
                   label: 'Historia rankingu',
                   value: readout,
                   increasedValue: selected < _history.length - 1
@@ -136,11 +142,7 @@ class _RankingHistoryGraphState extends State<RankingHistoryGraphWidget> {
                   onDecrease: selected > 0 ? () => _select(selected - 1) : null,
                   child: MouseRegion(
                     cursor: SystemMouseCursors.grab,
-                    onHover: (event) => _select(
-                      (_view.start +
-                              fraction(event.localPosition.dx) * _view.span)
-                          .round(),
-                    ),
+                    onHover: (event) => selectAt(event.localPosition.dx),
                     child: Listener(
                       onPointerSignal: (event) {
                         if (event is! PointerScrollEvent) return;
@@ -173,12 +175,7 @@ class _RankingHistoryGraphState extends State<RankingHistoryGraphWidget> {
                         behavior: HitTestBehavior.opaque,
                         onTapUp: (details) {
                           _focus.requestFocus();
-                          _select(
-                            (_view.start +
-                                    fraction(details.localPosition.dx) *
-                                        _view.span)
-                                .round(),
-                          );
+                          selectAt(details.localPosition.dx);
                         },
                         onScaleStart: (details) {
                           _focus.requestFocus();

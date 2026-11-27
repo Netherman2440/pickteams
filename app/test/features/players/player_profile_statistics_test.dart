@@ -1,5 +1,6 @@
 import 'package:app/core/app_theme.dart';
 import 'package:flutter/gestures.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:app/features/players/presentation/widgets/ranking_history_viewport.dart';
 import 'package:app/features/players/domain/entities/player_head_to_head_stat.dart';
 import 'package:app/features/players/domain/entities/ranking_history_entry.dart';
@@ -181,6 +182,10 @@ void main() {
           .map((e) => e.data ?? '')
           .firstWhere((e) => e.startsWith('Mecze '));
       expect(range(), 'Mecze 53–64 z 64');
+      final latestDate = DateFormat(
+        'dd.MM.yyyy',
+      ).format(history.first.createdAt.toLocal());
+      expect(find.text('$latestDate · 56.30 pkt'), findsOneWidget);
       final center = tester.getCenter(plot);
       final a = await tester.startGesture(
         center - const Offset(40, 0),
@@ -213,6 +218,19 @@ void main() {
       );
       await tester.pump();
       expect(range(), isNot(beforeWheel));
+      final beforeHover = range();
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(
+        location: Offset(tester.getTopLeft(plot).dx + 1, center.dy),
+      );
+      await mouse.moveTo(Offset(tester.getTopLeft(plot).dx + 2, center.dy));
+      await tester.pump();
+      expect(
+        range(),
+        beforeHover,
+        reason: 'Reading an edge point must not pan a fractional viewport',
+      );
+      await mouse.removePointer();
       final beforeTrackpad = range();
       final trackpad = await tester.createGesture(
         kind: PointerDeviceKind.trackpad,
@@ -235,6 +253,17 @@ void main() {
         findsNothing,
       );
       expect(find.textContaining('secret'), findsNothing);
+      final point = tester
+          .getSemantics(find.bySemanticsLabel('Historia rankingu'))
+          .getSemanticsData();
+      expect(
+        point.value,
+        matches(RegExp(r'^\d{2}\.\d{2}\.\d{4} · \d+\.\d{2} pkt$')),
+      );
+      expect(
+        point.decreasedValue,
+        matches(RegExp(r'^\d{2}\.\d{2}\.\d{4} · \d+\.\d{2} pkt$')),
+      );
       await tester.tap(find.byTooltip('Następny punkt'));
       await tester.pump();
       expect(tester.takeException(), isNull);
