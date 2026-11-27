@@ -204,8 +204,8 @@ def checked_web_controls(root, env):
     ), 'Invalid node metadata'
 
 
-def verify_web_source(root, env):
-    """Full source admission plus one checked, unstaged web materialization."""
+def verify_web_worktree(root, env):
+    """Exact checkout admission plus one checked, unstaged web materialization."""
     def git(*args):
         return subprocess.check_output(['git', *args], cwd=root)
 
@@ -279,6 +279,13 @@ def verify_web_source(root, env):
             while chunk := os.read(fd, 1024 * 1024):
                 digest.update(chunk)
             assert digest.hexdigest().encode() == oid, 'Source byte mutation'
+    assert git('rev-parse', 'HEAD').decode().strip() == head, 'Source HEAD changed'
+    return head
+
+
+def verify_web_source(root, env):
+    """Production requires both exact worktree and immutable release history."""
+    head = verify_web_worktree(root, env)
     assert verify_source_history(root) == head, 'Source HEAD changed'
     return head
 
@@ -643,7 +650,11 @@ def _compile_web(app, env, flutter, check_source):
 
 
 def build(app, env, flutter):
-    output, config, version, commit = _compile_web(app, env, flutter, verify_source_stage)
+    return _build_release(app, env, flutter, verify_source_stage)
+
+
+def _build_release(app, env, flutter, check_source):
+    output, config, version, commit = _compile_web(app, env, flutter, check_source)
     manifest = {"schemaVersion": 1, "version": version, "commit": commit,
                 "flutter": FLUTTER_VERSION, "flutterRevision": FLUTTER_REVISION,
                 "files": {name: hashlib.sha256((output / name).read_bytes()).hexdigest()
@@ -1062,7 +1073,11 @@ def _candidate_public_type(raw, kind, asset_keys=()):
 
 def build_candidate(app, env, flutter):
     """Compile an unaccepted PR tree. This entrypoint cannot emit release.json."""
-    source = CandidateSource(app.parent, env)
+    return _build_candidate(app, env, flutter, CandidateSource(app.parent, env))
+
+
+def _build_candidate(app, env, flutter, source):
+    """Shared closed payload audit; callers fix their own source authority."""
     output, config, version, commit = _compile_web(app, env, flutter, source.verify_stage)
     raw_config = json.dumps(config).encode()
     allowed, source_hashes, public_revision = _candidate_public_payload(app)
@@ -1140,7 +1155,7 @@ def build_candidate(app, env, flutter):
     (container / 'candidate.json').write_bytes(raw_manifest)
     (container / 'candidate.json.sha256').write_text(hashlib.sha256(raw_manifest).hexdigest() + '  candidate.json\n')
     assert commit == source.identity['checkoutCommit'], 'Candidate provenance mismatch'
-    print(f'Built NONPROMOTABLE candidate {commit} from PR {source.identity["pullRequest"]}')
+    print(f'Built NONPROMOTABLE candidate {commit}')
     return manifest
 
 

@@ -341,7 +341,9 @@ class WebReleaseTest(unittest.TestCase):
         for root in (release.APP.parent, release.APP):
             data = json.loads((root / "vercel.json").read_text())
             self.assertTrue((root / data["buildCommand"].split()[1]).is_file())
-            self.assertEqual((root / data["outputDirectory"]).resolve(), release.APP / "build/web")
+            self.assertEqual(data["buildCommand"].split()[1].split('/')[-1], 'build_web_vercel.py')
+            self.assertEqual((root / data["outputDirectory"]).resolve(), release.APP / "build/vercel-web")
+            self.assertIn({"source": "/preview.json", "headers": [{"key": "Cache-Control", "value": "no-store"}]}, data["headers"])
             self.assertEqual(data["installCommand"], "")
             self.assertIsNone(data["framework"])
             self.assertIn({"source": "/release.json", "headers": [{"key": "Cache-Control", "value": "no-store"}]}, data["headers"])
