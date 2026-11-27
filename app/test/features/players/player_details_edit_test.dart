@@ -234,7 +234,7 @@ void main() {
     ('Statystyki', 'Stats'),
   ]) {
     testWidgets(
-      '$label follows goal comparisons and preserves player route parameters',
+      '$label precedes the chart and preserves player route parameters',
       (tester) async {
         await mount(tester);
         final heading = find.text('Drużyna z tym zawodnikiem');
@@ -245,17 +245,11 @@ void main() {
         expect(heading, findsOneWidget);
         expect(
           tester.getTopLeft(heading).dy,
-          lessThan(tester.getTopLeft(navigationLabel).dy),
+          greaterThan(tester.getTopLeft(navigationLabel).dy),
         );
         expect(find.text('+3,00'), findsOneWidget);
         expect(find.text('−0,50'), findsOneWidget);
-        final button = find
-            .ancestor(of: find.text(label), matching: find.byType(Column))
-            .first;
-        await tap(
-          tester,
-          find.descendant(of: button, matching: find.byType(IconButton)),
-        );
+        await tap(tester, navigationLabel);
         expect(find.text('$destination fixture player'), findsOneWidget);
       },
     );

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/player_goal_comparison_provider.dart';
 import '../../domain/services/player_goal_comparison.dart';
+import 'player_role_goal_values.dart';
+import 'player_goal_comparison_section.dart' show aggregateGoalExplanation;
 
 String goalDeltaText(double? value) {
   if (value == null) return 'Brak danych';
@@ -60,8 +62,7 @@ class PlayerRoleGoalSection extends ConsumerWidget {
           'Gole według strony',
           style: Theme.of(context).textTheme.titleLarge,
         ),
-        const Text(roleGoalExplanation),
-        const SizedBox(height: 12),
+
         comparison.when(
           loading: () => const CircularProgressIndicator(),
           error: (_, _) => Column(
@@ -78,10 +79,28 @@ class PlayerRoleGoalSection extends ConsumerWidget {
           data: (values) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final role in GoalRole.values) ...[
-                RoleGoalValues(role: role, result: values[role]!),
-                const SizedBox(height: 12),
-              ],
+              for (final role in GoalRole.values)
+                PlayerRoleGoalValues(role: role, result: values[role]!),
+              ExpansionTile(
+                title: const Text('Jak czytać te liczby?'),
+                tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+                childrenPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(roleGoalExplanation),
+                  const SizedBox(height: 8),
+                  const Text(aggregateGoalExplanation),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Więcej strzelonych lub mniej straconych = korzystnie. Odwrotna zmiana = niekorzystnie. 0,00 oznacza brak różnicy; brak danych oznacza brak próbki albo niekompletną historię. Jednostka: gola na mecz.',
+                  ),
+                  for (final role in GoalRole.values)
+                    PlayerRoleGoalDetails(role: role, result: values[role]!),
+                ],
+              ),
             ],
           ),
         ),

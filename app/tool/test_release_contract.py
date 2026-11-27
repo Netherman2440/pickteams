@@ -60,7 +60,7 @@ class ReleaseContractTest(unittest.TestCase):
 
     def test_wrong_version_or_code_is_rejected(self):
         for version in ('1.0.4+2026111301', '1.0.5+2026111501',
-                        '1.0.7+2026111701', '1.0.8+2026111701'):
+                        '1.0.7+2026111701', '1.0.8+2026112601'):
             with self.subTest(version=version):
                 self.put('app/pubspec.yaml', 'name: app\nversion: ' + version + '\n')
                 self.commit()
@@ -221,19 +221,22 @@ class ReleaseContractTest(unittest.TestCase):
             release.restore_analysis(path, original)
 
 
-class AcceptedJointReleaseTest(unittest.TestCase):
+class AcceptedPlayerReleaseTest(unittest.TestCase):
     def test_shared_version_and_landed_pin_replace_prior_release_contract(self):
         import audit_native_candidate
         import build_native_candidate
         import sign_native_candidate
 
-        self.assertEqual(release.ACCEPTED_SOURCE, '66bb7c9ea52fe7853b8e350d5531e4f3a384ebf4')
-        self.assertEqual((release.VERSION, release.VERSION_CODE), ('1.0.8', 2026112601))
+        self.assertEqual(release.ACCEPTED_SOURCE, '6383c1cf3363cddeebcfe22395183df84f153cc1')
+        self.assertEqual((release.VERSION, release.VERSION_CODE), ('1.0.9', 2026112602))
         for module in (audit_native_candidate, build_native_candidate, sign_native_candidate):
             self.assertEqual((module.VERSION, module.VERSION_CODE), (release.VERSION, release.VERSION_CODE))
         self.assertEqual(build_native_candidate.UI_SOURCE, release.ACCEPTED_SOURCE)
-        # The earlier three-PR runtime/descriptor and prior pins are not this release.
-        for source in ('e3a36d6928b653138e4c513d77a83fa844b30b16',
+        # Released and superseded runtime/descriptor pins are not this release.
+        for source in ('179df8dc5802c4cf55a14bd3dc9c4ac50273911d',
+                       '1684ba3cb0b492f213538851ac27ae81525a6aba',
+                       '66bb7c9ea52fe7853b8e350d5531e4f3a384ebf4',
+                       'e3a36d6928b653138e4c513d77a83fa844b30b16',
                        '6a20920d7a57109f661913bb43bccdb0f21a9f71',
                        '492f3f3eb1a19c380fd4f4066695423fcd506609',
                        'dc4f2a490e8ebeb70c8ad764de56719cba112c1f',
@@ -244,7 +247,7 @@ class AcceptedJointReleaseTest(unittest.TestCase):
                                                entrypoint='lib/main.dart'))
         with self.assertRaisesRegex(AssertionError, 'Release version mismatch'):
             release.validate_metadata(dict(reviewed_ui_source=release.ACCEPTED_SOURCE,
-                                           build_name='1.0.7', build_number=2026111701,
+                                           build_name='1.0.8', build_number=2026112601,
                                            entrypoint='lib/main.dart'))
 
 

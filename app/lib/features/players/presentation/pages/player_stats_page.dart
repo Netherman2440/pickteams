@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app/core/error/failure.dart';
 import '../../application/player_goal_comparison_provider.dart';
 import '../widgets/player_role_goal_section.dart';
+import '../widgets/player_goal_comparison_section.dart';
+import '../widgets/player_context_header.dart';
+import '../widgets/player_navigation.dart';
 import 'package:app/features/players/domain/entities/player_stats.dart';
 import 'package:app/features/players/presentation/state/player_name_provider.dart';
 import 'package:app/features/players/presentation/state/player_stats_provider.dart';
@@ -59,30 +62,93 @@ class _PlayerStatsPageState extends ConsumerState<PlayerStatsPage> {
             padding: const EdgeInsets.all(16),
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              PlayerRoleGoalSection(
-                squadId: widget.squadId,
-                playerId: widget.playerId,
-              ),
-              const Divider(),
-              ..._buildStatTiles(state.stats),
-              const SizedBox(height: 24),
-              Text(
-                'Bezpośrednie pojedynki',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: PlayerHeadToHeadTable(
-                  stats: state.headToHead,
-                  sortColumn: _sortColumn,
-                  sortAscending: _sortAscending,
-                  onSort: (column, ascending) {
-                    setState(() {
-                      _sortColumn = column;
-                      _sortAscending = ascending;
-                    });
-                  },
+              PlayerContent(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PlayerContextHeader(
+                      squadId: widget.squadId,
+                      playerId: widget.playerId,
+                      selected: PlayerSection.stats,
+                    ),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final goals = _card(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              PlayerGoalComparisonSection(
+                                squadId: widget.squadId,
+                                playerId: widget.playerId,
+                                compact: true,
+                              ),
+                              const SizedBox(height: 12),
+                              PlayerRoleGoalSection(
+                                squadId: widget.squadId,
+                                playerId: widget.playerId,
+                              ),
+                            ],
+                          ),
+                        );
+                        final metrics = _card(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Bilans i ranking',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 12),
+                              ..._buildStatTiles(state.stats),
+                            ],
+                          ),
+                        );
+                        if (constraints.maxWidth < 800) {
+                          return Column(
+                            children: [
+                              goals,
+                              const SizedBox(height: 16),
+                              metrics,
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 3, child: goals),
+                            const SizedBox(width: 16),
+                            Expanded(flex: 2, child: metrics),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _card(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Bezpośrednie pojedynki',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Wyniki drużyny oglądanego zawodnika z innym graczem i przeciwko niemu.',
+                          ),
+                          const SizedBox(height: 12),
+                          PlayerHeadToHeadTable(
+                            stats: state.headToHead,
+                            sortColumn: _sortColumn,
+                            sortAscending: _sortAscending,
+                            onSort: (column, ascending) => setState(() {
+                              _sortColumn = column;
+                              _sortAscending = ascending;
+                            }),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -91,6 +157,11 @@ class _PlayerStatsPageState extends ConsumerState<PlayerStatsPage> {
       ),
     );
   }
+
+  Widget _card(Widget child) => Card(
+    margin: EdgeInsets.zero,
+    child: Padding(padding: const EdgeInsets.all(16), child: child),
+  );
 
   List<Widget> _buildStatTiles(PlayerStats stats) {
     final avgScoreText =

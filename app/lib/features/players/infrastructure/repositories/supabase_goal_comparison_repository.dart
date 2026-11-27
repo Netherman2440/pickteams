@@ -45,6 +45,7 @@ GoalComparisonMatch decodeGoalComparisonMatch(Map<String, dynamic> row) {
 
   final meta = row['score_meta'];
   return GoalComparisonMatch(
+    matchId: row['match_id'] as String?,
     home: teams.length == 2 ? side('home') : null,
     away: teams.length == 2 ? side('away') : null,
     homeScore: row['home_score'] as int?,

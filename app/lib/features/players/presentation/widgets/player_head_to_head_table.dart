@@ -49,6 +49,7 @@ class _PlayerHeadToHeadTableState extends State<PlayerHeadToHeadTable> {
   final ScrollController _leftVerticalController = ScrollController();
   final ScrollController _bodyVerticalController = ScrollController();
 
+  bool _against = false;
   bool _isSyncingHorizontal = false;
   bool _isSyncingVertical = false;
 
@@ -127,7 +128,12 @@ class _PlayerHeadToHeadTableState extends State<PlayerHeadToHeadTable> {
         final isCompact = constraints.maxWidth < AppConfig.compactWidth;
         final rowHeight = isCompact ? 44.0 : 48.0;
         final playerColumnWidth = isCompact ? 140.0 : 180.0;
-        final statColumnWidth = isCompact ? 120.0 : 140.0;
+        final statColumnWidth = isCompact
+            ? 112.0
+            : ((constraints.maxWidth - playerColumnWidth) / 8).clamp(
+                100.0,
+                140.0,
+              );
         final columns = _orderedColumns();
         final statColumns = columns
             .where((column) => column != HeadToHeadColumn.player)
@@ -150,9 +156,30 @@ class _PlayerHeadToHeadTableState extends State<PlayerHeadToHeadTable> {
         );
 
         return SizedBox(
-          height: tableHeight,
+          height: tableHeight + 124,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Razem')),
+                  ButtonSegment(value: true, label: Text('Przeciwko')),
+                ],
+                selected: {_against},
+                onSelectionChanged: (selection) {
+                  setState(() => _against = selection.single);
+                  widget.onSort(
+                    _against
+                        ? HeadToHeadColumn.vsMatches
+                        : HeadToHeadColumn.togetherMatches,
+                    false,
+                  );
+                  if (_bodyHorizontalController.hasClients) {
+                    _bodyHorizontalController.jumpTo(0);
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 height: rowHeight,
                 child: Row(
@@ -248,6 +275,8 @@ class _PlayerHeadToHeadTableState extends State<PlayerHeadToHeadTable> {
                                                 stat,
                                                 column,
                                               ),
+                                              semanticsLabel:
+                                                  '${stat.otherName}, ${_columnLabel(column)}: ${_valueFor(context, stat, column)}',
                                               isSelected:
                                                   widget.sortColumn == column,
                                               highlightColor: highlightColor,
@@ -265,6 +294,11 @@ class _PlayerHeadToHeadTableState extends State<PlayerHeadToHeadTable> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Dotknij nagłówka, aby zmienić kolejność. Przesuń tabelę, aby zobaczyć dalsze kolumny.',
+                style: TextStyle(fontSize: 12),
               ),
             ],
           ),
@@ -296,25 +330,29 @@ class _PlayerHeadToHeadTableState extends State<PlayerHeadToHeadTable> {
   }
 
   List<HeadToHeadColumn> _orderedColumns() {
-    return const [
-      HeadToHeadColumn.player,
-      HeadToHeadColumn.togetherMatches,
-      HeadToHeadColumn.togetherWins,
-      HeadToHeadColumn.togetherDraws,
-      HeadToHeadColumn.togetherLosses,
-      HeadToHeadColumn.togetherWinRate,
-      HeadToHeadColumn.togetherLossRate,
-      HeadToHeadColumn.togetherGoalsFor,
-      HeadToHeadColumn.togetherGoalsAgainst,
-      HeadToHeadColumn.vsMatches,
-      HeadToHeadColumn.vsWins,
-      HeadToHeadColumn.vsDraws,
-      HeadToHeadColumn.vsLosses,
-      HeadToHeadColumn.vsWinRate,
-      HeadToHeadColumn.vsLossRate,
-      HeadToHeadColumn.vsGoalsFor,
-      HeadToHeadColumn.vsGoalsAgainst,
-    ];
+    return _against
+        ? const [
+            HeadToHeadColumn.player,
+            HeadToHeadColumn.vsMatches,
+            HeadToHeadColumn.vsWins,
+            HeadToHeadColumn.vsDraws,
+            HeadToHeadColumn.vsLosses,
+            HeadToHeadColumn.vsWinRate,
+            HeadToHeadColumn.vsLossRate,
+            HeadToHeadColumn.vsGoalsFor,
+            HeadToHeadColumn.vsGoalsAgainst,
+          ]
+        : const [
+            HeadToHeadColumn.player,
+            HeadToHeadColumn.togetherMatches,
+            HeadToHeadColumn.togetherWins,
+            HeadToHeadColumn.togetherDraws,
+            HeadToHeadColumn.togetherLosses,
+            HeadToHeadColumn.togetherWinRate,
+            HeadToHeadColumn.togetherLossRate,
+            HeadToHeadColumn.togetherGoalsFor,
+            HeadToHeadColumn.togetherGoalsAgainst,
+          ];
   }
 
   String _columnLabel(HeadToHeadColumn column) {
@@ -576,28 +614,39 @@ class _HeaderCell extends StatelessWidget {
         : null;
     final iconWidgets = icon == null ? null : <Widget>[icon];
 
-    return InkWell(
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
       onTap: onTap,
-      child: Container(
-        width: width,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        color: isSelected ? highlightColor : Colors.transparent,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+      label:
+          '$label${isSelected ? (isAscending ? ', rosnąco' : ', malejąco') : ''}',
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            width: width,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            color: isSelected ? highlightColor : Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    label.replaceFirst(RegExp(r'^(Razem|Przeciwko) '), ''),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
+                ...?iconWidgets,
+              ],
             ),
-            ...?iconWidgets,
-          ],
+          ),
         ),
       ),
     );
@@ -611,6 +660,7 @@ class _BodyCell extends StatelessWidget {
     required this.isSelected,
     required this.highlightColor,
     this.alignStart = false,
+    this.semanticsLabel,
   });
 
   final double width;
@@ -618,6 +668,7 @@ class _BodyCell extends StatelessWidget {
   final bool isSelected;
   final Color highlightColor;
   final bool alignStart;
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -628,6 +679,7 @@ class _BodyCell extends StatelessWidget {
       color: isSelected ? highlightColor : Colors.transparent,
       child: Text(
         value,
+        semanticsLabel: semanticsLabel,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         textAlign: alignStart ? TextAlign.left : TextAlign.center,

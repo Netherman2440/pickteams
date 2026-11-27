@@ -3,14 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/player_goal_comparison_provider.dart';
 import '../../domain/services/player_goal_comparison.dart';
 
+const aggregateGoalExplanation =
+    'Porównanie z meczami całkowitej nieobecności zawodnika, osobno dla kolorów, '
+    'ważone liczbą jego występów. Każdy występ to cały mecz. '
+    'Wynik drużyny, nie dowód indywidualnego wpływu przyczynowego.';
+
 class PlayerGoalComparisonSection extends ConsumerWidget {
   const PlayerGoalComparisonSection({
     super.key,
     required this.squadId,
     required this.playerId,
+    this.compact = false,
   });
   final String squadId;
   final String playerId;
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -78,12 +85,11 @@ class PlayerGoalComparisonSection extends ConsumerWidget {
             label: const Text('Spróbuj ponownie'),
           ),
         const SizedBox(height: 8),
-        Text(
-          'Porównanie z meczami całkowitej nieobecności zawodnika, osobno dla kolorów, '
-          'ważone liczbą jego występów. Każdy występ to cały mecz. '
-          'Wynik drużyny, nie dowód indywidualnego wpływu przyczynowego.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        if (!compact)
+          Text(
+            aggregateGoalExplanation,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
       ],
     );
   }

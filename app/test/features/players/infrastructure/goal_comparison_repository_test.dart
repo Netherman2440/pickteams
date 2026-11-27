@@ -56,6 +56,7 @@ void main() {
       ).getSquadHistory('squad');
       expect(matches.length, 201);
       expect(matches.first.home!.playerIds, ['historical-id']);
+      expect(matches.first.matchId, 'm');
       expect(requests.length, 2);
       expect(requests.first.queryParameters['squad_id'], 'eq.squad');
       expect(requests.first.queryParameters['order'], 'match_id.asc.nullslast');
